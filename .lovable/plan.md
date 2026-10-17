@@ -1,18 +1,16 @@
-# Connect Ops_OS to this app
+# Finish connecting Ops_OS
 
-## Your step (only you can do this)
-1. In the Lovable editor, open **Connectors → Supabase** (or the Cloud view, then "Already have a Supabase project? Connect it here").
-2. Sign in to Supabase in the popup and pick the **Ops_OS** project.
-3. Come back to chat and say "connected".
+Ops_OS is linked to the project, and its tables are already there. The app itself still points at the original project's backend, so sign-in and data pages won't reach Ops_OS until that's fixed.
 
-## My steps after you connect
-1. Point the app's connection settings at Ops_OS, replacing the original project's address.
-2. Since Ops_OS is already populated, check its tables against this app's expected setup instead of re-applying everything. Only missing pieces get added; no data gets overwritten.
-3. Deploy the background services (payments, shipping rates, labels, emails, texts, vendor ordering) to Ops_OS.
-4. Open secure forms where you enter the keys for Stripe, FedEx, UPS, USPS, Mouser, DigiKey, Twilio and Resend, plus your site address.
-5. Sign in on the sign-in page and load orders, customers and inventory to confirm real data shows up.
+## Steps
+1. Point the app at Ops_OS so sign-in and all data pages use it.
+2. Check that Ops_OS has everything the app expects (tables, rules, automations). Add only what's missing. Existing data stays untouched.
+3. Deploy the 61 background services (payments, shipping rates and labels, emails, texts, vendor ordering) to Ops_OS.
+4. Open secure forms for your Stripe, FedEx, UPS, USPS, Mouser, DigiKey, Twilio and Resend keys, plus your site address.
+5. Sign in and confirm orders, customers and inventory load from Ops_OS.
 
 ## Technical details
-- Update the client URL and anon key, then regenerate the types from the live schema.
-- Diff the live schema against `supabase/migrations/`. Apply only the missing migrations, and mark the ones already applied.
-- Deploy every function in `supabase/functions/`, then request the secrets listed in the project notes.
+- `src/integrations/supabase/client.ts` hardcodes the old ref `pnawosyjmvibwjpegnrs`. Switch it to the `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` env values (ref `tycaownqbhtexkvdkuor`).
+- Change `supabase/config.toml` `project_id` to `tycaownqbhtexkvdkuor`.
+- Compare the live functions, triggers and cron jobs against the migrations before applying any of them.
+- Deploy all functions in `supabase/functions/`, then request the secrets listed in the project notes.
