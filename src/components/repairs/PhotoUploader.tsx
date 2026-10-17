@@ -171,7 +171,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 <span className="text-xs text-muted-foreground">Existing</span>
               </div>
               <img
-                src={photo.previewUrl || `https://pnawosyjmvibwjpegnrs.supabase.co/storage/v1/object/public/repairs-intake/${photo.file_path}`}
+                src={photo.previewUrl || `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/repairs-intake/${photo.file_path}`}
                 alt="Existing repair photo"
                 className="w-full h-36 object-cover"
                 loading="lazy"
