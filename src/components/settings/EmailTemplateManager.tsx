@@ -26,7 +26,7 @@ interface TemplateConfig {
 }
 
 // Default company logo URL
-const DEFAULT_LOGO_URL = "https://pnawosyjmvibwjpegnrs.supabase.co/storage/v1/object/public/branding/company-logo.png";
+const DEFAULT_LOGO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/branding/company-logo.png`;
 
 // Sample data for each template type
 const sampleDataMap: Record<string, Record<string, string>> = {
