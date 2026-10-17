@@ -1,0 +1,1 @@
+ALTER TABLE public.inbound_packages ADD COLUMN IF NOT EXISTS customer_po text;

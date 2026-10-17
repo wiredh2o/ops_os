@@ -1,0 +1,181 @@
+project_id = "pnawosyjmvibwjpegnrs"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+ip_version = "ipv4"
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1:54321"
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "https://6410f7ff-45ec-4220-b569-f8e7c70d0f79.lovableproject.com"
+additional_redirect_urls = ["https://6410f7ff-45ec-4220-b569-f8e7c70d0f79.lovableproject.com"]
+jwt_expiry = 3600
+enable_signup = true
+enable_email_confirmations = false
+enable_sms_confirmations = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+
+[functions.send-status-notification]
+verify_jwt = false
+
+[functions.daily-reorder-calculation]
+verify_jwt = false
+
+[functions.weekly-component-price-update]
+verify_jwt = false
+
+[functions.daily-waste-monitoring] 
+verify_jwt = false
+
+[functions.search-stripe-customers]
+verify_jwt = false
+
+[functions.create-stripe-customer]
+verify_jwt = false
+
+[functions.update-stripe-customer]
+verify_jwt = false
+
+[functions.sync-stripe-customers]
+verify_jwt = false
+
+[functions.get-stripe-payment-methods]
+verify_jwt = false
+
+[functions.charge-saved-card]
+verify_jwt = false
+
+[functions.create-stripe-checkout]
+verify_jwt = false
+
+[functions.link-stripe-customer]
+verify_jwt = false
+
+[functions.get-fedex-rates]
+verify_jwt = false
+
+[functions.create-fedex-shipment]
+verify_jwt = false
+
+[functions.create-stripe-setup-session]
+verify_jwt = false
+
+[functions.create-payment-intent]
+verify_jwt = false
+
+[functions.check-fedex-tracking]
+verify_jwt = false
+
+[functions.void-fedex-shipment]
+verify_jwt = false
+
+[functions.detach-stripe-payment-method]
+verify_jwt = false
+
+[functions.create-stripe-setup-intent]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.send-payment-link]
+verify_jwt = false
+
+[functions.get-order-by-token]
+verify_jwt = false
+
+[functions.process-token-payment]
+verify_jwt = false
+
+[functions.admin-reset-test-data]
+verify_jwt = false
+
+[functions.get-available-carriers]
+verify_jwt = false
+
+[functions.get-ups-rates]
+verify_jwt = false
+
+[functions.create-ups-shipment]
+verify_jwt = false
+
+[functions.void-ups-shipment]
+verify_jwt = false
+
+[functions.get-usps-rates]
+verify_jwt = false
+
+[functions.check-usps-eps-balance]
+verify_jwt = false
+
+[functions.create-usps-label]
+verify_jwt = false
+
+[functions.get-all-carrier-rates]
+verify_jwt = false
+
+[functions.get-po-by-shipment-token]
+verify_jwt = false
+
+[functions.submit-vendor-shipment]
+verify_jwt = false
+
+[functions.mouser-submit-order]
+verify_jwt = false
+
+[functions.mouser-check-order-status]
+verify_jwt = false
+
+[functions.digikey-get-token]
+verify_jwt = false
+
+[functions.digikey-submit-order]
+verify_jwt = false
+
+[functions.digikey-check-order-status]
+verify_jwt = false
+
+[functions.send-order-confirmation]
+verify_jwt = false
+
+[edge_runtime]
+policy = "per_worker"

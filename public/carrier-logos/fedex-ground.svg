@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 60">
+  <rect width="160" height="60" fill="#FFFFFF" rx="4"/>
+  <!-- FedEx logo with green Ex -->
+  <text x="80" y="32" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="bold" letter-spacing="-1">
+    <tspan fill="#4D148C">Fed</tspan><tspan fill="#00882B">Ex</tspan>
+  </text>
+  <!-- Ground text -->
+  <text x="80" y="50" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif" font-size="14" font-weight="500" fill="#00882B" letter-spacing="0.5">Ground</text>
+</svg>

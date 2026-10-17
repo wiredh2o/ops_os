@@ -1,0 +1,1 @@
+ALTER TABLE public.customer_orders ADD COLUMN customer_po text DEFAULT NULL;

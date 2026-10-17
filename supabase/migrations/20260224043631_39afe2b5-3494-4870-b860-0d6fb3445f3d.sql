@@ -1,0 +1,1 @@
+ALTER TABLE customer_orders ADD COLUMN packing_packages_json jsonb;

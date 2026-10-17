@@ -1,0 +1,1 @@
+ALTER TABLE public.customer_orders ADD COLUMN is_one_time_card boolean NOT NULL DEFAULT false;

@@ -1,0 +1,538 @@
+import React, { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Loader2, 
+  Truck, 
+  Package, 
+  ArrowLeft, 
+  Check, 
+  AlertCircle, 
+  CheckCircle, 
+  Circle,
+  FlaskConical,
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
+
+interface ShippingAddress {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  signature_required: boolean;
+}
+
+interface CarrierRate {
+  service_type: string;
+  service_name: string;
+  total_charge: number;
+  currency: string;
+  transit_days?: number;
+  delivery_date?: string;
+}
+
+interface LabelCreationResult {
+  tracking_number: string;
+  label_path: string;
+  shipping_cost: number;
+  isMock?: boolean;
+}
+
+interface CarrierRateSelectorProps {
+  carrier: string;
+  isMock: boolean;
+  shipTo: ShippingAddress;
+  packageWeight: number;
+  packageDimensions: { length: number; width: number; height: number };
+  onWeightChange: (weight: number) => void;
+  onDimensionsChange: (dims: { length: number; width: number; height: number }) => void;
+  onLabelCreated: (rate: CarrierRate, result: LabelCreationResult) => void;
+  onBack: () => void;
+  shipFrom: {
+    name?: string;
+    company: string;
+    street: string;
+    street2?: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+    phone: string;
+  };
+  shipToDetails: {
+    name?: string;
+    company: string;
+    phone?: string;
+  };
+  orderId: string;
+}
+
+const CARRIER_COLORS: Record<string, { bg: string; text: string; accent: string }> = {
+  fedex: { bg: 'bg-[#4D148C]', text: 'text-white', accent: 'text-[#FF6600]' },
+  ups: { bg: 'bg-[#351C15]', text: 'text-[#FFB500]', accent: 'text-[#FFB500]' },
+  usps: { bg: 'bg-[#004B87]', text: 'text-white', accent: 'text-[#DA291C]' },
+};
+
+export function CarrierRateSelector({
+  carrier,
+  isMock,
+  shipTo,
+  packageWeight,
+  packageDimensions,
+  onWeightChange,
+  onDimensionsChange,
+  onLabelCreated,
+  onBack,
+  shipFrom,
+  shipToDetails,
+  orderId,
+}: CarrierRateSelectorProps) {
+  const [rates, setRates] = useState<CarrierRate[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  const [selectedRate, setSelectedRate] = useState<CarrierRate | null>(null);
+  const [creatingLabel, setCreatingLabel] = useState(false);
+  const [labelCreated, setLabelCreated] = useState(false);
+  const [labelError, setLabelError] = useState<string | null>(null);
+  const [createdResult, setCreatedResult] = useState<{ rate: CarrierRate; result: LabelCreationResult } | null>(null);
+
+  const colors = CARRIER_COLORS[carrier] || { bg: 'bg-muted', text: 'text-foreground', accent: 'text-primary' };
+  const carrierName = carrier.toUpperCase();
+
+  const getRateFunctionName = () => {
+    switch (carrier) {
+      case 'ups': return 'get-ups-rates';
+      case 'usps': return 'get-usps-rates';
+      default: return 'get-fedex-rates';
+    }
+  };
+
+  const getLabelFunctionName = () => {
+    switch (carrier) {
+      case 'ups': return 'create-ups-shipment';
+      case 'usps': return 'create-usps-label';
+      default: return 'create-fedex-shipment';
+    }
+  };
+
+  const fetchRates = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    setRates([]);
+    setLabelError(null);
+
+    try {
+      const { data, error: fetchError } = await supabase.functions.invoke(getRateFunctionName(), {
+        body: {
+          ship_from: {
+            street: shipFrom.street,
+            city: shipFrom.city,
+            state: shipFrom.state,
+            postal_code: shipFrom.postal_code,
+            country: shipFrom.country,
+          },
+          ship_to: {
+            street: shipTo.address,
+            city: shipTo.city,
+            state: shipTo.state,
+            postal_code: shipTo.zip,
+            country: shipTo.country || 'US',
+            residential: false,
+          },
+          packages: [{
+            weight_lbs: packageWeight,
+            dimensions: packageDimensions,
+          }],
+        },
+      });
+
+      if (fetchError) {
+        throw new Error(fetchError.message || 'Failed to get shipping rates');
+      }
+
+      if (data?.success === false || data?.error) {
+        throw new Error(data.error || 'Unknown error');
+      }
+
+      if (data?.rates && data.rates.length > 0) {
+        setRates(data.rates);
+      } else {
+        throw new Error('No shipping rates available for this destination');
+      }
+    } catch (err: any) {
+      console.error(`Error fetching ${carrier} rates:`, err);
+      setErrorMessage(err.message);
+      setErrorDialogOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateLabel = async () => {
+    if (!selectedRate) return;
+
+    setCreatingLabel(true);
+    setLabelError(null);
+
+    try {
+      const { data: shipmentData, error: shipmentError } = await supabase.functions.invoke(
+        getLabelFunctionName(),
+        {
+          body: {
+            ship_from: {
+              name: shipFrom.name || '',
+              company: shipFrom.company,
+              street: shipFrom.street,
+              street2: shipFrom.street2,
+              city: shipFrom.city,
+              state: shipFrom.state,
+              postal_code: shipFrom.postal_code,
+              country: shipFrom.country,
+              phone: shipFrom.phone,
+            },
+            ship_to: {
+              name: shipToDetails.name || '',
+              company: shipToDetails.company,
+              street: shipTo.address,
+              city: shipTo.city,
+              state: shipTo.state,
+              postal_code: shipTo.zip,
+              country: shipTo.country || 'US',
+              residential: false,
+              phone: shipToDetails.phone,
+            },
+            packages: [{ weight_lbs: packageWeight, dimensions: packageDimensions }],
+            service_type: selectedRate.service_type,
+            order_id: orderId,
+            label_format: 'PNG',
+          },
+        }
+      );
+
+      if (shipmentError || !shipmentData?.tracking_number) {
+        throw new Error(shipmentError?.message || shipmentData?.error || 'Failed to create shipping label');
+      }
+
+      // Update order with tracking info and status (for FedEx compatibility)
+      const nowIso = new Date().toISOString();
+      await supabase
+        .from('production_orders')
+        .update({
+          status: 'label_staged',
+          sold_at: nowIso,
+          label_created_at: nowIso,
+          shipping_cost: selectedRate.total_charge,
+          fedex_tracking_number: shipmentData.tracking_number,
+          fedex_label_url: shipmentData.label_path,
+          carrier: carrier,
+          is_mock_shipment: shipmentData.isMock || isMock,
+        })
+        .eq('id', orderId);
+
+      const result: LabelCreationResult = {
+        tracking_number: shipmentData.tracking_number,
+        label_path: shipmentData.label_path,
+        shipping_cost: selectedRate.total_charge,
+        isMock: shipmentData.isMock || isMock,
+      };
+
+      setCreatedResult({ rate: selectedRate, result });
+      setLabelCreated(true);
+    } catch (error: any) {
+      console.error('Error creating shipment:', error);
+      setLabelError(error.message || 'Failed to create shipping label');
+    } finally {
+      setCreatingLabel(false);
+    }
+  };
+
+  const handleContinue = () => {
+    if (createdResult) {
+      onLabelCreated(createdResult.rate, createdResult.result);
+    }
+  };
+
+  // Show success state if label was created
+  if (labelCreated && createdResult) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle className="h-5 w-5 text-green-500" />
+          <h3 className="font-semibold text-green-700 dark:text-green-400">
+            {carrierName} Shipping Label Created
+          </h3>
+          {createdResult.result.isMock && (
+            <Badge variant="outline" className="text-xs flex items-center gap-1 border-amber-500 text-amber-600">
+              <FlaskConical className="h-3 w-3" />
+              Sandbox
+            </Badge>
+          )}
+        </div>
+
+        <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+          <CardContent className="pt-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="font-medium">{createdResult.rate.service_name || createdResult.rate.service_type}</p>
+                {createdResult.rate.transit_days && (
+                  <p className="text-xs text-muted-foreground">{createdResult.rate.transit_days} business days</p>
+                )}
+              </div>
+              <span className="font-bold text-primary">{formatCurrency(createdResult.rate.total_charge)}</span>
+            </div>
+            <div className="pt-2 border-t">
+              <p className="text-sm font-medium text-muted-foreground">Tracking Number</p>
+              <p className="font-mono text-lg">{createdResult.result.tracking_number}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Button className="w-full" onClick={handleContinue}>
+          <CheckCircle className="h-4 w-4 mr-2" />
+          Continue
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <div className={cn('px-2 py-1 rounded font-bold text-sm', colors.bg, colors.text)}>
+          {carrierName}
+        </div>
+        <h3 className="font-semibold">Create Shipping Label</h3>
+        {isMock && (
+          <Badge variant="outline" className="text-xs flex items-center gap-1 border-amber-500 text-amber-600">
+            <FlaskConical className="h-3 w-3" />
+            Sandbox Mode
+          </Badge>
+        )}
+      </div>
+
+      {/* Package Details */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Package className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Package Details</span>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <Label className="text-xs">Weight (lbs)</Label>
+              <Input
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={packageWeight}
+                onChange={(e) => onWeightChange(parseFloat(e.target.value) || 1)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Length (in)</Label>
+              <Input
+                type="number"
+                min="1"
+                value={packageDimensions.length}
+                onChange={(e) => onDimensionsChange({ ...packageDimensions, length: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Width (in)</Label>
+              <Input
+                type="number"
+                min="1"
+                value={packageDimensions.width}
+                onChange={(e) => onDimensionsChange({ ...packageDimensions, width: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Height (in)</Label>
+              <Input
+                type="number"
+                min="1"
+                value={packageDimensions.height}
+                onChange={(e) => onDimensionsChange({ ...packageDimensions, height: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+          </div>
+          <Button variant="default" size="sm" className="mt-3" onClick={fetchRates} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Calculate Rates
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Error display for label creation */}
+      {labelError && (
+        <Card className="border-destructive/50 bg-destructive/10">
+          <CardContent className="pt-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-destructive">Label Creation Failed</p>
+                <p className="text-sm text-muted-foreground mt-1">{labelError}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={() => setLabelError(null)}
+                >
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Rates List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Fetching {carrierName} rates...</span>
+        </div>
+      ) : rates.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center">
+            <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-muted-foreground">
+              Enter package details above and click "Calculate Rates" to see available {carrierName} shipping options.
+            </p>
+            {isMock && (
+              <p className="text-xs text-amber-600 mt-2">
+                Sample rates will be shown (Sandbox Mode)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Select a shipping service:
+            {isMock && <span className="text-amber-600 ml-1">(Sample rates)</span>}
+          </p>
+          <div className="grid gap-2">
+            {[...rates].sort((a, b) => a.total_charge - b.total_charge).map((rate) => {
+              const isSelected = selectedRate?.service_type === rate.service_type;
+
+              return (
+                <Card
+                  key={rate.service_type}
+                  onClick={() => !creatingLabel && setSelectedRate(rate)}
+                  className={cn(
+                    'transition-all cursor-pointer hover:border-primary/50',
+                    isSelected
+                      ? 'border-2 border-primary bg-primary/5'
+                      : 'hover:bg-muted/50',
+                    creatingLabel && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        {isSelected ? (
+                          <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          </div>
+                        ) : (
+                          <Circle className="h-5 w-5 text-muted-foreground/50" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{rate.service_name || rate.service_type}</p>
+                        {rate.transit_days && (
+                          <p className="text-xs text-muted-foreground">{rate.transit_days} business days</p>
+                        )}
+                      </div>
+
+                      <span className="font-bold text-primary flex-shrink-0">
+                        {formatCurrency(rate.total_charge)}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <Button
+            className="w-full"
+            size="lg"
+            disabled={!selectedRate || creatingLabel}
+            onClick={handleCreateLabel}
+          >
+            {creatingLabel ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Creating Label...
+              </>
+            ) : (
+              <>
+                <Truck className="h-4 w-4 mr-2" />
+                Create {carrierName} Label
+              </>
+            )}
+          </Button>
+
+          {creatingLabel && (
+            <div className="space-y-2">
+              <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="absolute inset-0 bg-primary/30" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary to-transparent animate-shimmer" />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">Creating {carrierName} shipping label...</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Back Button */}
+      <div className="flex gap-2 pt-4">
+        <Button variant="outline" onClick={onBack} disabled={creatingLabel}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+      </div>
+
+      {/* Error Dialog */}
+      <AlertDialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unable to Get {carrierName} Rates</AlertDialogTitle>
+            <AlertDialogDescription>
+              {errorMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setErrorDialogOpen(false); fetchRates(); }}>
+              Retry
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

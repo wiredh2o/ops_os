@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80">
+  <rect width="200" height="80" fill="#FFFFFF" rx="4"/>
+  <!-- Blue box with eagle -->
+  <g transform="translate(15, 10)">
+    <rect x="0" y="0" width="70" height="55" fill="#004B87" rx="2"/>
+    <!-- Stylized eagle head (white) -->
+    <path d="M5 42 L5 15 L25 8 L50 10 L58 18 L42 20 L38 26 L48 24 L62 30 L38 35 L25 33 L18 38 L5 42 Z" fill="#FFFFFF"/>
+    <path d="M28 16 L44 18 L42 22 L26 20 Z" fill="#004B87"/>
+  </g>
+  <!-- USPS Text -->
+  <text x="140" y="48" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="bold" fill="#004B87" letter-spacing="1">USPS</text>
+  <!-- Red underline -->
+  <rect x="100" y="55" width="80" height="3" fill="#DA291C" rx="1"/>
+</svg>

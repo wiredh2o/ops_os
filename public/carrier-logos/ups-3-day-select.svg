@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 80">
+  <defs>
+    <linearGradient id="upsBrown" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A3728"/>
+      <stop offset="100%" style="stop-color:#351C15"/>
+    </linearGradient>
+    <linearGradient id="upsGold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFCC00"/>
+      <stop offset="100%" style="stop-color:#FFB500"/>
+    </linearGradient>
+  </defs>
+  <rect width="260" height="80" fill="#FFFFFF" rx="4"/>
+  <!-- UPS Shield -->
+  <path d="M14 14 L14 48 Q14 60 38 60 Q62 60 62 48 L62 14 Q38 10 14 14 Z" fill="url(#upsBrown)"/>
+  <path d="M19 19 L19 46 Q19 55 38 55 Q57 55 57 46 L57 19 Q38 15 19 19 Z" fill="url(#upsGold)"/>
+  <text x="38" y="43" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="bold" fill="#351C15">ups</text>
+  <!-- Service name -->
+  <text x="76" y="35" font-family="'Helvetica Neue', Arial, sans-serif" font-size="18" font-weight="bold" fill="#351C15">3 Day Select</text>
+  <text x="76" y="54" font-family="'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#666666">3 Day Delivery</text>
+  <rect x="76" y="60" width="95" height="3" fill="url(#upsGold)" rx="1"/>
+</svg>

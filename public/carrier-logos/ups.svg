@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80">
+  <defs>
+    <linearGradient id="upsGoldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4A017"/>
+      <stop offset="50%" style="stop-color:#C99700"/>
+      <stop offset="100%" style="stop-color:#8B6914"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="80" fill="#FFFFFF" rx="4"/>
+  <!-- Shield outline (gold) -->
+  <path d="M20 12 L20 48 Q20 68 60 74 Q100 68 100 48 L100 12 Q60 6 20 12 Z" fill="url(#upsGoldGradient)"/>
+  <!-- Inner shield (brown) -->
+  <path d="M26 18 L26 46 Q26 62 60 68 Q94 62 94 46 L94 18 Q60 12 26 18 Z" fill="#351C15"/>
+  <!-- UPS text -->
+  <text x="60" y="52" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="bold" fill="#C99700" letter-spacing="1">ups</text>
+</svg>

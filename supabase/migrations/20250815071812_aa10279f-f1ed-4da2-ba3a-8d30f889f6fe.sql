@@ -1,0 +1,1 @@
+DELETE FROM pending_invites WHERE email = 'dave@washgear.com' AND status = 'failed';

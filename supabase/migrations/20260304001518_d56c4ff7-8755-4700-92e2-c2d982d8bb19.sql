@@ -1,0 +1,1 @@
+ALTER TABLE customer_orders ADD COLUMN stripe_payment_method_id text;
