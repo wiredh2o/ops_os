@@ -155,6 +155,17 @@ function AppRoutes() {
         <Route path="/pay/:token" element={<CustomerPayment />} />
         <Route path="/vendor-shipment/:token" element={<VendorShipment />} />
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff" element={<Navigate to="/staff/orders" replace />} />
+        <Route path="/staff/orders" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff/inventory" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff/waste-analytics" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff/purchasing" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff/receiving" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff/repair-lookup" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff/customers" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff/vendors" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff/accounting" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/staff/users" element={<ProtectedRoute><Index /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/repair-queue" element={<ProtectedRoute><RepairOrderQueueFullScreen /></ProtectedRoute>} />
         <Route path="/receiving/orphaned-packages" element={<ProtectedRoute><OrphanedPackages /></ProtectedRoute>} />
