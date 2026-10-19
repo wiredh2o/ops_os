@@ -1,5 +1,7 @@
 # Project Notes
 
+- Staff tab selection is driven by explicit `/staff/:tab` routes in App.tsx and the current pathname in Index.tsx, so direct links, refreshes, and browser history preserve the selected screen.
+
 ## Backend
 - This project is a remix; it runs on the user's own Supabase project named "Ops_OS" (connected manually in the editor, not from chat). The baked-in client URL may still point at the original project's Supabase — it must be repointed after Ops_OS is connected.
 - Never suggest Lovable Cloud here; the user chose BYO Supabase.

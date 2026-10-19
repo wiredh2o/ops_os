@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ProductionDashboard } from '@/components/production/ProductionDashboard';
 import { InventoryManagement } from "@/components/inventory/InventoryManagement";
 import { WasteAnalyticsDashboard } from "@/components/inventory/WasteAnalyticsDashboard";
@@ -11,6 +12,10 @@ import { ReceivingDashboard } from "@/components/receiving/ReceivingDashboard";
 import { RepairStatusLookup } from "@/components/customer-service/RepairStatusLookup";
 
 const Index = () => {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const activeTab = pathname.replace(/\/$/, "").split("/")[2] || "orders";
+
   return (
     <div className="bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="container mx-auto p-6">
@@ -18,7 +23,7 @@ const Index = () => {
           <h1 className="text-4xl font-bold">Production Management System</h1>
         </div>
         
-        <Tabs defaultValue="orders" className="w-full">
+        <Tabs value={activeTab} onValueChange={(tab) => navigate(`/staff/${tab}`)} className="w-full">
           <TabsList className="grid w-full grid-cols-10">
             <TabsTrigger value="orders">Customer Orders</TabsTrigger>
             <TabsTrigger value="inventory">Inventory & Assemblies</TabsTrigger>
