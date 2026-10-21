@@ -1,4 +1,5 @@
 // Shared filtering logic for the Repair Order Queue (Kanban + Fullscreen)
+import { isRepairItemResolved, isRepairPackageArchived } from './queue-lifecycle';
 
 // Scrapped outcomes - item is disposed of, won't be shipped
 // Items with these outcomes should be treated as "finished" for queue filtering
@@ -68,51 +69,16 @@ export const isItemFinished = (
   status: string | null | undefined, 
   completionOutcome: string | null | undefined
 ): boolean => {
-  const normalizedStatus = normalizeStatus(status);
-  
-  // In shipping phase = finished
-  if (SHIPPING_PHASE_STATUSES.includes(
-    normalizedStatus as (typeof SHIPPING_PHASE_STATUSES)[number]
-  )) {
-    return true;
-  }
-  
-  // Scrapped = finished
-  if (isScrappedOutcome(completionOutcome)) {
-    return true;
-  }
-  
-  return false;
+  return isRepairItemResolved({ status, completion_outcome: completionOutcome });
 };
 
-export const filterRepairQueuePackages = <T extends { id: string; status?: unknown }>(
+export const filterRepairQueuePackages = <T extends { id: string; status?: unknown; item_count?: unknown }>(
   packages: T[],
   itemsByPackage: Record<string, Array<{ status?: unknown; completion_outcome?: unknown }>>,
 ): T[] => {
   return (packages || []).filter((pkg) => {
     const items = itemsByPackage?.[pkg.id] || [];
 
-    // Check if any item is still "active" (not shipped and not scrapped)
-    const hasActiveItems = items.some((item) => {
-      const normalizedStatus = normalizeStatus(item.status);
-      const outcome = item.completion_outcome ? String(item.completion_outcome) : null;
-      
-      // Item is "active" if it's incomplete AND not scrapped
-      const isIncomplete = INCOMPLETE_REPAIR_ITEM_STATUSES.includes(
-        normalizedStatus as (typeof INCOMPLETE_REPAIR_ITEM_STATUSES)[number],
-      );
-      const isScrapped = isScrappedOutcome(outcome);
-      
-      return isIncomplete && !isScrapped;
-    });
-
-    const normalizedPkgStatus = normalizeStatus(pkg.status) || "in_transit";
-    const needsUnboxing =
-      items.length === 0 &&
-      NEEDS_UNBOXING_PACKAGE_STATUSES.includes(
-        normalizedPkgStatus as (typeof NEEDS_UNBOXING_PACKAGE_STATUSES)[number],
-      );
-
-    return hasActiveItems || needsUnboxing;
+    return !isRepairPackageArchived(pkg, items);
   });
 };
