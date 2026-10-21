@@ -102,6 +102,7 @@ export function UserManagement() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
+  const [notificationProfile, setNotificationProfile] = useState<Profile | null>(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -911,6 +912,7 @@ export function UserManagement() {
                         </TableCell>
                          <TableCell>
                            <div className="flex gap-2">
+                             {(currentUserRoles.includes('admin') || (profile.id !== user?.id && profile.company_id != null && profile.company_id === profiles.find(p => p.id === user?.id)?.company_id && currentUserRoles.some(role => ['car_wash_admin','distributor_admin','vendor_admin'].includes(role)) && roles.some(role => ['car_wash_employee','distributor_employee','vendor_employee'].includes(role)))) && <Button variant="outline" size="sm" aria-label={`Notification preferences for ${profile.email}`} onClick={() => setNotificationProfile(profile)}><Mail className="h-4 w-4" /></Button>}
                              {canManage && (
                                <>
                                  <Button
@@ -1057,7 +1059,7 @@ export function UserManagement() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
@@ -1180,10 +1182,10 @@ export function UserManagement() {
             <Button onClick={handleUpdateUser} className="w-full">
               Update User
             </Button>
-            {editingProfile && <NotificationPreferences targetId={editingProfile.id} allowLock={currentUserRoles.includes('admin') || (editingProfile.company_id === profiles.find(p => p.id === user?.id)?.company_id && currentUserRoles.some(role => ['car_wash_admin', 'distributor_admin', 'vendor_admin'].includes(role)))} />}
           </div>
         </DialogContent>
       </Dialog>
+      <Dialog open={Boolean(notificationProfile)} onOpenChange={open => { if (!open) setNotificationProfile(null); }}><DialogContent className="max-w-md max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Employee notifications</DialogTitle></DialogHeader>{notificationProfile && <><p className="text-sm">{notificationProfile.email}</p><NotificationPreferences targetId={notificationProfile.id} allowLock /></>}</DialogContent></Dialog>
     </div>
   );
 }

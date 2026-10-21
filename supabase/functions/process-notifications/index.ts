@@ -1,8 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { deliverResendEmail } from '../_shared/resend-email.ts';
+import { notificationAllowed, notificationMethods, type NotificationMethod } from '../_shared/notification-rules.ts';
 const client = createClient(Deno.env.get('SUPABASE_URL') || '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '');
-const mandatory = ['rma_issued', 'account_disabled', 'account_enabled', 'failed_payment'];
 const DAY = 86400000;
 const response = (status: number, data: unknown) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
@@ -19,14 +19,14 @@ Deno.serve(async req => {
       try {
         const { data: p, error: profileError } = await client.from('profiles').select('email,phone,notification_method,account_notifications,offers_marketing').eq('id', job.user_id).single();
         if (profileError || !p) throw profileError || new Error('Recipient unavailable');
-        if (!mandatory.includes(job.kind) && !(job.kind === 'marketing' ? p.offers_marketing : p.account_notifications)) {
+        if (!notificationAllowed(job.kind, p.account_notifications, p.offers_marketing)) {
           await client.from('notification_outbox').update({ status: 'skipped', lease_until: null, next_attempt_at: null }).eq('id', job.id); continue;
         }
-        const channels = p.notification_method === 'both' ? ['email', 'text'] : [p.notification_method];
+        const channels = notificationMethods(p.notification_method as NotificationMethod);
         let success = false, attempted = false, missing = false, blocked = false, lastError = '';
         for (const channel of channels) {
           const contact = channel === 'email' ? (p.email || '').trim().toLowerCase() : (p.phone || '').replace(/[^+0-9]/g, '');
-          if (!contact) { lastError = `${channel} contact is missing`; continue; }
+          if (!contact) { blocked = true; lastError = `${channel} contact is missing`; continue; }
           const { data: previous } = await client.from('notification_deliveries').select('status').eq('notification_id', job.id).eq('channel', channel).eq('contact', contact).maybeSingle();
           if (previous?.status === 'sent') { success = true; continue; }
           const configured = channel === 'email' ? Boolean(Deno.env.get('RESEND_API_KEY')) : Boolean(Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') && Deno.env.get('TWILIO_PHONE_NUMBER'));

@@ -5934,6 +5934,12 @@ export type Database = {
         Args: { p_channel: string; p_contact: string; p_success: boolean }
         Returns: undefined
       }
+      notification_match_contact: {
+        Args: { p_channel: string; p_contact: string }
+        Returns: {
+          id: string
+        }[]
+      }
       notification_schedule_next: { Args: never; Returns: undefined }
       notification_wake: { Args: never; Returns: undefined }
       populate_weekly_component_prices: { Args: never; Returns: string }

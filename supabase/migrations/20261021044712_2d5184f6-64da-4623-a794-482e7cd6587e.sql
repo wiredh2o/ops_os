@@ -1,0 +1,8 @@
+CREATE OR REPLACE FUNCTION public.notification_match_contact(p_channel text,p_contact text) RETURNS TABLE(id uuid) LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT p.id FROM public.profiles p WHERE (p_channel='email' AND lower(trim(p.email))=p_contact) OR (p_channel='text' AND regexp_replace(coalesce(p.phone,''),'[^+0-9]','','g')=p_contact); $$;
+REVOKE ALL ON FUNCTION public.notification_match_contact(text,text) FROM PUBLIC,anon,authenticated; GRANT EXECUTE ON FUNCTION public.notification_match_contact(text,text) TO service_role;
+CREATE OR REPLACE FUNCTION public.notification_auth_email_changed() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN IF NEW.email IS DISTINCT FROM OLD.email THEN UPDATE public.profiles SET email=NEW.email WHERE id=NEW.id; END IF; RETURN NEW; END; $$;
+REVOKE ALL ON FUNCTION public.notification_auth_email_changed() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER notification_auth_email_changed AFTER UPDATE OF email ON auth.users FOR EACH ROW EXECUTE FUNCTION public.notification_auth_email_changed();
+CREATE OR REPLACE FUNCTION public.protect_notification_contact() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN IF auth.uid() IS NOT NULL AND NEW.email IS DISTINCT FROM OLD.email AND NOT EXISTS(SELECT 1 FROM auth.users WHERE id=NEW.id AND email=NEW.email) THEN RAISE EXCEPTION 'Confirm email change through account settings'; END IF; RETURN NEW; END; $$;
+REVOKE ALL ON FUNCTION public.protect_notification_contact() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER protect_notification_contact BEFORE UPDATE OF email ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.protect_notification_contact();

@@ -11,6 +11,7 @@ export interface EmailParams {
 
 export interface EmailResult {
   success: boolean;
+  queued?: boolean;
   id?: string;
   error?: string;
 }
@@ -25,9 +26,9 @@ export async function sendResendEmail(params: EmailParams): Promise<EmailResult>
     const recipients = Array.isArray(params.to) ? params.to : [params.to];
     for (const to of recipients) {
       const result = await queueContactNotification(to, 'email', params.subject, params.html);
-      if (!result.matched) return { success: false, error: 'Recipient has no user notification profile' };
+      if (!result.matched) return deliverResendEmail(params);
     }
-    return { success: true };
+    return { success: true, queued: true };
   }
   return deliverResendEmail(params);
 }

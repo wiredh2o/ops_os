@@ -326,6 +326,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send password reset email using Resend
     const result = await sendResendEmail({
+      bypassPreferences: true,
       to: targetUser.user.email!,
       subject: emailSubject,
       html: htmlContent,

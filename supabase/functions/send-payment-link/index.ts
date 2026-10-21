@@ -1,5 +1,7 @@
+import { requireNotificationStaff } from "../_shared/notification-auth.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
+import { queueContactNotification } from "../_shared/notification-outbox.ts";
 import { sendResendEmail } from "../_shared/resend-email.ts";
 
 const corsHeaders = {
@@ -16,8 +18,8 @@ interface PaymentLinkRequest {
   amount: number;
 }
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 function replaceTemplateVariables(template: string, variables: Record<string, string>): string {
   let result = template;
@@ -296,52 +298,9 @@ async function sendSMS(
   amount: number,
   paymentUrl: string
 ): Promise<{ success: boolean; error?: string; messageSid?: string }> {
-  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
+  const message = `Order #${orderNumber}: pay $${amount.toFixed(2)} here: ${paymentUrl}`;
+  return queueContactNotification(to, 'text', `Payment link - ${orderNumber}`, message);
 
-  if (!accountSid || !authToken || !fromNumber) {
-    console.error("Twilio credentials not configured");
-    return { success: false, error: "Twilio credentials not configured" };
-  }
-
-  const formattedAmount = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-
-  const message = `WashGear: Order #${orderNumber} is ready! Pay ${formattedAmount} here: ${paymentUrl} - Link expires in 7 days.`;
-
-  try {
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          To: to,
-          From: fromNumber,
-          Body: message,
-        }),
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error("Twilio error:", result);
-      return { success: false, error: result.message || `Twilio error: ${response.status}` };
-    }
-
-    console.log("SMS sent successfully to:", to, "SID:", result.sid);
-    return { success: true, messageSid: result.sid };
-  } catch (error: any) {
-    console.error("SMS send error:", error);
-    return { success: false, error: error.message };
-  }
 }
 
 async function logNotification(
@@ -378,6 +337,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireNotificationStaff(req);
     const { order_id, order_number, customer_email, customer_phone, customer_name, amount }: PaymentLinkRequest = await req.json();
 
     console.log("Processing payment link request:", { order_id, order_number, customer_email, customer_phone, amount });
@@ -447,13 +407,13 @@ serve(async (req) => {
         "email",
         customer_email,
         `Payment link sent for ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)}`,
-        emailResult.success ? "sent" : "failed",
+        emailResult.success ? "queued" : "failed",
         emailResult.error
       );
     }
 
     // Send SMS if provided
-    if (customer_phone) {
+    if (customer_phone && !customer_email) {
       const smsResult = await sendSMS(customer_phone, order_number, amount, paymentUrl);
       results.sms.sent = smsResult.success;
       results.sms.error = smsResult.error || null;
@@ -465,7 +425,7 @@ serve(async (req) => {
         "sms",
         customer_phone,
         `Payment link sent for ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)}`,
-        smsResult.success ? "sent" : "failed",
+        smsResult.success ? "queued" : "failed",
         smsResult.error,
         smsResult.messageSid
       );
