@@ -15,6 +15,8 @@ import { UnifiedPackageModal } from "./UnifiedPackageModal";
 import { ComprehensiveRepairItemModal, RepairItemData } from "./ComprehensiveRepairItemModal";
 import { CreateRepairShipmentModal } from "./CreateRepairShipmentModal";
 import { cn, formatHoursToHrMin } from "@/lib/utils";
+import { isRepairItemResolved, isRepairPackageArchived } from '@/lib/queue-lifecycle';
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { getRepairItemRibbon, shouldMuteInRepairQueue } from "@/lib/repair-item-status-ui";
 
 export type InboundPackage = {
@@ -57,6 +59,7 @@ export type RepairItemSummary = {
 interface InboundPackageCardProps {
   pkg: InboundPackage;
   items: RepairItemSummary[];
+  archived?: boolean;
   shouldExpand?: boolean;
   onExpanded?: () => void;
 }
@@ -72,7 +75,7 @@ const statusBadgeVariant = (status: string) => {
   }
 };
 
-export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, items, shouldExpand = false, onExpanded }) => {
+export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, items, archived = false, shouldExpand = false, onExpanded }) => {
   const [open, setOpen] = useState(false);
   const [detailsCollapsed, setDetailsCollapsed] = useState(true);
   const [showUnboxModal, setShowUnboxModal] = useState(false);
@@ -98,7 +101,9 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
   const [selectedItem, setSelectedItem] = useState<(RepairItemSummary & { package_id?: string }) | null>(null);
   const { toast } = useToast();
 
-  const itemCount = pkg.item_count ?? 0;
+  const itemCount = pkg.item_count ?? localItems.length;
+  const visibleItems = archived ? localItems : localItems.filter(item => !isRepairItemResolved(item));
+  const packageResolved = isRepairPackageArchived(pkg, localItems);
   const isUnboxed = pkg.status === "opened"; // Package is opened only when status is "opened"
   const receivedLabel = useMemo(() => {
     if (pkg.received_at) return `Received: ${format(new Date(pkg.received_at), "PP p")}`;
@@ -107,7 +112,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
 
   // Helper to check if item is already shipped (in_transit or delivered - cannot be edited)
   const isAlreadyShipped = (status: string | null | undefined) => {
-    return ['in_transit', 'delivered'].includes(status || '');
+    return isRepairItemResolved({ status });
   };
 
   // Count completed items ready to ship
@@ -276,6 +281,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
 
   // Simplified package status display
   const statusInfo = useMemo(() => {
+    if (archived || packageResolved) return { label: 'ARCHIVED • ALL ITEMS RESOLVED', bgClass: 'bg-muted text-muted-foreground' };
     switch (pkg.status) {
       case 'in_transit':
         return {
@@ -298,7 +304,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
           bgClass: 'bg-gray-600'
         };
     }
-  }, [pkg.status, itemCount]);
+  }, [pkg.status, itemCount, archived, packageResolved]);
 
   return (
     <Card className="hover:shadow-md transition-shadow overflow-hidden border-2 border-gray-400 dark:border-gray-500">
@@ -334,6 +340,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                           size="sm"
                           variant="outline"
                           className="h-5 w-5 p-0 border border-red-500 text-red-500 hover:bg-red-400 hover:text-white hover:border-red-400"
+                          disabled={archived}
                           onClick={() => setShowDeleteConfirmation(true)}
                         >
                           <Trash2 className="h-2 w-2" />
@@ -414,7 +421,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
 
         {/* Package action buttons */}
         <div className={`flex justify-end gap-1 ${detailsCollapsed ? 'mb-0 -mt-2' : 'mb-3'}`}>
-          {completedItemsCount > 0 && (
+          {!archived && completedItemsCount > 0 && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -440,6 +447,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                   size="sm"
                   variant="outline"
                   className="h-6 w-6 p-0 border border-gray-400 dark:border-gray-500"
+                  disabled={archived}
                   onClick={() => setShowUnboxModal(true)}
                 >
                   <PackageOpen className="h-2.5 w-2.5" />
@@ -457,6 +465,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                   size="sm"
                   variant="outline"
                   className="h-6 w-6 p-0 border border-gray-400 dark:border-gray-500"
+                  disabled={archived}
                   onClick={() => setShowEditPackageModal(true)}
                 >
                   <Box className="h-2.5 w-2.5" />
@@ -469,7 +478,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
           </TooltipProvider>
         </div>
 
-        {isUnboxed && (
+        {(isUnboxed || localItems.length > 0) && (
           <Collapsible open={open} onOpenChange={setOpen}>
             <div className="flex items-center gap-1 mt-2">
               <CollapsibleTrigger asChild>
@@ -479,8 +488,8 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                   ) : (
                     <ChevronRight className="h-4 w-4 mr-1" />
                   )}
-                  Items ({localItems?.length || 0})
-                  {completedItemsCount > 0 && (
+                  {archived ? 'Resolved items' : 'Unresolved items'} ({visibleItems.length})
+                  {!archived && completedItemsCount > 0 && (
                     <Badge className="ml-2 bg-green-600 text-white text-xs px-1.5 py-0">
                       {completedItemsCount} Ready
                     </Badge>
@@ -488,7 +497,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                 </Button>
               </CollapsibleTrigger>
               {/* Hide "Unbox Items" button when package is at capacity */}
-              {!(localItems.length >= pkg.item_count && pkg.item_count && pkg.item_count > 0) && (
+              {!archived && !(localItems.length >= pkg.item_count && pkg.item_count && pkg.item_count > 0) && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -511,18 +520,18 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
             </div>
 
             <CollapsibleContent className="mt-2 space-y-2">
-              {localItems.length === 0 ? (
+              {visibleItems.length === 0 ? (
                 <div className="text-xs text-muted-foreground">No items linked to this package yet.</div>
               ) : (
-                [...localItems]
+                [...visibleItems]
                   .sort((a, b) => {
                     const orderDifference = (a.unboxing_order ?? Number.MAX_SAFE_INTEGER) - (b.unboxing_order ?? Number.MAX_SAFE_INTEGER);
                     return orderDifference !== 0 ? orderDifference : a.id.localeCompare(b.id);
                   })
                   .map((it) => {
                     // Use shared helper for consistent status display
-                    const itemStatusInfo = getRepairItemRibbon(it.status);
-                    const isMuted = shouldMuteInRepairQueue(it.status);
+                    const itemStatusInfo = isRepairItemResolved(it) && (it.status === 'scrapped' || it.completion_outcome?.endsWith('_scrapped')) ? { label: 'SCRAPPED', bgClass: 'bg-muted text-muted-foreground' } : getRepairItemRibbon(it.status);
+                    const isMuted = archived || shouldMuteInRepairQueue(it.status);
 
                     return (
                       <TooltipProvider key={it.id}>
@@ -589,7 +598,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                                 
                                 {it.estimated_cost && (
                                   <div className="text-xs mt-1 text-muted-foreground">
-                                    <strong>Estimate:</strong> ${it.estimated_cost}
+                                    <FinancialGuard kind="revenue"><strong>Estimate:</strong> ${it.estimated_cost}</FinancialGuard>
                                   </div>
                                 )}
 
@@ -604,7 +613,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                                   {isMuted && (
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                       <Truck className="h-3 w-3" />
-                                      <span>In Shipping Queue</span>
+                                      <span>{archived ? 'Resolved' : 'In Shipping Queue'}</span>
                                     </div>
                                   )}
                                   
@@ -618,7 +627,11 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                                             variant="outline"
                                             className="h-6 w-6 p-0 border border-gray-400 dark:border-gray-500"
                                             onClick={() => {
-                                              if (isMuted) {
+                                              if (archived) {
+                                                setIsReadOnlyMode(true);
+                                                setSelectedItem(it);
+                                                setShowDiagnoseModal(true);
+                                              } else if (isMuted) {
                                                 setPendingModalAction('diagnose');
                                                 setPendingItem(it);
                                                 setShippingStatusDialogType(isAlreadyShipped(it.status) ? 'shipped' : 'queued');
@@ -644,7 +657,12 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                                             variant="outline"
                                             className="h-6 w-6 p-0 border border-gray-400 dark:border-gray-500"
                                             onClick={() => {
-                                              if (isMuted) {
+                                              if (archived) {
+                                                setIsReadOnlyMode(true);
+                                                setSelectedItem(it);
+                                                setRepairItemModalMode('edit');
+                                                setShowRepairItemModal(true);
+                                              } else if (isMuted) {
                                                 setPendingModalAction('edit');
                                                 setPendingItem(it);
                                                 setShippingStatusDialogType(isAlreadyShipped(it.status) ? 'shipped' : 'queued');
@@ -671,7 +689,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                           </TooltipTrigger>
                           {isMuted && (
                             <TooltipContent>
-                              <p>This item is in the Shipping Queue</p>
+                              <p>{archived ? 'This item is resolved' : 'This item is in the Shipping Queue'}</p>
                             </TooltipContent>
                           )}
                         </Tooltip>

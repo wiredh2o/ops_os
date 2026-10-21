@@ -133,6 +133,8 @@ export function ReceivingDashboard() {
         })}
       </div>
 
+      <RepairOrderQueueKanban fullWidth />
+
       <UnifiedPackageModal 
         open={showPackageReceiptModal} 
         onOpenChange={setShowPackageReceiptModal} 

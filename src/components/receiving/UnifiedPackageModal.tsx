@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { isRepairPackageArchived, isRepairItemResolved } from '@/lib/queue-lifecycle';
 import type { InboundPackage } from "./InboundPackageCard";
 
 interface UnifiedPackageModalProps {
@@ -24,6 +25,8 @@ interface UnifiedPackageModalProps {
 }
 
 export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, onSuccess }: UnifiedPackageModalProps) {
+  const [packageItems, setPackageItems] = useState<Array<{ id: string; status: string; completion_outcome: string | null }>>([]);
+  const [resolutionLoading, setResolutionLoading] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [dateReceived, setDateReceived] = useState<Date | undefined>(undefined);
   const [selectedCustomer, setSelectedCustomer] = useState("");
@@ -38,6 +41,30 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
   
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!open || mode !== 'edit' || !pkg) { setPackageItems([]); return; }
+    let cancelled = false;
+    setResolutionLoading(true);
+    const loadItems = async () => {
+      try {
+        const { data: links, error: linksError } = await supabase.from('inbound_package_items').select('repair_item_id').eq('package_id', pkg.id);
+        if (linksError) throw linksError;
+        const ids = (links || []).map(link => link.repair_item_id).filter((id): id is string => Boolean(id));
+        const [direct, linked] = await Promise.all([
+          supabase.from('repair_items').select('id, status, completion_outcome').eq('package_id', pkg.id),
+          ids.length ? supabase.from('repair_items').select('id, status, completion_outcome').in('id', ids) : Promise.resolve({ data: [], error: null }),
+        ]);
+        if (direct.error) throw direct.error;
+        if (linked.error) throw linked.error;
+        if (!cancelled) setPackageItems([...new Map([...(direct.data || []), ...(linked.data || [])].map(item => [item.id, item])).values()]);
+      } catch (error) {
+        if (!cancelled) setPackageItems([]);
+      } finally { if (!cancelled) setResolutionLoading(false); }
+    };
+    loadItems();
+    return () => { cancelled = true; };
+  }, [open, mode, pkg]);
 
   // Fetch companies directly when modal opens
   useEffect(() => {
@@ -105,8 +132,7 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
     if (open && !companiesLoading) {
       if (mode === 'edit' && pkg) {
         setTrackingNumber(pkg.tracking_number || "");
-        setSelectedCustomer(pkg.company ? 
-          companies.find(c => c.name === pkg.company?.name)?.id || "" : "");
+        setSelectedCustomer(pkg.company_id || pkg.company?.id || (pkg.company ? companies.find(c => c.name === pkg.company?.name)?.id || "" : ""));
         setDateReceived(pkg.received_at ? new Date(pkg.received_at) : undefined);
         setNotes(pkg.intake_notes || "");
         loadReturnShippingAddress();
@@ -194,6 +220,7 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
       return;
     }
 
+    if (mode === 'edit' && !pkg) return;
     setIsSubmitting(true);
 
     try {
@@ -276,12 +303,12 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
         const { error } = await supabase
           .from("inbound_packages")
           .update(updateData)
-          .eq("id", pkg!.id);
+          .eq("id", pkg?.id);
 
         if (error) throw error;
 
         // Cascade customer change to related production_orders
-        if (selectedCustomer !== pkg?.company?.id) {
+        if (selectedCustomer !== (pkg?.company_id || pkg?.company?.id)) {
           const selectedCompany = companies.find(c => c.id === selectedCustomer);
           if (selectedCompany) {
             const { error: poUpdateError } = await supabase
@@ -290,7 +317,7 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
                 customer_company_id: selectedCustomer,
                 customer_name: selectedCompany.name,
               })
-              .eq('inbound_package_id', pkg!.id);
+              .eq('inbound_package_id', pkg?.id);
 
             if (poUpdateError) {
               console.error('Warning: Failed to update related production orders:', poUpdateError);
@@ -305,7 +332,7 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
 
         // Dispatch event to refresh UI
         const event = new CustomEvent('package-updated', { 
-          detail: { packageId: pkg!.id } 
+          detail: { packageId: pkg?.id } 
         });
         window.dispatchEvent(event);
       }
@@ -442,6 +469,9 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
         </DialogHeader>
         
         <div className="space-y-4">
+          {mode === 'edit' && pkg && <div className="text-sm text-muted-foreground" role="status">
+            {resolutionLoading ? 'Loading item resolutions…' : isRepairPackageArchived(pkg, packageItems) ? 'Archived — all items resolved' : `${packageItems.filter(item => !isRepairItemResolved(item)).length + Math.max(0, (pkg.item_count || 0) - packageItems.length)} unresolved items`}
+          </div>}
           {/* Tracking Number */}
           <div className="space-y-2">
             <Label htmlFor="tracking">Tracking Number *</Label>
