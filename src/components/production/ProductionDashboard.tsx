@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { readQueueRelations } from '@/lib/queue-data';
-import { isShippingArchived, matchesArchiveFilter } from '@/lib/queue-lifecycle';
+import { isShippingArchived, matchesArchiveFilter, SHIPPING_QUEUE_STATUSES } from '@/lib/queue-lifecycle';
 
 interface KanbanOrder {
   id: string;
@@ -134,6 +134,7 @@ export const ProductionDashboard = () => {
               .select('id, order_number, customer_name, created_at, priority, status, total_amount, notes, customer_email, customer_phone, shipping_preference, store_at_point_of_use, customer_po, picked_up_at, customer_company_id')
               .in('order_type', ['customer', 'repair'])
               .neq('status', 'cancelled')
+              .or(`status.in.(${SHIPPING_QUEUE_STATUSES.join(',')}),picked_up_at.not.is.null`)
               .order('created_at', { ascending: true }).order('id')
               .range(from, from + 999);
             if (error) return { data: null, error };

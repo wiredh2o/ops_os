@@ -1,9 +1,14 @@
 import { describe, it } from 'node:test';
 import { strictEqual, deepStrictEqual } from 'node:assert/strict';
-import { isShippingArchived, isRepairItemResolved, isRepairPackageArchived, matchesArchiveFilter } from './queue-lifecycle';
+import { isShippingArchived, isRepairItemResolved, isRepairPackageArchived, matchesArchiveFilter, SHIPPING_QUEUE_STATUSES } from './queue-lifecycle';
 import { filterRepairQueuePackages } from './repair-queue-filter';
 
 describe('shipping archive handoff', () => {
+  it('keeps in-progress production out of the ready-to-ship queue', () => {
+    strictEqual(SHIPPING_QUEUE_STATUSES.includes('in_progress'), false);
+    strictEqual(SHIPPING_QUEUE_STATUSES.includes('pending'), true);
+    strictEqual(SHIPPING_QUEUE_STATUSES.includes('label_staged'), true);
+  });
   it('archives carrier possession even with an unpaid balance', () => {
     strictEqual(isShippingArchived({ status: 'awaiting_pickup', picked_up_at: '2026-10-21T03:10:00Z', payment_status: 'unpaid' }), true);
   });

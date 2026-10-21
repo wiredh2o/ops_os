@@ -6,6 +6,9 @@ export interface ShippingHandoff {
 
 const normalize = (value: unknown) => String(value ?? '').trim().toLowerCase();
 
+// Preserve the ready-to-ship RPC statuses and subsequent label/pickup states.
+export const SHIPPING_QUEUE_STATUSES = ['pending', 'completed', 'label_staged', 'label_created', 'ready_for_pickup', 'awaiting_pickup', 'shipped', 'in_transit', 'delivered', 'picked_up'];
+
 // Label creation, readiness, and payment are not evidence of physical handoff.
 export function isShippingArchived(order: ShippingHandoff): boolean {
   return Boolean(order.picked_up_at) || ['shipped', 'in_transit', 'delivered', 'picked_up'].includes(normalize(order.status));
