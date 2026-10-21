@@ -31,4 +31,9 @@
 - [x] Keep repair packages open with subordinate unresolved items until every item is shipped or scrapped.
 - [x] Add searchable, customer-filtered archives using existing cards; preserve orphan manual attention and add no reset/clear/bulk-delete controls.
 - [x] Test lifecycle rules and verify available live views — 57 focused regression tests pass; build OK; both staff URLs retain sign-in protection with no runtime errors.
-- [ ] Verify signed-in queue movement and archives end-to-end — blocked by external Supabase without a managed test session.
+- [ ] Verify signed-in queue movement and archives end-to-end — blocked by external Supabase without a managed test session.## Drop-ship addresses
+- [x] Distributor-owned reusable drop-ship addresses with USPS-eligible flag and optional email/phone.
+- [x] Select/save in order form; show on order cards; label uses only the car wash name; USPS blocked unless eligible.
+- [x] Shipment notice to drop-ship email/phone when a label is created (delivery awaits Resend/Twilio keys).
+- [ ] Verify signed-in order → label flow — external Supabase has no managed test session.
+- [ ] Distributor self-service web ordering screen does not exist yet; database access is ready for it.

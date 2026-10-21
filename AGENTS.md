@@ -17,3 +17,4 @@
 ## Secrets
 - Remixes do not copy secrets. All third-party keys (Stripe, FedEx, UPS, USPS, Mouser, DigiKey, Twilio, Resend) must be re-entered by the user via secure secret forms after the backend is connected.
 - Edge functions expect: STRIPE_SECRET_KEY, CHECKOUT_COMPLETED_SANDBOX_WEBHOOK_SECRET, FEDEX_API_KEY, FEDEX_SECRET_KEY, FEDEX_ACCOUNT, FEDEX_SANDBOX_* variants, UPS_CLIENT_ID, UPS_CLIENT_SECRET, UPS_ACCOUNT_NUMBER, USPS_CLIENT_ID, USPS_CLIENT_SECRET, USPS_ACCOUNT_ID, MOUSER_ALLBUT_SEARCH_KEY, DIGIKEY_CLIENT_ID, DIGIKEY_CLIENT_SECRET, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, RESEND_API_KEY, PUBLIC_SITE_URL.
+- Distributor drop-ship addresses live in their own owner-scoped table, never in car-wash company addresses; orders and invoices keep a server-built snapshot, and database triggers enforce ownership, USPS eligibility and direct-contact shipment notices so client screens cannot bypass them.
