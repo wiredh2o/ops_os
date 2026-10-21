@@ -87,7 +87,7 @@ const ROLE_COLORS = {
   distributor_employee: 'secondary',
 } as const;
 
-export function UserManagement() {
+export function UserManagement({ notificationsOnly = false }: { notificationsOnly?: boolean }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [financialFlags, setFinancialFlags] = useState<MarketingFinancialFlags>(HIDDEN_FINANCIAL_FLAGS);
@@ -641,6 +641,12 @@ export function UserManagement() {
 
   if (loading) {
     return <div className="flex items-center justify-center h-64">Loading...</div>;
+  }
+
+  if (notificationsOnly) {
+    const companyId = profiles.find(profile => profile.id === user?.id)?.company_id;
+    const employees = profiles.filter(profile => companyId && profile.company_id === companyId && profile.id !== user?.id && getUserRoles(profile.id).some(role => ['car_wash_employee', 'distributor_employee', 'vendor_employee'].includes(role)));
+    return <section className="space-y-4"><h2 className="text-xl font-semibold">Employee notifications</h2>{employees.map(profile => <div key={profile.id} className="flex items-center justify-between gap-4 border-b py-3"><span className="min-w-0 break-all">{profile.email}</span><Button variant="outline" size="icon" aria-label={`Notification preferences for ${profile.email}`} onClick={() => setNotificationProfile(profile)}><Mail className="h-4 w-4" /></Button></div>)}<Dialog open={Boolean(notificationProfile)} onOpenChange={open => { if (!open) setNotificationProfile(null); }}><DialogContent className="max-w-md max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Employee notifications</DialogTitle></DialogHeader>{notificationProfile && <NotificationPreferences targetId={notificationProfile.id} allowLock />}</DialogContent></Dialog></section>;
   }
 
   return (

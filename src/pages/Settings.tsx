@@ -85,7 +85,7 @@ const Settings = () => {
   };
 
   if (rolesLoading) return <div className="container py-6">Loading settings…</div>;
-  if (!staff) return <div className="container max-w-3xl py-6"><h1 className="text-2xl font-bold">My settings</h1><NotificationPreferences />{roles.some(role => ['car_wash_admin','distributor_admin','vendor_admin'].includes(role)) && <UserManagement />}</div>;
+  if (!staff) return <div className="container max-w-3xl py-6"><h1 className="text-2xl font-bold">My settings</h1><NotificationPreferences />{roles.some(role => ['car_wash_admin','distributor_admin','vendor_admin'].includes(role)) && <UserManagement notificationsOnly />}</div>;
   if (accountingOnly) return <div className="container py-6"><NotificationFailureList /><TaxSettings /></div>;
 
   return (
