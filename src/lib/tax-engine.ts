@@ -15,8 +15,8 @@ export function calculateJurisdictionTax(model: TaxModel, input: TaxInput) {
   if (!stateRule) return empty(true);
   if (!stateRule.is_taxable) return empty();
   const zipRule = model.zips.find(z => z.zip === zip && z.state === state);
-  if (zipRule?.is_taxable === false) return empty();
-  const assigned = new Set(model.assignments.filter(a => a.zip === zip && a.state === state).map(a => a.jurisdiction_id));
+  // State trumps ZIP: a non-taxable ZIP only removes local jurisdictions, never the state tax.
+  const assigned = new Set(zipRule?.is_taxable === false ? [] : model.assignments.filter(a => a.zip === zip && a.state === state).map(a => a.jurisdiction_id));
   const rank = ['state', 'county', 'city', 'special_district'];
   for (const j of model.jurisdictions.filter(j => j.active && j.is_taxable && j.state === state && (j.id === stateRule.id || assigned.has(j.id))).sort((a,b) => rank.indexOf(a.kind)-rank.indexOf(b.kind))) {
     const taxable = base + (j.tax_shipping ? input.shipping || 0 : 0);

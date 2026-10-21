@@ -77,7 +77,7 @@ export const FulfillCustomerOrderModal = ({
       const { data, error } = await supabase
         .from("customer_order_items")
         .select(`
-          id, item_type, quantity_ordered, quantity_invoiced, unit_price, notes, requested_serial,
+          id, item_type, quantity_ordered, quantity_invoiced, unit_price, notes, requested_serial, is_taxable,
           inventory_sales_uom_id, assembly_sales_uom_id,
           inventory_item:inventory_items!customer_order_items_inventory_item_id_fkey(id, sku, sales_description, quantity_ats, serial_tracking_type, external_supplier_id),
           assembly:assemblies!customer_order_items_assembly_id_fkey(id, sku, sales_description, quantity_ats, serial_tracking_type, external_supplier_id),
@@ -284,7 +284,7 @@ export const FulfillCustomerOrderModal = ({
         .from("customer_orders")
         .select(`
           id, order_number, notes, shipping_preference, signature_option,
-          carrier_preference, shipping_address_id, customer_po,
+          carrier_preference, shipping_address_id, customer_po, tax_destination,
            company:companies(id, name, email, phone, is_taxable, preferred_shipping_carrier, shipping_addresses, default_shipping_address_id)
         `)
         .eq("id", order.id)
@@ -336,6 +336,7 @@ export const FulfillCustomerOrderModal = ({
           shipping_preference: customerOrder.shipping_preference as "ship_complete" | "ship_as_available" | null,
           signature_option: customerOrder.signature_option,
           parent_customer_order_id: order.id,
+          tax_destination: (customerOrder as any).tax_destination ?? null,
           carrier_preference: customerOrder.carrier_preference || customerOrder.company?.preferred_shipping_carrier,
           total_amount: subtotal,
           created_by: user.id,
@@ -353,7 +354,8 @@ export const FulfillCustomerOrderModal = ({
         quantity: qty,
         unit_price: item.unit_price,
         total_price: lineTotal,
-        is_taxable: customerOrder.company?.is_taxable ?? true,
+        // Item-level taxability from the source order line; labor is never taxable.
+        is_taxable: item.item_type !== "labor" && (item as any).is_taxable !== false,
         source_order_item_id: item.id,
         assembly_id: item.item_type === "assembly" && item.assembly ? item.assembly.id : null,
         inventory_item_id: item.item_type === "inventory_item" && item.inventory_item ? item.inventory_item.id : null,

@@ -1,4 +1,4 @@
-import { calculateJurisdictionTax, getTaxModel, type TaxModel } from '@/lib/tax-utils';
+import { calculateJurisdictionTax, getTaxModel, parseTaxLines, type TaxModel } from '@/lib/tax-utils';
 import { TaxLines } from '@/components/production/TaxLines';
 import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
@@ -108,6 +108,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
   const [taxPending, setTaxPending] = useState(true);
   const [taxError, setTaxError] = useState('');
   const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [taxSnapshotReady, setTaxSnapshotReady] = useState(false);
   const [step, setStep] = useState<'address' | 'packing' | 'select_rate' | 'payment' | 'manual_entry' | 'creating_label' | 'print_label' | 'pickup_complete'>('address');
   const [isPickUpOrder, setIsPickUpOrder] = useState(false);
   const [resumedFromPersistence, setResumedFromPersistence] = useState(false);
@@ -535,17 +536,23 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
     destination: selectedAddress, shipping: selectedRate?.total_charge || 0, shipments: isPickUpOrder ? 0 : 1,
     items: (orderDetails?.items || []).map((i: any) => ({ amount: i.total_price || 0, item_type: i.item_type, is_taxable: i.is_taxable === true })),
   });
-  const taxLines = taxLocked ? orderDetails?.tax_lines : liveTax.taxLines;
-  const taxReview = taxLocked ? orderDetails?.tax_review_required : liveTax.reviewRequired;
-  const getTotalTax = () => taxLocked ? orderDetails?.tax_amount || 0 : liveTax.taxAmount;
+  // Stored snapshot is authoritative once saved; the live quote is only a preview while it saves.
+  const useStored = taxLocked || taxSnapshotReady;
+  const taxLines = useStored ? parseTaxLines(orderDetails?.tax_lines) : liveTax.taxLines;
+  const taxReview = useStored ? !!orderDetails?.tax_review_required : liveTax.reviewRequired;
+  const getTotalTax = () => useStored ? Number(orderDetails?.tax_amount) || 0 : liveTax.taxAmount;
   useEffect(() => {
     if (!customer || !selectedAddress || taxLocked) { if (taxLocked) setTaxPending(false); return; }
-    let cancelled = false; setTaxPending(true); setTaxError('');
+    let cancelled = false; setTaxPending(true); setTaxError(''); setTaxSnapshotReady(false);
     (async () => {
       const model = await getTaxModel(selectedAddress.state, selectedAddress.zip);
       const { error } = await supabase.from('production_orders').update({ tax_destination: selectedAddress as any, shipping_cost: selectedRate?.total_charge || 0 }).eq('id', order.id);
       if (error) throw error;
-      if (!cancelled) setTaxModel(model);
+      // Read back the server-calculated snapshot so displayed and charged tax match what is stored.
+      const { data: snap, error: snapErr } = await supabase.from('production_orders')
+        .select('tax_lines, tax_amount, tax_review_required').eq('id', order.id).single();
+      if (snapErr) throw snapErr;
+      if (!cancelled) { setTaxModel(model); setOrderDetails((prev: any) => prev ? { ...prev, ...snap } : prev); setTaxSnapshotReady(true); }
     })().catch(e => { if (!cancelled) setTaxError(e.message); }).finally(() => { if (!cancelled) setTaxPending(false); });
     return () => { cancelled = true; };
   }, [customer?.id, selectedAddress, selectedRate?.total_charge, taxLocked]);
