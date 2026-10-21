@@ -28,6 +28,7 @@ import { PrintInstructionsTooltip } from './PrintInstructionsTooltip';
 import { ThirdPartyBillingFallbackDialog } from './ThirdPartyBillingFallbackDialog';
 import { SerialAssignmentModal } from './SerialAssignmentModal';
 import { carrierAllowedForDropShip, dropShipLabelRecipient, isDropShipSnapshot, type DropShipSnapshot } from '@/lib/drop-ship';
+import { printPackingSlip } from '@/lib/packing-slip';
 
 interface ShipOrderModalProps {
   order: {
@@ -637,6 +638,34 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
         unit_price: item.unit_price || 0,
       }));
   }, [orderDetails?.items]);
+
+  // Price-free packing slip for the person packing the box
+  const handlePrintPackingSlip = () => {
+    if (!orderDetails) return;
+    const shipTo = dropShip
+      ? { name: dropShip.recipient_name, address: dropShip.address, city: dropShip.city, state: dropShip.state, zip: dropShip.zip }
+      : selectedAddress
+        ? { name: customer?.owners_name || customer?.name || order.customer_name, address: selectedAddress.address, city: selectedAddress.city, state: selectedAddress.state, zip: selectedAddress.zip }
+        : { name: customer?.name || order.customer_name };
+    printPackingSlip({
+      orderNumber: orderDetails.order_number || order.order_number,
+      customerPo: orderDetails.customer_po,
+      companyName: customer?.name || order.customer_name,
+      orderDate: orderDetails.created_at
+        ? new Date(orderDetails.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+        : null,
+      shipTo,
+      isDropShip: !!dropShip,
+      items: (orderDetails.items || [])
+        .filter((item: any) => item.item_type !== 'labor')
+        .map((item: any) => ({
+          sku: item.item_sku || item.item_name,
+          description: item.item_name,
+          quantity: item.quantity,
+        })),
+      notes: orderDetails.notes,
+    });
+  };
 
   const handlePackingComplete = (config: PackingConfig) => {
     setPackingConfig(config);
@@ -1407,6 +1436,10 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" onClick={() => setStep('address')}>
                   Back
+                </Button>
+                <Button variant="outline" onClick={handlePrintPackingSlip}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Packing Slip
                 </Button>
                 <Button
                   className="flex-1"
