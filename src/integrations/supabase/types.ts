@@ -2235,6 +2235,7 @@ export type Database = {
           created_at: string
           failures: number
           id: string
+          lease_until: string | null
           updated_at: string
         }
         Insert: {
@@ -2243,6 +2244,7 @@ export type Database = {
           created_at?: string
           failures?: number
           id?: string
+          lease_until?: string | null
           updated_at?: string
         }
         Update: {
@@ -2251,6 +2253,7 @@ export type Database = {
           created_at?: string
           failures?: number
           id?: string
+          lease_until?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2353,6 +2356,8 @@ export type Database = {
           id: string
           kind: string
           last_error: string | null
+          lease_until: string | null
+          manual_retry: boolean
           next_attempt_at: string | null
           sms: string
           status: string
@@ -2368,6 +2373,8 @@ export type Database = {
           id?: string
           kind: string
           last_error?: string | null
+          lease_until?: string | null
+          manual_retry?: boolean
           next_attempt_at?: string | null
           sms: string
           status?: string
@@ -2383,6 +2390,8 @@ export type Database = {
           id?: string
           kind?: string
           last_error?: string | null
+          lease_until?: string | null
+          manual_retry?: boolean
           next_attempt_at?: string | null
           sms?: string
           status?: string
@@ -5891,6 +5900,42 @@ export type Database = {
       }
       is_admin_or_owner: { Args: never; Returns: boolean }
       is_notification_staff: { Args: never; Returns: boolean }
+      notification_claim: {
+        Args: never
+        Returns: {
+          automatic_tries: number
+          created_at: string
+          event_key: string | null
+          html: string
+          id: string
+          kind: string
+          last_error: string | null
+          lease_until: string | null
+          manual_retry: boolean
+          next_attempt_at: string | null
+          sms: string
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      notification_contact_claim: {
+        Args: { p_channel: string; p_contact: string }
+        Returns: boolean
+      }
+      notification_contact_result: {
+        Args: { p_channel: string; p_contact: string; p_success: boolean }
+        Returns: undefined
+      }
+      notification_schedule_next: { Args: never; Returns: undefined }
+      notification_wake: { Args: never; Returns: undefined }
       populate_weekly_component_prices: { Args: never; Returns: string }
       quote_order_tax: {
         Args: {
@@ -5944,6 +5989,7 @@ export type Database = {
         Returns: undefined
       }
       rma_package_access: { Args: { p_id: string }; Returns: boolean }
+      save_notification_phone: { Args: { p_phone: string }; Returns: undefined }
       save_notification_preferences: {
         Args: {
           p_account: boolean
