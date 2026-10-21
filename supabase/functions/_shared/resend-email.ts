@@ -26,7 +26,10 @@ export async function sendResendEmail(params: EmailParams): Promise<EmailResult>
     const recipients = Array.isArray(params.to) ? params.to : [params.to];
     for (const to of recipients) {
       const result = await queueContactNotification(to, 'email', params.subject, params.html);
-      if (!result.matched) return deliverResendEmail(params);
+      if (!result.matched) {
+        const delivered = await deliverResendEmail({ ...params, to });
+        if (!delivered.success) return delivered;
+      }
     }
     return { success: true, queued: true };
   }
