@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { test } from 'node:test';
+import { strict as assert } from 'node:assert';
 import { buildPackingSlipHtml, type PackingSlipData } from './packing-slip';
 
 const base: PackingSlipData = {
@@ -14,38 +15,36 @@ const base: PackingSlipData = {
   notes: 'Fragile',
 };
 
-describe('buildPackingSlipHtml', () => {
-  it('lists SKUs, descriptions and quantities with a packed checkbox column', () => {
-    const html = buildPackingSlipHtml(base);
-    expect(html).toContain('PUMP-1');
-    expect(html).toContain('High pressure pump');
-    expect(html).toContain('<td class="qty">4</td>');
-    expect(html).toContain('Packed');
-  });
+test('lists SKUs, descriptions and quantities with a packed checkbox column', () => {
+  const html = buildPackingSlipHtml(base);
+  assert.ok(html.includes('PUMP-1'));
+  assert.ok(html.includes('High pressure pump'));
+  assert.ok(html.includes('<td class="qty">4</td>'));
+  assert.ok(html.includes('Packed'));
+});
 
-  it('never renders prices or currency amounts', () => {
-    const html = buildPackingSlipHtml(base);
-    expect(html).not.toContain('$');
-    expect(html.toLowerCase()).not.toContain('price');
-    expect(html.toLowerCase()).not.toContain('total');
-  });
+test('never renders prices or currency amounts', () => {
+  const html = buildPackingSlipHtml(base);
+  assert.ok(!html.includes('$'));
+  assert.ok(!html.toLowerCase().includes('price'));
+  assert.ok(!html.toLowerCase().includes('total'));
+});
 
-  it('shows the order number, customer PO and ship-to address', () => {
-    const html = buildPackingSlipHtml(base);
-    expect(html).toContain('CO-1001');
-    expect(html).toContain('PO-55');
-    expect(html).toContain('12 Main St');
-    expect(html).toContain('Denver');
-  });
+test('shows the order number, customer PO and ship-to address', () => {
+  const html = buildPackingSlipHtml(base);
+  assert.ok(html.includes('CO-1001'));
+  assert.ok(html.includes('PO-55'));
+  assert.ok(html.includes('12 Main St'));
+  assert.ok(html.includes('Denver'));
+});
 
-  it('marks drop-ship slips and shows only the car wash name as recipient', () => {
-    const html = buildPackingSlipHtml({
-      ...base,
-      isDropShip: true,
-      shipTo: { name: 'Mountain Wash', address: '1 Pine Rd', city: 'Boulder', state: 'CO', zip: '80301' },
-    });
-    expect(html).toContain('Drop-ship');
-    expect(html).toContain('Mountain Wash');
-    expect(html).not.toContain('Distributor Inc');
+test('marks drop-ship slips and shows only the car wash name as recipient', () => {
+  const html = buildPackingSlipHtml({
+    ...base,
+    isDropShip: true,
+    shipTo: { name: 'Mountain Wash', address: '1 Pine Rd', city: 'Boulder', state: 'CO', zip: '80301' },
   });
+  assert.ok(html.includes('Drop-ship'));
+  assert.ok(html.includes('Mountain Wash'));
+  assert.ok(!html.includes('Distributor Inc'));
 });
