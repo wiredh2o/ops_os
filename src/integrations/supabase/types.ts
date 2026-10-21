@@ -2228,6 +2228,80 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_contacts: {
+        Row: {
+          channel: string
+          contact: string
+          created_at: string
+          failures: number
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          contact: string
+          created_at?: string
+          failures?: number
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          contact?: string
+          created_at?: string
+          failures?: number
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_deliveries: {
+        Row: {
+          attempts: number
+          channel: string
+          contact: string
+          created_at: string
+          id: string
+          last_error: string | null
+          notification_id: string
+          provider_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          channel: string
+          contact: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          notification_id: string
+          provider_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          contact?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          notification_id?: string
+          provider_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notification_outbox"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_log: {
         Row: {
           error_message: string | null
@@ -2269,6 +2343,62 @@ export type Database = {
           subject?: string | null
         }
         Relationships: []
+      }
+      notification_outbox: {
+        Row: {
+          automatic_tries: number
+          created_at: string
+          event_key: string | null
+          html: string
+          id: string
+          kind: string
+          last_error: string | null
+          next_attempt_at: string | null
+          sms: string
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          automatic_tries?: number
+          created_at?: string
+          event_key?: string | null
+          html: string
+          id?: string
+          kind: string
+          last_error?: string | null
+          next_attempt_at?: string | null
+          sms: string
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          automatic_tries?: number
+          created_at?: string
+          event_key?: string | null
+          html?: string
+          id?: string
+          kind?: string
+          last_error?: string | null
+          next_attempt_at?: string | null
+          sms?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_outbox_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_item_serials: {
         Row: {
@@ -3195,6 +3325,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_notifications: boolean
           company_id: string | null
           created_at: string
           default_initials: string | null
@@ -3206,12 +3337,16 @@ export type Database = {
           marketing_view_margin: boolean
           marketing_view_revenue: boolean
           marketing_view_supplier_price: boolean
+          notification_method: string
+          notification_preferences_locked: boolean
+          offers_marketing: boolean
           phone: string | null
           price_level_id: string | null
           supplier_id: string | null
           updated_at: string
         }
         Insert: {
+          account_notifications?: boolean
           company_id?: string | null
           created_at?: string
           default_initials?: string | null
@@ -3223,12 +3358,16 @@ export type Database = {
           marketing_view_margin?: boolean
           marketing_view_revenue?: boolean
           marketing_view_supplier_price?: boolean
+          notification_method?: string
+          notification_preferences_locked?: boolean
+          offers_marketing?: boolean
           phone?: string | null
           price_level_id?: string | null
           supplier_id?: string | null
           updated_at?: string
         }
         Update: {
+          account_notifications?: boolean
           company_id?: string | null
           created_at?: string
           default_initials?: string | null
@@ -3240,6 +3379,9 @@ export type Database = {
           marketing_view_margin?: boolean
           marketing_view_revenue?: boolean
           marketing_view_supplier_price?: boolean
+          notification_method?: string
+          notification_preferences_locked?: boolean
+          offers_marketing?: boolean
           phone?: string | null
           price_level_id?: string | null
           supplier_id?: string | null
@@ -5577,6 +5719,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_lock_notification_preferences: {
+        Args: { p_target: string }
+        Returns: boolean
+      }
       can_manage_tax: { Args: never; Returns: boolean }
       can_manage_user: {
         Args: {
@@ -5609,6 +5755,17 @@ export type Database = {
           p_shipping?: number
         }
         Returns: Json
+      }
+      enqueue_notification: {
+        Args: {
+          p_html: string
+          p_key?: string
+          p_kind: string
+          p_sms: string
+          p_subject: string
+          p_user: string
+        }
+        Returns: string
       }
       get_company_order_tax_summaries: {
         Args: never
@@ -5733,6 +5890,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_owner: { Args: never; Returns: boolean }
+      is_notification_staff: { Args: never; Returns: boolean }
       populate_weekly_component_prices: { Args: never; Returns: string }
       quote_order_tax: {
         Args: {
@@ -5774,6 +5932,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      retry_notification: { Args: { p_id: string }; Returns: undefined }
       review_rma: {
         Args: {
           p_action: string
@@ -5785,6 +5944,16 @@ export type Database = {
         Returns: undefined
       }
       rma_package_access: { Args: { p_id: string }; Returns: boolean }
+      save_notification_preferences: {
+        Args: {
+          p_account: boolean
+          p_locked?: boolean
+          p_marketing: boolean
+          p_method: string
+          p_target: string
+        }
+        Returns: undefined
+      }
       save_tax_zip_assignment: {
         Args: {
           p_change_id?: string
