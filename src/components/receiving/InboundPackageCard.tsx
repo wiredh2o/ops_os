@@ -18,6 +18,7 @@ import { cn, formatHoursToHrMin } from "@/lib/utils";
 import { isRepairItemResolved, isRepairPackageArchived } from '@/lib/queue-lifecycle';
 import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { getRepairItemRibbon, shouldMuteInRepairQueue } from "@/lib/repair-item-status-ui";
+import { getRmaItems, type RmaRequest } from '@/lib/rma';
 
 export type InboundPackage = {
   id: string;
@@ -81,6 +82,14 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
   const [open, setOpen] = useState(false);
   const [detailsCollapsed, setDetailsCollapsed] = useState(true);
   const [showUnboxModal, setShowUnboxModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [rma, setRma] = useState<RmaRequest | null>(null);
+  useEffect(() => {
+    if (!pkg.rma_request_id) return;
+    let cancelled = false;
+    supabase.from('rma_requests').select('*').eq('id', pkg.rma_request_id).single().then(({data}) => { if (!cancelled) setRma(data); });
+    return () => { cancelled = true; };
+  }, [pkg.rma_request_id]);
   const [showRepairItemModal, setShowRepairItemModal] = useState(false);
   const [repairItemModalMode, setRepairItemModalMode] = useState<'add' | 'edit'>('add');
   const [showDiagnoseModal, setShowDiagnoseModal] = useState(false);
@@ -104,6 +113,12 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
   const { toast } = useToast();
 
   const itemCount = pkg.item_count ?? localItems.length;
+  const rmaItemDefaults = useMemo(() => {
+    if (!rma) return undefined;
+    const requested = getRmaItems(rma.items).flatMap(item => Array.from({length: item.quantity}, () => item));
+    const next = requested[localItems.length];
+    return next ? { item_name: next.item_name, serial_number: next.serial_number, mac_address: next.mac_address, problem_reported: rma.problem_reported } : undefined;
+  }, [rma, localItems.length]);
   const visibleItems = archived ? localItems : localItems.filter(item => !isRepairItemResolved(item));
   const packageResolved = isRepairPackageArchived(pkg, localItems);
   const isUnboxed = pkg.status === "opened"; // Package is opened only when status is "opened"
@@ -424,6 +439,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
 
         {/* Package action buttons */}
         <div className={`flex justify-end gap-1 ${detailsCollapsed ? 'mb-0 -mt-2' : 'mb-3'}`}>
+          {!archived && rma && ['issued','in_transit'].includes(rma.status) && <Button variant="outline" size="sm" onClick={() => setShowReceiptModal(true)}>Record RMA receipt</Button>}
           {!archived && completedItemsCount > 0 && (
             <TooltipProvider>
               <Tooltip>
@@ -450,7 +466,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                   size="sm"
                   variant="outline"
                   className="h-6 w-6 p-0 border border-gray-400 dark:border-gray-500"
-                  disabled={archived}
+                  disabled={archived || Boolean(rma && ['issued','in_transit'].includes(rma.status))}
                   onClick={() => setShowUnboxModal(true)}
                 >
                   <PackageOpen className="h-2.5 w-2.5" />
@@ -729,6 +745,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
           setIsReadOnlyMode(false);
         }}
         packageId={pkg.id}
+        initialDetails={rmaItemDefaults}
         editItem={repairItemModalMode === 'edit' ? selectedItem as RepairItemData : undefined}
         mode={repairItemModalMode}
         companyId={pkg.company ? (pkg.company as any).id : undefined}
@@ -776,6 +793,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
           window.dispatchEvent(event);
         }}
       />
+      {rma && <UnifiedPackageModal open={showReceiptModal} onOpenChange={setShowReceiptModal} mode="receive" rma={rma} onSuccess={() => { setRma({...rma,status:'received'}); }} />}
 
       {/* Delete Confirmation Modal */}
       <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>

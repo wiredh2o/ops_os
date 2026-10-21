@@ -76,6 +76,7 @@ const ROLE_DESCRIPTIONS = {
 
 const ROLE_COLORS = {
   admin: 'destructive',
+  tech_support: 'default',
   sales_support: 'default',
   car_wash_admin: 'default',
   car_wash_employee: 'secondary',

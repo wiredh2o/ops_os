@@ -1,9 +1,11 @@
 # Tasks
 ## External RMA workflow
-- [ ] Add company-scoped requests, staff approval/appointment invitation, and requester status access.
-- [ ] Feed issued RMA data into existing receiving packages without rebuilding unboxing or diagnosis.
-- [ ] Add return tracking and UPS/FedEx paid-label path; exclude USPS.
-- [ ] Test authorization and lifecycle rules; record unavailable signed-in checks.
+- [x] Add company-scoped requests, staff approval/appointment invitation, and requester status access.
+- [x] Feed issued RMA data into existing receiving packages without rebuilding unboxing or diagnosis.
+- [x] Add return tracking; limit purchased return carriers to UPS/FedEx.
+- [ ] Enable paid UPS/FedEx return labels — blocked by missing Stripe/carrier credentials and required live-payment/carrier validation; no mock labels or charges are enabled.
+- [x] Test authorization and lifecycle rules (57 tests); record unavailable signed-in checks.
+- [ ] Verify signed-in RMA submit/review/receipt/status end-to-end — external Supabase has no managed test session; user preview checks required.
 
 - [x] Read existing role and marketing flags.
 - [x] Add admin-only per-user marketing revenue, margin and supplier-price flags if missing, independently of View switches.

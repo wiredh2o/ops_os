@@ -91,6 +91,7 @@ interface ComprehensiveRepairItemModalProps {
   mode: 'add' | 'edit';
   companyId?: string;
   readOnly?: boolean;
+  initialDetails?: Partial<RepairItemData>;
 }
 
 export const ComprehensiveRepairItemModal: React.FC<ComprehensiveRepairItemModalProps> = ({
@@ -101,7 +102,8 @@ export const ComprehensiveRepairItemModal: React.FC<ComprehensiveRepairItemModal
   onSuccess,
   mode,
   companyId,
-  readOnly = false
+  readOnly = false,
+  initialDetails
 }) => {
   // Item details state
   const [itemDescription, setItemDescription] = useState("");
@@ -161,15 +163,15 @@ export const ComprehensiveRepairItemModal: React.FC<ComprehensiveRepairItemModal
       setPhotos([]); // TODO: Load existing photos
     } else {
       // Clear form for add mode
-      setItemDescription("");
-      setSerialNumber("");
-      setMacAddress("");
-      setProblemReported("");
+      setItemDescription(initialDetails?.item_name || "");
+      setSerialNumber(initialDetails?.serial_number || "");
+      setMacAddress(initialDetails?.mac_address || "");
+      setProblemReported(initialDetails?.problem_reported || "");
       setNotes("");
       setPhotos([]);
       setIsRepairCompleted(false);
     }
-  }, [mode, editItem, isOpen]);
+  }, [mode, editItem, isOpen, initialDetails]);
 
   // Load data when modal opens
   useEffect(() => {

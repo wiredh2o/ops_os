@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useRmaRequests } from '@/hooks/useRmaRequests';
 import { UnifiedPackageModal } from '../UnifiedPackageModal';
 import { getRmaItems } from '@/lib/rma';
+import { useCompanies } from '@/hooks/useCompanies';
 
 interface ReturnsReceivingFormProps {
   onBack: () => void;
@@ -16,6 +17,7 @@ interface ReturnsReceivingFormProps {
 
 export function ReturnsReceivingForm({ onBack }: ReturnsReceivingFormProps) {
   const requests = useRmaRequests(true);
+  const { data: companies } = useCompanies();
   const [selectedId, setSelectedId] = useState('');
   const [receiving, setReceiving] = useState(false);
   const rma = requests.data?.find(entry => entry.id === selectedId);
@@ -44,52 +46,18 @@ export function ReturnsReceivingForm({ onBack }: ReturnsReceivingFormProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="customer">Customer Name</Label>
-              <Input id="customer" placeholder="Selected RMA company account" value={rma?.company_id || ''} readOnly />
+              <Input id="customer" placeholder="Selected RMA company" value={companies?.find(company => company.id === rma?.company_id)?.name || ''} readOnly />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="tracking">Tracking Number</Label>
-              <Input key={selectedId} id="tracking" placeholder="Enter tracking number" defaultValue={rma?.tracking_number || ''} />
+              <Input id="tracking" placeholder="Tracking not yet entered" value={rma?.tracking_number || ''} readOnly />
             </div>
             <div className="space-y-2">
               <Label htmlFor="received-date">Date Received</Label>
-              <Input id="received-date" type="date" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="return-reason">Return Reason</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="defective">Defective</SelectItem>
-                  <SelectItem value="wrong-item">Wrong Item</SelectItem>
-                  <SelectItem value="damaged">Damaged in Transit</SelectItem>
-                  <SelectItem value="not-needed">No Longer Needed</SelectItem>
-                  <SelectItem value="warranty">Warranty Claim</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="disposition">Disposition</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select disposition" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="refund">Refund</SelectItem>
-                  <SelectItem value="exchange">Exchange</SelectItem>
-                  <SelectItem value="store-credit">Store Credit</SelectItem>
-                  <SelectItem value="repair">Repair</SelectItem>
-                  <SelectItem value="scrap">Scrap</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input id="received-date" type="date" value={new Date().toLocaleDateString('en-CA')} readOnly />
             </div>
           </div>
 
@@ -97,8 +65,8 @@ export function ReturnsReceivingForm({ onBack }: ReturnsReceivingFormProps) {
             <Label htmlFor="items">Items Returned</Label>
             <Textarea 
               id="items" 
-              key={`items-${selectedId}`}
-              defaultValue={rma ? getRmaItems(rma.items).map(item => `${item.quantity} × ${item.item_name}${item.serial_number ? ` · ${item.serial_number}` : ''}`).join('\n') : ''}
+              readOnly
+              value={rma ? getRmaItems(rma.items).map(item => `${item.quantity} × ${item.item_name}${item.serial_number ? ` · ${item.serial_number}` : ''}`).join('\n') : ''}
               placeholder="List items returned with quantities and condition"
               rows={6}
             />
@@ -108,8 +76,8 @@ export function ReturnsReceivingForm({ onBack }: ReturnsReceivingFormProps) {
             <Label htmlFor="notes">Return Notes</Label>
             <Textarea 
               id="notes" 
-              key={`notes-${selectedId}`}
-              defaultValue={rma?.problem_reported || ''}
+              readOnly
+              value={rma?.problem_reported || ''}
               placeholder="Additional notes about the return"
               rows={3}
             />
