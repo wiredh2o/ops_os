@@ -173,9 +173,9 @@ export const SalesUomEditor = ({
                         /></FinancialGuard>
                       </div>
                     </td>
-                    <FinancialGuard kind="revenue"><td className="p-2 text-muted-foreground text-xs">
-                      ${pricePerEach}
-                    </td></FinancialGuard>
+                    <td className="p-2 text-muted-foreground text-xs">
+                      <FinancialGuard kind="revenue">${pricePerEach}</FinancialGuard>
+                    </td>
                     <td className="p-2 text-center">
                       <Checkbox
                         checked={uom.is_default}

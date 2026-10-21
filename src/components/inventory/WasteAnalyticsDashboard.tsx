@@ -10,6 +10,7 @@ import { useAssemblyWasteTracking } from "@/hooks/useAssemblyWasteTracking";
 import { format, subDays, startOfWeek, endOfWeek } from "date-fns";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 
 interface AssemblyOption {
   id: string;
@@ -224,7 +225,7 @@ export function WasteAnalyticsDashboard() {
       <Tabs defaultValue="trends" className="space-y-4">
         <TabsList>
           <TabsTrigger value="trends">Waste Trends</TabsTrigger>
-          <TabsTrigger value="cost-analysis">Cost Analysis</TabsTrigger>
+          <FinancialGuard kind="supplier_price"><TabsTrigger value="cost-analysis">Cost Analysis</TabsTrigger></FinancialGuard>
           <TabsTrigger value="alerts">Active Alerts</TabsTrigger>
           <TabsTrigger value="efficiency">Time Efficiency</TabsTrigger>
         </TabsList>
@@ -276,7 +277,7 @@ export function WasteAnalyticsDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="cost-analysis" className="space-y-4">
+        <FinancialGuard kind="supplier_price"><TabsContent value="cost-analysis" className="space-y-4">
           {selectedAssemblyId !== 'all' ? (
             <Card>
               <CardHeader>
@@ -311,7 +312,7 @@ export function WasteAnalyticsDashboard() {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
+        </TabsContent></FinancialGuard>
 
         <TabsContent value="alerts" className="space-y-4">
           <div className="space-y-4">

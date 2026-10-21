@@ -446,7 +446,7 @@ export const InventoryManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">{item.quantity_allocated}</TableCell>
                     <TableCell className="text-right">{item.quantity_on_order}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
+                    <TableCell className="text-right"><FinancialGuard kind="revenue">{formatCurrency(item.unit_price)}</FinancialGuard></TableCell>
                     <TableCell className="text-right">{item.reorder_point}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
@@ -541,7 +541,7 @@ export const InventoryManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">{assembly.quantity_allocated}</TableCell>
                     <TableCell className="text-right">{assembly.quantity_on_order}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(assembly.selling_price)}</TableCell>
+                    <TableCell className="text-right"><FinancialGuard kind="revenue">{formatCurrency(assembly.selling_price)}</FinancialGuard></TableCell>
                     <TableCell className="text-right">{assembly.reorder_point}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
@@ -593,7 +593,7 @@ export const InventoryManagement = () => {
                     <TableCell className="max-w-xs truncate" title={item.description}>
                       {item.description || '-'}
                     </TableCell>
-                    <TableCell className="text-right">{formatCurrency(item.hourly_rate)}</TableCell>
+                    <TableCell className="text-right"><FinancialGuard kind="revenue">{formatCurrency(item.hourly_rate)}</FinancialGuard></TableCell>
                     <TableCell className="text-right">{item.unit_of_measure}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant={item.is_taxable ? "default" : "secondary"}>

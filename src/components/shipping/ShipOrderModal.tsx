@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -1239,8 +1240,8 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                                 </div>
                               </div>
                               <div className="text-right text-xs whitespace-nowrap shrink-0">
-                                <span className="text-muted-foreground">{item.quantity} × {formatCurrency(item.unit_price || 0)}</span>
-                                <span className="ml-2 text-foreground font-medium">{formatCurrency(item.total_price || 0)}</span>
+                                <span className="text-muted-foreground">{item.quantity} × <FinancialGuard kind="revenue">{formatCurrency(item.unit_price || 0)}</FinancialGuard></span>
+                                <span className="ml-2 text-foreground font-medium"><FinancialGuard kind="revenue">{formatCurrency(item.total_price || 0)}</FinancialGuard></span>
                               </div>
                             </div>
                           </div>
@@ -1250,22 +1251,22 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                   </Collapsible>
                   <div className="flex justify-between gap-4 pt-1">
                     <span>Subtotal:</span>
-                    <span>{formatCurrency(getItemsSubtotal())}</span>
+                    <span><FinancialGuard kind="revenue">{formatCurrency(getItemsSubtotal())}</FinancialGuard></span>
                   </div>
                   <div className="flex justify-between gap-4">
                     <span>Tax ({getTaxRate()}%):</span>
-                    <span>{formatCurrency(getTotalTax())}</span>
+                    <span><FinancialGuard kind="revenue">{formatCurrency(getTotalTax())}</FinancialGuard></span>
                   </div>
                   {selectedRate && (
                     <div className="flex justify-between gap-4">
                       <span>Shipping:</span>
-                      <span>{formatCurrency(getShippingCost())}</span>
+                      <span><FinancialGuard kind="revenue">{formatCurrency(getShippingCost())}</FinancialGuard></span>
                     </div>
                   )}
                   <div className="flex justify-between gap-4 font-medium text-foreground pt-1">
                     <span>Gross Total:</span>
                     <span className="relative">
-                      {formatCurrency(getOrderSubtotal() + getShippingCost())}
+                      <FinancialGuard kind="revenue">{formatCurrency(getOrderSubtotal() + getShippingCost())}</FinancialGuard>
                       {!selectedRate && (
                         <span className="absolute left-full top-0 ml-1 text-muted-foreground font-normal whitespace-nowrap">
                           (Plus shipping)
@@ -1276,13 +1277,13 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                   {getCreditToApply() > 0 && (
                     <div className="flex justify-between gap-4 text-green-600 dark:text-green-400">
                       <span>Store Credit Applied:</span>
-                      <span>-{formatCurrency(getCreditToApply())}</span>
+                      <span>-<FinancialGuard kind="revenue">{formatCurrency(getCreditToApply())}</FinancialGuard></span>
                     </div>
                   )}
                   {getCreditToApply() > 0 && (
                     <div className="flex justify-between gap-4 font-medium text-foreground">
                       <span>Amount Due:</span>
-                      <span>{formatCurrency(getAmountDue())}</span>
+                      <span><FinancialGuard kind="revenue">{formatCurrency(getAmountDue())}</FinancialGuard></span>
                     </div>
                   )}
                 </div>
@@ -1469,7 +1470,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                       </div>
                       <div>
                         <p className="font-medium text-muted-foreground">Amount</p>
-                        <p className="text-primary font-medium">{formatCurrency(getAmountDue())}</p>
+                        <p className="text-primary font-medium"><FinancialGuard kind="revenue">{formatCurrency(getAmountDue())}</FinancialGuard></p>
                       </div>
                     </div>
 
@@ -1493,9 +1494,9 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                         <div>
                           <p className="font-medium text-green-600">Payment Successful!</p>
                           <p className="text-sm text-muted-foreground">
-                            {paymentMethodType === 'link' ? 'Payment link sent to customer' : 
+                            <FinancialGuard kind="revenue">{paymentMethodType === 'link' ? 'Payment link sent to customer' : 
                              paymentMethodType === 'invoice' || paymentMethodType === 'terms' ? 'Invoice will be sent after shipping' :
-                             `Charged ${formatCurrency(getAmountDue())}`}
+                             `Charged ${formatCurrency(getAmountDue())}`}</FinancialGuard>
                           </p>
                         </div>
                       </div>

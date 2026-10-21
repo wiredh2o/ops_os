@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -60,7 +61,7 @@ export function PackingOptionCard({
             <span>{formatWeight(result.totalPackageWeightOz)}</span>
           </div>
           <div className="flex justify-between">
-            <span>${result.totalMaterialCost.toFixed(2)} materials</span>
+            <FinancialGuard kind="supplier_price"><span>${result.totalMaterialCost.toFixed(2)} materials</span></FinancialGuard>
             <span>{result.packedItems.length} items</span>
           </div>
         </div>

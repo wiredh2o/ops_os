@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -597,7 +598,7 @@ export function MultiCarrierRateComparison({
                   <p className="text-xs text-muted-foreground">{createdResult.rate.transit_days} day{createdResult.rate.transit_days !== 1 ? 's' : ''}</p>
                 )}
               </div>
-              <span className="font-bold text-primary">{formatCurrency(createdResult.rate.total_charge)}</span>
+              <span className="font-bold text-primary"><FinancialGuard kind="revenue">{formatCurrency(createdResult.rate.total_charge)}</FinancialGuard></span>
             </div>
             <div className="pt-2 border-t">
               <p className="text-sm font-medium text-muted-foreground">Tracking Number</p>
@@ -888,18 +889,18 @@ export function MultiCarrierRateComparison({
                       {/* Price + $/hr metric */}
                       <div className="text-right flex-shrink-0">
                         <span className="font-bold text-primary text-lg">
-                          {formatCurrency(rate.total_charge)}
+                          <FinancialGuard kind="revenue">{formatCurrency(rate.total_charge)}</FinancialGuard>
                         </span>
                         {rate.account_charge !== undefined && (
                           <p className="text-xs text-muted-foreground">
-                            Our cost: {formatCurrency(rate.account_charge)}
+                            Our cost: <FinancialGuard kind="supplier_price">{formatCurrency(rate.account_charge)}</FinancialGuard>
                           </p>
                         )}
                         {/* Marginal cost per hour metric */}
                         {rate.marginal_cost_per_hour === undefined && rate.cost_per_value_hour !== undefined && rate.cost_per_value_hour !== Infinity && (
-                          <p className="text-xs text-muted-foreground">
+                          <FinancialGuard kind="revenue"><p className="text-xs text-muted-foreground">
                             ${rate.cost_per_value_hour.toFixed(2)}/hr
-                          </p>
+                          </p></FinancialGuard>
                         )}
                         {rate.marginal_cost_per_hour !== undefined && (
                           <p className={cn(
@@ -910,7 +911,7 @@ export function MultiCarrierRateComparison({
                                 ? "text-green-600 dark:text-green-400"
                                 : "text-amber-600 dark:text-amber-400"
                           )}>
-                            {`Arrives ${Math.round(rate.hours_saved ?? 0)} business hrs faster at additional cost of ${
+                            <FinancialGuard kind="supplier_price">{`Arrives ${Math.round(rate.hours_saved ?? 0)} business hrs faster at additional cost of ${
                               (rate.hours_saved ?? 0) > 0
                                 ? (rate.marginal_cost_per_hour <= 0
                                     ? `-$${Math.abs(rate.marginal_cost_per_hour).toFixed(2)}`
@@ -918,7 +919,7 @@ export function MultiCarrierRateComparison({
                                 : (rate.price_diff != null && rate.price_diff < 0
                                     ? `-$${Math.abs(rate.price_diff).toFixed(2)}`
                                     : `$${Math.abs(rate.price_diff ?? 0).toFixed(2)}`)
-                            }/hr`}
+                            }/hr`}</FinancialGuard>
                           </p>
                         )}
                       </div>

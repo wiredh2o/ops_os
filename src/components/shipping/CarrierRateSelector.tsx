@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -298,7 +299,7 @@ export function CarrierRateSelector({
                   <p className="text-xs text-muted-foreground">{createdResult.rate.transit_days} business days</p>
                 )}
               </div>
-              <span className="font-bold text-primary">{formatCurrency(createdResult.rate.total_charge)}</span>
+              <span className="font-bold text-primary"><FinancialGuard kind="revenue">{formatCurrency(createdResult.rate.total_charge)}</FinancialGuard></span>
             </div>
             <div className="pt-2 border-t">
               <p className="text-sm font-medium text-muted-foreground">Tracking Number</p>
@@ -468,7 +469,7 @@ export function CarrierRateSelector({
                       </div>
 
                       <span className="font-bold text-primary flex-shrink-0">
-                        {formatCurrency(rate.total_charge)}
+                        <FinancialGuard kind="revenue">{formatCurrency(rate.total_charge)}</FinancialGuard>
                       </span>
                     </div>
                   </CardContent>

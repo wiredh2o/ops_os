@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -533,7 +534,7 @@ export function PaymentSelector({
                     </div>
                   </div>
                   <span className={`font-bold ${option.amount === 0 ? 'text-muted-foreground' : 'text-primary'}`}>
-                    {option.amount === 0 ? '$0.00 now' : formatCurrency(option.amount)}
+                    <FinancialGuard kind="revenue">{option.amount === 0 ? '$0.00 now' : formatCurrency(option.amount)}</FinancialGuard>
                   </span>
                 </div>
               ))}
@@ -548,7 +549,7 @@ export function PaymentSelector({
           <CardContent className="pt-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Amount to Charge</span>
-              <span className="text-2xl font-bold text-primary">{formatCurrency(selectedAmount)}</span>
+              <span className="text-2xl font-bold text-primary"><FinancialGuard kind="revenue">{formatCurrency(selectedAmount)}</FinancialGuard></span>
             </div>
           </CardContent>
         </Card>
@@ -979,7 +980,7 @@ export function PaymentSelector({
                   Invoice on {paymentTerms === 'net_15' ? 'Net 15' : 'Net 30'} Terms
                 </p>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  No payment required now. An invoice for {formatCurrency(orderSubtotal + shippingCost)} will be 
+                  No payment required now. An invoice for <FinancialGuard kind="revenue">{formatCurrency(orderSubtotal + shippingCost)}</FinancialGuard> will be 
                   sent after shipping and is due within {paymentTerms === 'net_15' ? '15' : '30'} days.
                 </p>
               </div>

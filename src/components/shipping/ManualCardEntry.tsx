@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { StripeCardElementOptions } from '@stripe/stripe-js';
@@ -125,7 +126,7 @@ function PaymentForm({
         <CardContent className="pt-4">
           <div className="mb-4">
             <p className="text-sm font-medium text-muted-foreground mb-1">Amount to Charge</p>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(amount)}</p>
+            <p className="text-2xl font-bold text-primary"><FinancialGuard kind="revenue">{formatCurrency(amount)}</FinancialGuard></p>
           </div>
           
           <div className="p-3 border rounded-md bg-background">
@@ -168,7 +169,7 @@ function PaymentForm({
           ) : (
             <>
               <CreditCard className="h-4 w-4 mr-2" />
-              Pay {formatCurrency(amount)}
+              Pay <FinancialGuard kind="revenue">{formatCurrency(amount)}</FinancialGuard>
             </>
           )}
         </Button>

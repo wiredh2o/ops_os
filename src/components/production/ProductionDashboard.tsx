@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -670,7 +671,7 @@ export const ProductionDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {formatCurrency(readyToBuildWorkItems.reduce((sum, o) => sum + (o.total_amount || 0), 0))}
+              <FinancialGuard kind="revenue">{formatCurrency(readyToBuildWorkItems.reduce((sum, o) => sum + (o.total_amount || 0), 0))}</FinancialGuard>
             </div>
             <p className="text-xs text-muted-foreground">Orders value</p>
           </CardContent>
@@ -685,7 +686,7 @@ export const ProductionDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {formatCurrency(readyToShipOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0))}
+              <FinancialGuard kind="revenue">{formatCurrency(readyToShipOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0))}</FinancialGuard>
             </div>
             <p className="text-xs text-muted-foreground">Ready to ship</p>
           </CardContent>
