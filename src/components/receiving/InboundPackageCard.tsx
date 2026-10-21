@@ -507,7 +507,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
                   ) : (
                     <ChevronRight className="h-4 w-4 mr-1" />
                   )}
-                  {archived ? 'Resolved items' : 'Unresolved items'} ({visibleItems.length})
+                  {archived ? 'Resolved items' : 'Items'} ({visibleItems.length})
                   {!archived && completedItemsCount > 0 && (
                     <Badge className="ml-2 bg-green-600 text-white text-xs px-1.5 py-0">
                       {completedItemsCount} Ready
