@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
+import { queueContactNotification } from "../_shared/notification-outbox.ts";
 import { sendResendEmail } from "../_shared/resend-email.ts";
 
 const corsHeaders = {
@@ -122,39 +123,8 @@ async function sendEmailNotification(
 }
 
 async function sendSMSNotification(phone: string, message: string) {
-  const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
+  return queueContactNotification(phone, 'text', 'Order status update', message);
 
-  if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
-    console.log('Twilio credentials not configured, skipping SMS notification');
-    return { skipped: true, reason: 'No API credentials' };
-  }
-
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-  
-  const formData = new URLSearchParams();
-  formData.append('From', twilioPhoneNumber);
-  formData.append('To', phone);
-  formData.append('Body', message);
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${btoa(`${twilioAccountSid}:${twilioAuthToken}`)}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: formData,
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(`SMS API error: ${result.message || 'Unknown error'}`);
-  }
-
-  await logNotification('production', '', 'sms', phone, undefined, message, 'sent', result.sid);
-  return result;
 }
 
 async function logNotification(
@@ -280,7 +250,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send SMS notification
-    if (customer_phone) {
+    if (customer_phone && !customer_email) {
       try {
         const smsMessage = `${companyName}: ${emailSubject} - ${statusMessage}`;
         const smsResult = await sendSMSNotification(customer_phone, smsMessage);
