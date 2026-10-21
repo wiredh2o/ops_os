@@ -1,11 +1,15 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  roles: string[];
+  rolesLoading: boolean;
+  rolesError: Error | null;
   signOut: () => Promise<void>;
 }
 
@@ -15,6 +19,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  // Role assignments are read from Supabase, never from profile metadata or local storage.
+  const rolesQuery = useQuery({
+    queryKey: ['staff-user-roles', user?.id],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return (data || []).map(({ role }) => role);
+    },
+    staleTime: 0,
+  });
 
   useEffect(() => {
     // Set up auth state listener
@@ -44,6 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     loading,
+    roles: user ? rolesQuery.data || [] : [],
+    rolesLoading: loading || Boolean(user && rolesQuery.isPending),
+    rolesError: rolesQuery.error,
     signOut,
   };
 
