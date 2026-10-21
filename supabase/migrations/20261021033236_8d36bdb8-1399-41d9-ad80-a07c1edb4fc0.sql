@@ -1,0 +1,7 @@
+DROP POLICY external_repair_write_guard ON public.repair_items;
+CREATE POLICY external_repair_insert_guard ON public.repair_items AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK(NOT public.can_request_rma() OR public.can_receive_rma());
+CREATE POLICY external_repair_update_guard ON public.repair_items AS RESTRICTIVE FOR UPDATE TO authenticated USING(NOT public.can_request_rma() OR public.can_receive_rma()) WITH CHECK(NOT public.can_request_rma() OR public.can_receive_rma());
+CREATE POLICY external_repair_delete_guard ON public.repair_items AS RESTRICTIVE FOR DELETE TO authenticated USING(NOT public.can_request_rma() OR public.can_receive_rma());
+CREATE OR REPLACE FUNCTION public.protect_rma_company_identity() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN IF auth.uid() IS NOT NULL AND public.can_request_rma() AND NOT public.has_role(auth.uid(),'admin') AND NEW.company_id IS DISTINCT FROM OLD.company_id THEN RAISE EXCEPTION 'Only staff can change your company'; END IF; RETURN NEW; END $$;
+CREATE TRIGGER protect_rma_company_identity BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.protect_rma_company_identity();
+DO $$ DECLARE def text; BEGIN SELECT pg_get_functiondef(oid) INTO def FROM pg_proc WHERE pronamespace='public'::regnamespace AND proname='search_repair_items'; def=replace(def,'WHERE public.can_receive_rma() AND (','WHERE auth.uid() IS NOT NULL AND (NOT public.can_request_rma() OR public.can_receive_rma()) AND ('); EXECUTE def; END $$;

@@ -26,6 +26,8 @@ export type InboundPackage = {
   intake_notes?: string | null;
   item_count?: number | null;
   assigned_tray?: string | null;
+  rma_request_id?: string | null;
+  customer_po?: string | null;
   created_at: string;
   received_at?: string | null;
   company_id?: string | null;
@@ -409,6 +411,7 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
       </CardHeader>
 
       <CardContent className="pt-0 px-3 pb-3">
+        {pkg.rma_request_id && <Badge variant="outline" className="mb-2">{pkg.intake_notes?.split('\n')[0] || 'RMA return'}</Badge>}
         <Collapsible open={!detailsCollapsed}>
           <CollapsibleContent>
             {pkg.intake_notes && (

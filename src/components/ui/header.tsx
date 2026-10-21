@@ -1,16 +1,18 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Settings, LogOut } from "lucide-react";
+import { Home, Settings, LogOut, ClipboardCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { canRequestRma, canReceiveRma } from '@/lib/rma';
 
 export function Header() {
-  const { signOut } = useAuth();
+  const { signOut, roles } = useAuth();
   const location = useLocation();
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: Home },
     { name: "Settings", href: "/settings", icon: Settings },
+    ...(canRequestRma(roles) || canReceiveRma(roles) ? [{ name: 'RMAs', href: '/rma', icon: ClipboardCheck }] : []),
   ];
 
   return (

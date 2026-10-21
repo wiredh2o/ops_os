@@ -31,6 +31,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow, format } from "date-fns";
+import { useAuth } from '@/hooks/useAuth';
+import { canRequestRma, canReceiveRma } from '@/lib/rma';
 
 // Interface matches the search_repair_items RPC function return type
 interface RepairSearchResult {
@@ -68,7 +70,21 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; clas
   invoiced: { label: "Invoiced", icon: <FileText className="h-3 w-3" />, className: "bg-slate-500 text-white" },
 };
 
-export const RepairStatusLookup: React.FC = () => {
+export const RepairStatusLookup: React.FC<{ rmaId?: string }> = ({ rmaId }) => {
+  const { roles, rolesLoading } = useAuth();
+  const external = canRequestRma(roles) && !canReceiveRma(roles);
+  const [rmaRepairs, setRmaRepairs] = useState<Array<{ id: string; item_name: string; serial_number?: string; status: string; completion_outcome?: string }>>([]);
+  const [rmaError, setRmaError] = useState('');
+  useEffect(() => {
+    if (!rmaId) return;
+    let cancelled = false;
+    supabase.rpc('get_my_rma_repairs', { p_id: rmaId }).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) { setRmaError('Unable to load repair status.'); return; }
+      setRmaRepairs(Array.isArray(data) ? data as unknown as typeof rmaRepairs : []);
+    });
+    return () => { cancelled = true; };
+  }, [rmaId]);
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<RepairSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,6 +94,7 @@ export const RepairStatusLookup: React.FC = () => {
 
   // Debounced search
   const performSearch = useCallback(async (term: string) => {
+    if (rmaId || rolesLoading || external) return;
     if (!term.trim() || term.length < 2) {
       setResults([]);
       setHasSearched(false);
@@ -105,7 +122,7 @@ export const RepairStatusLookup: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, rmaId, rolesLoading, external]);
 
   // Debounce effect
   useEffect(() => {
@@ -153,6 +170,12 @@ export const RepairStatusLookup: React.FC = () => {
     return null;
   };
 
+  if (rmaId) return <div className="space-y-3 border-t pt-3">
+    {rmaError && <p role="alert" className="text-destructive">{rmaError}</p>}
+    {!rmaError && rmaRepairs.length === 0 && <p className="text-sm text-muted-foreground">Repair items have not yet been logged.</p>}
+    {rmaRepairs.map(item => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 text-sm"><span>{item.item_name}{item.serial_number ? ` · ${item.serial_number}` : ''}</span><Badge variant="secondary">{item.completion_outcome || item.status}</Badge></div>)}
+  </div>;
+  if (external) return <div className="p-6"><Button asChild><a href="/rma">View my RMAs</a></Button></div>;
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">

@@ -65,6 +65,7 @@ const ROLE_DESCRIPTIONS = {
   accounting: 'Accounting',
   marketing: 'Marketing with per-user financial visibility',
   sales_support: 'Sales and customer management',
+  tech_support: 'RMA review and tech-support appointments',
   car_wash_admin: 'Car wash administrative functions',
   car_wash_employee: 'Car wash employee access',
   vendor_admin: 'Vendor administrative functions',
