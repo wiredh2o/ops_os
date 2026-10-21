@@ -1,0 +1,14 @@
+CREATE SCHEMA IF NOT EXISTS notification_private; REVOKE ALL ON SCHEMA notification_private FROM PUBLIC,anon; GRANT USAGE ON SCHEMA notification_private TO authenticated,service_role;
+ALTER FUNCTION public.is_notification_staff() SET SCHEMA notification_private;
+ALTER FUNCTION public.can_lock_notification_preferences(uuid) SET SCHEMA notification_private;
+ALTER FUNCTION public.save_notification_preferences(uuid,boolean,boolean,text,boolean) SET SCHEMA notification_private;
+ALTER FUNCTION public.retry_notification(uuid) SET SCHEMA notification_private;
+CREATE FUNCTION public.is_notification_staff() RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public AS $$ SELECT notification_private.is_notification_staff(); $$;
+CREATE FUNCTION public.can_lock_notification_preferences(p_target uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public AS $$ SELECT notification_private.can_lock_notification_preferences(p_target); $$;
+CREATE FUNCTION public.save_notification_preferences(p_target uuid,p_account boolean,p_marketing boolean,p_method text,p_locked boolean DEFAULT NULL) RETURNS void LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT notification_private.save_notification_preferences(p_target,p_account,p_marketing,p_method,p_locked); $$;
+CREATE FUNCTION public.retry_notification(p_id uuid) RETURNS void LANGUAGE sql SECURITY INVOKER SET search_path=public AS $$ SELECT notification_private.retry_notification(p_id); $$;
+REVOKE ALL ON ALL FUNCTIONS IN SCHEMA notification_private FROM PUBLIC,anon;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA notification_private TO authenticated,service_role;
+REVOKE ALL ON FUNCTION public.is_notification_staff(),public.can_lock_notification_preferences(uuid),public.save_notification_preferences(uuid,boolean,boolean,text,boolean),public.retry_notification(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.is_notification_staff(),public.can_lock_notification_preferences(uuid),public.save_notification_preferences(uuid,boolean,boolean,text,boolean),public.retry_notification(uuid) TO authenticated,service_role;
+REVOKE ALL ON FUNCTION public.protect_notification_preferences(),public.notification_profile_events(),public.notification_rma_event() FROM PUBLIC,anon,authenticated;
