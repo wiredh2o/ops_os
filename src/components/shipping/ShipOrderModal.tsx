@@ -27,6 +27,7 @@ import { printThermalLabel, downloadLabel } from '@/lib/thermal-print-utils';
 import { PrintInstructionsTooltip } from './PrintInstructionsTooltip';
 import { ThirdPartyBillingFallbackDialog } from './ThirdPartyBillingFallbackDialog';
 import { SerialAssignmentModal } from './SerialAssignmentModal';
+import { carrierAllowedForDropShip, dropShipLabelRecipient, isDropShipSnapshot, type DropShipSnapshot } from '@/lib/drop-ship';
 
 interface ShipOrderModalProps {
   order: {
@@ -135,6 +136,8 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
   
   // Selections
   const [selectedAddress, setSelectedAddress] = useState<ShippingAddress | null>(null);
+  // Distributor drop-ship destination saved on the invoice (overrides the account's addresses)
+  const [dropShip, setDropShip] = useState<DropShipSnapshot | null>(null);
   const [selectedRate, setSelectedRate] = useState<UnifiedRate | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [paymentMethodType, setPaymentMethodType] = useState<'card' | 'terms' | 'link' | 'manual_entry' | 'manual_entry_save' | 'invoice'>('card');
@@ -458,6 +461,11 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
         }
       }
 
+      if (isDropShipSnapshot(orderData.drop_ship_snapshot)) {
+        setDropShip(orderData.drop_ship_snapshot);
+        setSelectedAddress(orderData.drop_ship_snapshot as unknown as ShippingAddress);
+      }
+
       // Prompt auto-serial assignment before shipping label creation
       if (!autoSerialChecked && !orderData.fedex_tracking_number && !orderData.fedex_label_url) {
         setAutoSerialChecked(true);
@@ -546,7 +554,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
     let cancelled = false; setTaxPending(true); setTaxError(''); setTaxSnapshotReady(false);
     (async () => {
       const model = await getTaxModel(selectedAddress.state, selectedAddress.zip);
-      const { error } = await supabase.from('production_orders').update({ tax_destination: selectedAddress as any, shipping_cost: selectedRate?.total_charge || 0 }).eq('id', order.id);
+      const { error } = await supabase.from('production_orders').update({ tax_destination: (dropShip ? { ...selectedAddress, email: undefined, phone: undefined } : selectedAddress) as any, shipping_cost: selectedRate?.total_charge || 0 }).eq('id', order.id);
       if (error) throw error;
       // Read back the server-calculated snapshot so displayed and charged tax match what is stored.
       const { data: snap, error: snapErr } = await supabase.from('production_orders')
@@ -667,6 +675,10 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
   // Create shipping label (called after payment succeeds or for net terms)
   const createShippingLabel = async () => {
     if (!selectedRate || !selectedAddress || !customer) return;
+    if (!carrierAllowedForDropShip(selectedRate.carrier, dropShip)) {
+      setLabelError('USPS cannot be used until this drop-ship address is flagged USPS eligible.');
+      return;
+    }
     
     setIsCreatingLabel(true);
     setLabelError(null);
@@ -693,15 +705,14 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
           phone: companySettings?.shipFromAddress?.phone || '3035551234',
         },
         ship_to: {
-          name: customer.owners_name || '',
-          company: customer.name || order.customer_name,
+          // Drop-ship labels show only the car wash name as the recipient
+          ...(dropShip ? dropShipLabelRecipient(dropShip, customer.phone) : { name: customer.owners_name || '', company: customer.name || order.customer_name, phone: customer.phone }),
           street: selectedAddress.address,
           city: selectedAddress.city,
           state: selectedAddress.state,
           postal_code: selectedAddress.zip,
           country: selectedAddress.country || 'US',
           residential: false,
-          phone: customer.phone,
         },
         packages: [{ weight_lbs: packageWeight, dimensions: packageDimensions }],
         service_type: selectedRate.service_type,
@@ -1334,7 +1345,25 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
 
         {/* Step Content */}
         <div className="min-h-[300px]">
-          {step === 'address' && customer && (
+          {step === 'address' && customer && dropShip && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">Drop-ship address <Badge variant="outline">Owned by {customer.name}</Badge></CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <p className="text-sm text-muted-foreground">Label recipient</p>
+                <p className="font-medium">{dropShip.recipient_name}</p>
+                <p className="text-sm">{dropShip.address}</p>
+                <p className="text-sm">{dropShip.city}, {dropShip.state} {dropShip.zip}</p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Badge variant={dropShip.usps_eligible ? 'secondary' : 'outline'}>{dropShip.usps_eligible ? 'USPS eligible' : 'USPS not allowed'}</Badge>
+                  {(dropShip.email || dropShip.phone) && <Badge variant="outline">Shipment notice: {[dropShip.email, dropShip.phone].filter(Boolean).join(' · ')}</Badge>}
+                </div>
+                <div className="flex justify-end pt-3"><Button onClick={() => handleAddressSelected(dropShip as unknown as ShippingAddress)}>Continue</Button></div>
+              </CardContent>
+            </Card>
+          )}
+          {step === 'address' && customer && !dropShip && (
             editingAddress ? (
               <EditAddressForm
                 address={editingAddress}
@@ -1411,11 +1440,12 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                 country: 'US',
                 phone: companySettings?.shipFromAddress?.phone || '3035551234',
               }}
-              shipToDetails={{
+              shipToDetails={dropShip ? dropShipLabelRecipient(dropShip, customer?.phone) : {
                 name: customer?.owners_name || undefined,
                 company: customer?.name || order.customer_name,
                 phone: customer?.phone,
               }}
+              excludedCarriers={carrierAllowedForDropShip('usps', dropShip) ? [] : ['usps']}
               orderId={order.id}
             />
           )}
