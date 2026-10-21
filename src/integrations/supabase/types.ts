@@ -3166,6 +3166,9 @@ export type Database = {
           id: string
           is_active: boolean
           last_name: string | null
+          marketing_view_margin: boolean
+          marketing_view_revenue: boolean
+          marketing_view_supplier_price: boolean
           phone: string | null
           price_level_id: string | null
           supplier_id: string | null
@@ -3180,6 +3183,9 @@ export type Database = {
           id: string
           is_active?: boolean
           last_name?: string | null
+          marketing_view_margin?: boolean
+          marketing_view_revenue?: boolean
+          marketing_view_supplier_price?: boolean
           phone?: string | null
           price_level_id?: string | null
           supplier_id?: string | null
@@ -3194,6 +3200,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name?: string | null
+          marketing_view_margin?: boolean
+          marketing_view_revenue?: boolean
+          marketing_view_supplier_price?: boolean
           phone?: string | null
           price_level_id?: string | null
           supplier_id?: string | null
