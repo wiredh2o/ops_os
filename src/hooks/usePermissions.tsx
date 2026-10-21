@@ -1,6 +1,37 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { getVisibleStaffTabs, STAFF_TABS } from './staff-tab-access';
+
+// Separate from the management hook: the staff shell needs only this user's roles
+// and the existing server-side View checks, not every role's editable permissions.
+export function useStaffTabPermissions() {
+  const { user, roles, rolesLoading, rolesError } = useAuth();
+  const marketingQuery = useQuery({
+    queryKey: ['staff-marketing-view-permissions', user?.id, roles],
+    enabled: Boolean(user && roles.includes('marketing') && !roles.includes('admin')),
+    queryFn: async () => {
+      if (!user) return [];
+      const names = [...new Set(STAFF_TABS.map(tab => tab.permission).filter((name): name is Exclude<typeof name, null> => name !== null))];
+      const results = await Promise.all(names.map(async name => {
+        const { data, error } = await supabase.rpc('has_permission', {
+          _user_id: user.id, _permission_name: name,
+        });
+        if (error) throw error;
+        return data ? name : null;
+      }));
+      return results.filter((name): name is Exclude<typeof name, null> => name !== null);
+    },
+    staleTime: 0,
+  });
+  const needsMarketing = roles.includes('marketing') && !roles.includes('admin');
+  return {
+    visibleTabs: getVisibleStaffTabs(roles, marketingQuery.data || []),
+    loading: rolesLoading || (needsMarketing && marketingQuery.isPending),
+    error: rolesError || (needsMarketing ? marketingQuery.error : null),
+  };
+}
 
 export interface Permission {
   id: string;
