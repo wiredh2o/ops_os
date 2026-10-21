@@ -212,6 +212,7 @@ interface OrderItem {
   item_name: string;
   item_sku: string;
   quantity_ordered: number;
+  is_taxable?: boolean;
   quantity_invoiced: number;
   unit_price: number;
   notes?: string;
@@ -905,6 +906,7 @@ function formatDeliveryDate(isoString: string): string {
              labor_item_id: item.labor_item_id || undefined,
              item_name: itemName,
              item_sku: itemSku,
+             is_taxable: item.is_taxable,
              quantity_ordered: item.quantity_ordered,
              quantity_invoiced: item.quantity_invoiced || 0,
              unit_price: item.unit_price,
@@ -1637,6 +1639,7 @@ function formatDeliveryDate(isoString: string): string {
               inventory_item_id: item.inventory_item_id || null,
               assembly_id: item.assembly_id || null,
               labor_item_id: item.labor_item_id || null,
+              is_taxable: item.item_type !== "labor" && item.is_taxable !== false,
               quantity_ordered: item.quantity_ordered,
               unit_price: item.unit_price,
               notes: item.notes || null,
@@ -1717,6 +1720,7 @@ function formatDeliveryDate(isoString: string): string {
               inventory_item_id: item.inventory_item_id || null,
               assembly_id: item.assembly_id || null,
               labor_item_id: item.labor_item_id || null,
+              is_taxable: item.item_type !== "labor" && item.is_taxable !== false,
               quantity_ordered: item.quantity_ordered,
               unit_price: item.unit_price,
               notes: item.notes || null,
@@ -1813,6 +1817,7 @@ function formatDeliveryDate(isoString: string): string {
         if (field === "selectedItemId") {
           const combinedItem = combinedItems.find((ci) => ci.id === value);
           if (combinedItem) {
+            updated.is_taxable = combinedItem.type !== "labor" && combinedItem.is_taxable === true;
             updated.item_type = combinedItem.type;
             updated.item_name = combinedItem.name.replace(/ \((Inventory|Assembly|Labor)\)/, "");
             updated.item_sku = combinedItem.sku;
@@ -1930,7 +1935,7 @@ function formatDeliveryDate(isoString: string): string {
     distributor: companies.find(c => c.id === formData.customer_company_id)?.is_distributor,
     destination: selectedAddress,
     items: orderItems.map(item => ({ amount: item.quantity_ordered * item.unit_price, item_type: item.item_type,
-      is_taxable: combinedItems.find(i => i.id === (item.inventory_item_id || item.assembly_id || item.labor_item_id))?.is_taxable === true })),
+      is_taxable: item.is_taxable !== false && combinedItems.find(i => i.id === (item.inventory_item_id || item.assembly_id || item.labor_item_id))?.is_taxable === true })),
     shipping: formData.estimated_shipping,
     shipments: companies.find(c => c.id === formData.customer_company_id)?.preferred_shipping_carrier === 'Pick-Up' ? 0 : 1,
   });
@@ -2008,6 +2013,7 @@ function formatDeliveryDate(isoString: string): string {
           notes: formData.notes || null,
           internal_notes: formData.internal_notes || null,
           customer_po: formData.customer_po || null,
+          tax_destination: selectedAddress as any,
           packing_mode: packingConfig?.mode || null,
           selected_box_id: packingConfig?.packages?.[0]?.box?.id || null,
           package_weight_oz: packingConfig?.packages?.[0]?.totalPackageWeightOz || null,
@@ -2033,6 +2039,7 @@ function formatDeliveryDate(isoString: string): string {
         assembly_id: item.assembly_id || null,
         labor_item_id: item.labor_item_id || null,
         quantity_ordered: item.quantity_ordered,
+        is_taxable: item.item_type !== "labor" && item.is_taxable !== false,
         unit_price: item.unit_price,
         notes: item.notes || null,
         requested_serial: item.requested_serial || null,
@@ -2770,8 +2777,8 @@ function formatDeliveryDate(isoString: string): string {
                 /></FinancialGuard>
               </div>
 
-              {/* Spacer */}
-              <div></div>
+              {/* Line taxability */}
+              <div className="flex justify-center"><Checkbox aria-label={`Taxable line ${item.item_sku || item.id}`} disabled={item.item_type === 'labor'} checked={item.item_type !== 'labor' && item.is_taxable !== false} onCheckedChange={checked => updateOrderItem(item.id, 'is_taxable', checked === true)}/></div>
 
               {/* Amount */}
               <div className="flex items-center justify-center whitespace-nowrap">
