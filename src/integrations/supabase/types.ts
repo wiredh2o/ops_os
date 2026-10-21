@@ -5899,6 +5899,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_owner: { Args: never; Returns: boolean }
+      is_internal_staff: { Args: { _uid: string }; Returns: boolean }
       is_notification_staff: { Args: never; Returns: boolean }
       notification_claim: {
         Args: never
