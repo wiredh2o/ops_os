@@ -5785,6 +5785,16 @@ export type Database = {
         Returns: undefined
       }
       rma_package_access: { Args: { p_id: string }; Returns: boolean }
+      save_tax_zip_assignment: {
+        Args: {
+          p_change_id?: string
+          p_is_taxable: boolean
+          p_jurisdiction_ids: string[]
+          p_state: string
+          p_zip: string
+        }
+        Returns: undefined
+      }
       search_repair_items: {
         Args: { search_term: string }
         Returns: {
