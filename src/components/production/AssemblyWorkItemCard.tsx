@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,12 +83,12 @@ export const AssemblyWorkItemCard = ({ workItem, onAction }: AssemblyWorkItemCar
             {format(new Date(workItem.created_at), 'MMM dd, yyyy')}
           </div>
           
-          {workItem.unit_price && (
+          <FinancialGuard kind="revenue">{workItem.unit_price && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <DollarSign className="w-3 h-3" />
               {formatCurrency(workItem.unit_price)}
             </div>
-          )}
+          )}</FinancialGuard>
 
           {workItem.notes && (
             <p className="text-xs text-muted-foreground line-clamp-2">{workItem.notes}</p>

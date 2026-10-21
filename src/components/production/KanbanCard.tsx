@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -199,12 +200,12 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
       <CardContent className="pt-0 px-3 pb-3">
         <div className="space-y-2">
           
-          {order.total_amount && !hasLineItems && (
+          <FinancialGuard kind="revenue">{order.total_amount && !hasLineItems && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <DollarSign className="w-3 h-3" />
               {formatCurrency(order.total_amount)}
             </div>
-          )}
+          )}</FinancialGuard>
 
           {/* SKUs and Total Items - only for fulfillment with line items */}
           {type === 'fulfillment' && hasLineItems && (
@@ -265,7 +266,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
           )}
 
           {/* Expandable Details Section for fulfillment orders */}
-          {type === 'fulfillment' && hasLineItems && (
+          <FinancialGuard kind="revenue">{type === 'fulfillment' && hasLineItems && (
             <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
               <CollapsibleTrigger asChild>
                 <Button
@@ -398,15 +399,15 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
                 </TooltipProvider>
               </CollapsibleContent>
             </Collapsible>
-          )}
+          )}</FinancialGuard>
 
           {/* Show total with plus shipping note when collapsed for fulfillment */}
-          {type === 'fulfillment' && hasLineItems && !isExpanded && (
+          <FinancialGuard kind="revenue">{type === 'fulfillment' && hasLineItems && !isExpanded && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               {formatCurrency(grandTotal)}
               {!hasLabel && <span className="text-muted-foreground">(Plus Shipping)</span>}
             </div>
-          )}
+          )}</FinancialGuard>
 
           <div className="flex gap-2 mt-3">
             {type === 'production' && (

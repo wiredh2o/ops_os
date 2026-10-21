@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -181,7 +182,7 @@ interface CustomerOrderCardProps {
           </div>
 
           {/* Expandable Details */}
-          {order.line_items && order.line_items.length > 0 && (
+          <FinancialGuard kind="revenue">{order.line_items && order.line_items.length > 0 && (
             <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
               <CollapsibleTrigger asChild>
                 <Button
@@ -240,15 +241,15 @@ interface CustomerOrderCardProps {
                 </div>
               </CollapsibleContent>
             </Collapsible>
-          )}
+          )}</FinancialGuard>
 
           {/* Total when collapsed */}
-          {!isExpanded && (
+          <FinancialGuard kind="revenue">{!isExpanded && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               {formatCurrency(order.order_total + order.tax_amount)}
               <span className="text-muted-foreground">(Plus Shipping)</span>
             </div>
-          )}
+          )}</FinancialGuard>
 
           {/* Notes */}
           {order.notes && (

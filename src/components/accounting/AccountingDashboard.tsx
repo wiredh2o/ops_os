@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -179,7 +180,7 @@ export const AccountingDashboard = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalAssets)}</div>
+            <div className="text-2xl font-bold text-green-600"><FinancialGuard kind="margin">{formatCurrency(totalAssets)}</FinancialGuard></div>
           </CardContent>
         </Card>
 
@@ -189,7 +190,7 @@ export const AccountingDashboard = () => {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{formatCurrency(totalLiabilities)}</div>
+            <div className="text-2xl font-bold text-red-600"><FinancialGuard kind="margin">{formatCurrency(totalLiabilities)}</FinancialGuard></div>
           </CardContent>
         </Card>
 
@@ -200,7 +201,7 @@ export const AccountingDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${netWorth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(netWorth)}
+              <FinancialGuard kind="margin">{formatCurrency(netWorth)}</FinancialGuard>
             </div>
           </CardContent>
         </Card>
@@ -228,7 +229,7 @@ export const AccountingDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredAccounts.map((account) => (
+                <FinancialGuard kind="margin">{filteredAccounts.map((account) => (
                   <div key={account.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       <FieldGuard 
@@ -285,7 +286,7 @@ export const AccountingDashboard = () => {
                       </FieldGuard>
                     </div>
                   </div>
-                ))}
+                ))}</FinancialGuard>
               </div>
             </CardContent>
           </Card>
@@ -298,7 +299,7 @@ export const AccountingDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredTransactions.map((transaction) => (
+                <FinancialGuard kind="margin">{filteredTransactions.map((transaction) => (
                   <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className="text-sm text-muted-foreground">
@@ -331,7 +332,7 @@ export const AccountingDashboard = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                ))}</FinancialGuard>
                 {filteredTransactions.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     No transactions found

@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -215,7 +216,7 @@ export function PurchaseOrderManagement() {
               <DollarSign className="h-8 w-8 text-green-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-muted-foreground">Total Value</p>
-                <p className="text-2xl font-bold">{formatCurrency(stats.totalValue)}</p>
+                <p className="text-2xl font-bold"><FinancialGuard kind="supplier_price">{formatCurrency(stats.totalValue)}</FinancialGuard></p>
               </div>
             </div>
           </CardContent>
@@ -275,7 +276,7 @@ export function PurchaseOrderManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredPOs.map((po) => (
+                <FinancialGuard kind="supplier_price">{filteredPOs.map((po) => (
                   <Card key={po.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
@@ -336,7 +337,7 @@ export function PurchaseOrderManagement() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                ))}</FinancialGuard>
                 {filteredPOs.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">
                     No purchase orders found
