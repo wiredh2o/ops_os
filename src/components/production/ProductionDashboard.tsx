@@ -4,17 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PackageCheck, Truck, RefreshCw, Plus, Wrench, Trash2, Loader2, ShoppingCart } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { PackageCheck, Truck, RefreshCw, Plus, Wrench, ShoppingCart, Archive } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { EnhancedProductionOrderForm } from './EnhancedProductionOrderForm';
 import { RepairOrderForm } from './RepairOrderForm';
@@ -32,6 +22,11 @@ import { PendingSerialsDashboardWidget } from './PendingSerialsDashboardWidget';
 import { getCurrentTaxRate } from '@/lib/tax-utils';
 
 import { OrderLineItem } from './KanbanCard';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { readQueueRelations } from '@/lib/queue-data';
+import { isShippingArchived, matchesArchiveFilter, SHIPPING_QUEUE_STATUSES } from '@/lib/queue-lifecycle';
 
 interface KanbanOrder {
   id: string;
@@ -53,6 +48,8 @@ interface KanbanOrder {
   payment_status?: string;
   payment_terms?: string;
   label_created_at?: string;
+  picked_up_at?: string | null;
+  customer_company_id?: string | null;
 }
 
 
@@ -67,8 +64,10 @@ export const ProductionDashboard = () => {
   const [showShipModal, setShowShipModal] = useState(false);
   const [selectedOrderToShip, setSelectedOrderToShip] = useState<KanbanOrder | null>(null);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
-  const [showResetAllConfirm, setShowResetAllConfirm] = useState(false);
-  const [resettingAll, setResettingAll] = useState(false);
+  const [archivedShippingOrders, setArchivedShippingOrders] = useState<KanbanOrder[]>([]);
+  const [shippingView, setShippingView] = useState('active');
+  const [archiveSearch, setArchiveSearch] = useState('');
+  const [archiveCustomer, setArchiveCustomer] = useState('all');
   const [showFulfillModal, setShowFulfillModal] = useState(false);
   const [selectedCustomerOrder, setSelectedCustomerOrder] = useState<CustomerOrderSummary | null>(null);
   const [showCustomerOrderForm, setShowCustomerOrderForm] = useState(false);
@@ -103,6 +102,7 @@ export const ProductionDashboard = () => {
         { event: '*', schema: 'public', table: 'customer_order_items' }, 
         fetchKanbanData
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'production_order_shipments' }, fetchKanbanData)
       .subscribe();
 
     // Listen for shipping order created events
@@ -127,7 +127,21 @@ export const ProductionDashboard = () => {
       const [buildRes, subBuildRes, shipRes, customerOrdersRes, taxRate] = await Promise.all([
         supabase.rpc('get_ready_to_build_production_orders'),
         supabase.rpc('get_ready_to_build_subassembly_orders'),
-        supabase.rpc('get_ready_to_ship_customer_orders'),
+        (async () => {
+          const orders = [];
+          for (let from = 0; ; from += 1000) {
+            const { data, error } = await supabase.from('production_orders')
+              .select('id, order_number, customer_name, created_at, priority, status, total_amount, notes, customer_email, customer_phone, shipping_preference, store_at_point_of_use, customer_po, picked_up_at, customer_company_id')
+              .in('order_type', ['customer', 'repair'])
+              .neq('status', 'cancelled')
+              .or(`status.in.(${SHIPPING_QUEUE_STATUSES.join(',')}),picked_up_at.not.is.null`)
+              .order('created_at', { ascending: true }).order('id')
+              .range(from, from + 999);
+            if (error) return { data: null, error };
+            orders.push(...(data || []));
+            if ((data || []).length < 1000) return { data: orders, error: null };
+          }
+        })(),
         supabase
           .from('customer_orders')
           .select(`
@@ -257,26 +271,26 @@ export const ProductionDashboard = () => {
       if (shippingOrders.length > 0) {
         const orderIds = shippingOrders.map((o: KanbanOrder) => o.id);
         
-        const { data: lineItems } = await supabase
+        const lineItems = await readQueueRelations(orderIds, (ids, from, to) => supabase
           .from('production_order_items')
           .select('id, production_order_id, item_name, item_sku, quantity, unit_price, total_price, is_taxable, tax_amount, repair_item_id')
-          .in('production_order_id', orderIds);
+          .in('production_order_id', ids).order('id').range(from, to));
         
         // Fetch order details including shipping cost, payment status, and label_created_at
-        const { data: orderDetails } = await supabase
+        const orderDetails = await readQueueRelations(orderIds, (ids, from, to) => supabase
           .from('production_orders')
           .select('id, shipping_cost, payment_status, label_created_at, customer_company_id')
-          .in('id', orderIds);
+          .in('id', ids).order('id').range(from, to));
 
         // Fetch company payment terms for the orders
         const companyIds = [...new Set(orderDetails?.filter(od => od.customer_company_id).map(od => od.customer_company_id) || [])];
         let companyTermsMap: Record<string, string> = {};
         
         if (companyIds.length > 0) {
-          const { data: companies } = await supabase
+          const companies = await readQueueRelations(companyIds.filter((id): id is string => Boolean(id)), (ids, from, to) => supabase
             .from('companies')
             .select('id, payment_terms')
-            .in('id', companyIds);
+            .in('id', ids).order('id').range(from, to));
           
           companyTermsMap = (companies || []).reduce((acc, c) => {
             acc[c.id] = c.payment_terms || 'due_in_advance';
@@ -304,10 +318,10 @@ export const ProductionDashboard = () => {
         }> = {};
         
         if (repairItemIds.length > 0) {
-          const { data: repairItems } = await supabase
+          const repairItems = await readQueueRelations(repairItemIds.filter((id): id is string => Boolean(id)), (ids, from, to) => supabase
             .from('repair_items')
             .select('id, item_name, serial_number, mac_address, problem_reported, package_id, diagnosis, diagnosis_assessment, completion_outcome, estimated_cost, status')
-            .in('id', repairItemIds);
+            .in('id', ids).order('id').range(from, to));
           
           // Fetch assigned_tray from inbound_packages for each repair item's package
           const packageIds = [...new Set(repairItems?.filter(ri => ri.package_id).map(ri => ri.package_id) || [])];
@@ -315,10 +329,10 @@ export const ProductionDashboard = () => {
           let packageItemCountMap: Record<string, number> = {};
           
           if (packageIds.length > 0) {
-            const { data: packages } = await supabase
+            const packages = await readQueueRelations(packageIds.filter((id): id is string => Boolean(id)), (ids, from, to) => supabase
               .from('inbound_packages')
               .select('id, assigned_tray')
-              .in('id', packageIds);
+              .in('id', ids).order('id').range(from, to));
             
             packageTrayMap = (packages || []).reduce((acc, pkg) => {
               acc[pkg.id] = pkg.assigned_tray;
@@ -326,10 +340,10 @@ export const ProductionDashboard = () => {
             }, {} as Record<string, string | null>);
 
             // Fetch all package items to get unboxing_order and count per package
-            const { data: packageItems } = await supabase
+            const packageItems = await readQueueRelations(packageIds.filter((id): id is string => Boolean(id)), (ids, from, to) => supabase
               .from('inbound_package_items')
               .select('repair_item_id, package_id, unboxing_order')
-              .in('package_id', packageIds);
+              .in('package_id', ids).order('id').range(from, to));
 
             // Build unboxing order map and count items per package
             const unboxingOrderMap: Record<string, number | null> = {};
@@ -386,9 +400,11 @@ export const ProductionDashboard = () => {
           };
         });
         
-        setReadyToShipOrders(ordersWithItems);
+        setReadyToShipOrders(ordersWithItems.filter(order => !isShippingArchived(order)));
+        setArchivedShippingOrders(ordersWithItems.filter(isShippingArchived));
       } else {
         setReadyToShipOrders([]);
+        setArchivedShippingOrders([]);
       }
     } catch (error: any) {
       toast({
@@ -469,120 +485,10 @@ export const ProductionDashboard = () => {
      setDeleteCustomerOrderId(orderId);
    };
 
-  const handleResetAllShipping = async () => {
-    setResettingAll(true);
-    try {
-      // 1. Fetch ALL shipping orders
-      const { data: shippingOrders, error: fetchError } = await supabase
-        .from('production_orders')
-        .select('id, fedex_tracking_number, fedex_label_url, order_type, status');
-
-      if (fetchError) throw fetchError;
-
-      if (!shippingOrders || shippingOrders.length === 0) {
-        toast({
-          title: 'No orders to reset',
-          description: 'There are no shipping orders in the system',
-        });
-        setShowResetAllConfirm(false);
-        setResettingAll(false);
-        return;
-      }
-
-      let voidedLabels = 0;
-      let deletedOrders = 0;
-      let resetItems = 0;
-
-      // 2. For each order with a tracking number, void the FedEx label
-      for (const order of shippingOrders) {
-        if (order.fedex_tracking_number) {
-          try {
-            await supabase.functions.invoke('void-fedex-shipment', {
-              body: {
-                tracking_number: order.fedex_tracking_number,
-                order_id: order.id,
-              },
-            });
-            voidedLabels++;
-          } catch (voidError) {
-            console.error('Error voiding label for order:', order.id, voidError);
-          }
-        }
-
-        // Delete label from storage if exists
-        if (order.fedex_label_url) {
-          try {
-            await supabase.storage
-              .from('shipping-labels')
-              .remove([order.fedex_label_url]);
-          } catch (deleteError) {
-            console.error('Error deleting label file:', deleteError);
-          }
-        }
-      }
-
-      // 3. Get all repair_item_ids from production_order_items
-      const orderIds = shippingOrders.map(o => o.id);
-      const { data: orderItems } = await supabase
-        .from('production_order_items')
-        .select('repair_item_id')
-        .in('production_order_id', orderIds);
-
-      const repairItemIds = (orderItems || [])
-        .filter(i => i.repair_item_id)
-        .map(i => i.repair_item_id) as string[];
-
-      // 4. Reset all repair items to 'completed' status
-      if (repairItemIds.length > 0) {
-        const { error: updateError } = await supabase
-          .from('repair_items')
-          .update({ 
-            status: 'completed',
-            completion_outcome: 'repaired'
-          })
-          .in('id', repairItemIds);
-
-        if (!updateError) {
-          resetItems = repairItemIds.length;
-        }
-      }
-
-      // 5. Delete all production_order_items for these orders
-      await supabase
-        .from('production_order_items')
-        .delete()
-        .in('production_order_id', orderIds);
-
-      // 6. Delete all the production_orders themselves
-      const { error: deleteOrdersError } = await supabase
-        .from('production_orders')
-        .delete()
-        .in('id', orderIds);
-
-      if (deleteOrdersError) throw deleteOrdersError;
-      deletedOrders = orderIds.length;
-
-      // 7. Dispatch refresh events
-      window.dispatchEvent(new CustomEvent('repair-item-updated'));
-      fetchKanbanData();
-
-      toast({
-        title: 'Reset Complete',
-        description: `Deleted ${deletedOrders} orders, voided ${voidedLabels} labels, reset ${resetItems} repair items`,
-      });
-
-      setShowResetAllConfirm(false);
-    } catch (error: any) {
-      console.error('Error resetting shipping:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to reset shipping: ' + error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setResettingAll(false);
-    }
-  };
+  const shippingCustomers = [...new Map(archivedShippingOrders.filter(order => order.customer_company_id).map(order => [order.customer_company_id, order.customer_name])).entries()];
+  const displayedShippingOrders = shippingView === 'active' ? readyToShipOrders : archivedShippingOrders.filter(order =>
+    matchesArchiveFilter(order.customer_company_id, archiveCustomer, archiveSearch, [order.customer_name, order.order_number, order.customer_po, order.notes, ...(order.line_items || []).flatMap(item => [item.item_name, item.item_sku])])
+  );
 
   if (loading) {
     return (
@@ -821,15 +727,6 @@ export const ProductionDashboard = () => {
                 Shipping Queue
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => setShowResetAllConfirm(true)}
-                >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  Reset All
-                </Button>
                 <Badge variant="secondary">{readyToShipOrders.length} orders</Badge>
               </div>
             </div>
@@ -837,23 +734,31 @@ export const ProductionDashboard = () => {
               Customer orders ready to ship (FIFO by order date)
             </p>
           </CardHeader>
-          <CardContent className="space-y-0">
-            {readyToShipOrders.length === 0 ? (
+          <CardContent className="space-y-2">
+            <Tabs value={shippingView} onValueChange={setShippingView}>
+              <TabsList className="w-full"><TabsTrigger value="active">Active</TabsTrigger><TabsTrigger value="archive"><Archive className="mr-1 h-4 w-4" />Archive</TabsTrigger></TabsList>
+            </Tabs>
+            {shippingView === 'archive' && <div className="space-y-2">
+              <Input aria-label="Search shipping archive" placeholder="Search archive…" value={archiveSearch} onChange={event => setArchiveSearch(event.target.value)} />
+              <Select value={archiveCustomer} onValueChange={setArchiveCustomer}><SelectTrigger aria-label="Shipping archive customer"><SelectValue placeholder="All customers" /></SelectTrigger><SelectContent><SelectItem value="all">All customers</SelectItem>{shippingCustomers.map(([id, name]) => id && <SelectItem key={id} value={id}>{name}</SelectItem>)}</SelectContent></Select>
+            </div>}
+            {displayedShippingOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <Truck className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No orders ready to ship</h3>
+                <h3 className="text-lg font-semibold mb-2">{shippingView === 'archive' ? 'No matching archived shipments' : 'No orders ready to ship'}</h3>
                 <p className="text-muted-foreground">
                   Orders will appear here based on their shipping preference and inventory availability
                 </p>
               </div>
             ) : (
-              readyToShipOrders.map((order) => (
+              displayedShippingOrders.map((order) => (
                 <KanbanCard
                   key={order.id}
                   order={order}
                   type="fulfillment"
                   onAction={handleFulfillmentAction}
-                  onDelete={handleDeleteOrder}
+                  archived={shippingView === 'archive'}
+                  onDelete={shippingView === 'active' ? handleDeleteOrder : undefined}
                 />
               ))
             )}
@@ -910,52 +815,6 @@ export const ProductionDashboard = () => {
           }}
         />
       )}
-
-      {/* Reset All Shipping Confirmation Dialog */}
-      <AlertDialog open={showResetAllConfirm} onOpenChange={setShowResetAllConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="h-5 w-5" />
-              Reset All Shipping Orders (Debug)
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>
-                This will <strong>permanently delete ALL shipping orders</strong> in the system. This action cannot be undone.
-              </p>
-              <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-sm space-y-1">
-                <p><strong>What will happen:</strong></p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>All FedEx shipping labels will be voided</li>
-                  <li>All label files will be deleted from storage</li>
-                  <li>All repair items will be reset to "Completed" status</li>
-                  <li>All production orders will be deleted</li>
-                </ul>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={resettingAll}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleResetAllShipping();
-              }}
-              disabled={resettingAll}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {resettingAll ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Resetting...
-                </>
-              ) : (
-                'Reset All Shipping'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Fulfill Customer Order Modal */}
       {showFulfillModal && selectedCustomerOrder && (

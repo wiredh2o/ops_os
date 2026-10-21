@@ -74,11 +74,12 @@ interface KanbanCardProps {
     preferred_shipping_carrier?: string;
   };
   type: 'production' | 'fulfillment';
+  archived?: boolean;
   onAction: (orderId: string, action: string) => void;
   onDelete?: (orderId: string) => void;
 }
 
-export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps) => {
+export const KanbanCard = ({ order, type, onAction, onDelete, archived = false }: KanbanCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedRepairItem, setSelectedRepairItem] = useState<RepairItemData | null>(null);
   const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
@@ -435,7 +436,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
               </>
             )}
             
-            {type === 'fulfillment' && (
+            {type === 'fulfillment' && !archived && (
               <Button 
                 size="sm" 
                 variant="default" 
