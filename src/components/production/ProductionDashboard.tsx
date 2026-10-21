@@ -25,6 +25,7 @@ import { OrderLineItem } from './KanbanCard';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { readQueueRelations } from '@/lib/queue-data';
 import { isShippingArchived, matchesArchiveFilter } from '@/lib/queue-lifecycle';
 
 interface KanbanOrder {
@@ -269,26 +270,26 @@ export const ProductionDashboard = () => {
       if (shippingOrders.length > 0) {
         const orderIds = shippingOrders.map((o: KanbanOrder) => o.id);
         
-        const { data: lineItems } = await supabase
+        const lineItems = await readQueueRelations(orderIds, (ids, from, to) => supabase
           .from('production_order_items')
           .select('id, production_order_id, item_name, item_sku, quantity, unit_price, total_price, is_taxable, tax_amount, repair_item_id')
-          .in('production_order_id', orderIds);
+          .in('production_order_id', ids).order('id').range(from, to));
         
         // Fetch order details including shipping cost, payment status, and label_created_at
-        const { data: orderDetails } = await supabase
+        const orderDetails = await readQueueRelations(orderIds, (ids, from, to) => supabase
           .from('production_orders')
           .select('id, shipping_cost, payment_status, label_created_at, customer_company_id')
-          .in('id', orderIds);
+          .in('id', ids).order('id').range(from, to));
 
         // Fetch company payment terms for the orders
         const companyIds = [...new Set(orderDetails?.filter(od => od.customer_company_id).map(od => od.customer_company_id) || [])];
         let companyTermsMap: Record<string, string> = {};
         
         if (companyIds.length > 0) {
-          const { data: companies } = await supabase
+          const companies = await readQueueRelations(companyIds.filter((id): id is string => Boolean(id)), (ids, from, to) => supabase
             .from('companies')
             .select('id, payment_terms')
-            .in('id', companyIds);
+            .in('id', ids).order('id').range(from, to));
           
           companyTermsMap = (companies || []).reduce((acc, c) => {
             acc[c.id] = c.payment_terms || 'due_in_advance';
@@ -316,10 +317,10 @@ export const ProductionDashboard = () => {
         }> = {};
         
         if (repairItemIds.length > 0) {
-          const { data: repairItems } = await supabase
+          const repairItems = await readQueueRelations(repairItemIds.filter((id): id is string => Boolean(id)), (ids, from, to) => supabase
             .from('repair_items')
             .select('id, item_name, serial_number, mac_address, problem_reported, package_id, diagnosis, diagnosis_assessment, completion_outcome, estimated_cost, status')
-            .in('id', repairItemIds);
+            .in('id', ids).order('id').range(from, to));
           
           // Fetch assigned_tray from inbound_packages for each repair item's package
           const packageIds = [...new Set(repairItems?.filter(ri => ri.package_id).map(ri => ri.package_id) || [])];
@@ -327,10 +328,10 @@ export const ProductionDashboard = () => {
           let packageItemCountMap: Record<string, number> = {};
           
           if (packageIds.length > 0) {
-            const { data: packages } = await supabase
+            const packages = await readQueueRelations(packageIds.filter((id): id is string => Boolean(id)), (ids, from, to) => supabase
               .from('inbound_packages')
               .select('id, assigned_tray')
-              .in('id', packageIds);
+              .in('id', ids).order('id').range(from, to));
             
             packageTrayMap = (packages || []).reduce((acc, pkg) => {
               acc[pkg.id] = pkg.assigned_tray;
@@ -338,10 +339,10 @@ export const ProductionDashboard = () => {
             }, {} as Record<string, string | null>);
 
             // Fetch all package items to get unboxing_order and count per package
-            const { data: packageItems } = await supabase
+            const packageItems = await readQueueRelations(packageIds.filter((id): id is string => Boolean(id)), (ids, from, to) => supabase
               .from('inbound_package_items')
               .select('repair_item_id, package_id, unboxing_order')
-              .in('package_id', packageIds);
+              .in('package_id', ids).order('id').range(from, to));
 
             // Build unboxing order map and count items per package
             const unboxingOrderMap: Record<string, number | null> = {};

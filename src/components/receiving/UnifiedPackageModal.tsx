@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { readQueuePages, readQueueRelations } from '@/lib/queue-data';
 import { isRepairPackageArchived, isRepairItemResolved } from '@/lib/queue-lifecycle';
 import type { InboundPackage } from "./InboundPackageCard";
 
@@ -48,16 +49,15 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
     setResolutionLoading(true);
     const loadItems = async () => {
       try {
-        const { data: links, error: linksError } = await supabase.from('inbound_package_items').select('repair_item_id').eq('package_id', pkg.id);
-        if (linksError) throw linksError;
+        const links = await readQueuePages((from, to) => supabase.from('inbound_package_items').select('repair_item_id').eq('package_id', pkg.id).order('id').range(from, to));
         const ids = (links || []).map(link => link.repair_item_id).filter((id): id is string => Boolean(id));
         const [direct, linked] = await Promise.all([
-          supabase.from('repair_items').select('id, status, completion_outcome').eq('package_id', pkg.id),
-          ids.length ? supabase.from('repair_items').select('id, status, completion_outcome').in('id', ids) : Promise.resolve({ data: [], error: null }),
+          readQueuePages((from, to) => supabase.from('repair_items').select('id, status, completion_outcome').eq('package_id', pkg.id).order('id').range(from, to)),
+          readQueueRelations(ids, (batch, from, to) => supabase.from('repair_items').select('id, status, completion_outcome').in('id', batch).order('id').range(from, to)),
         ]);
-        if (direct.error) throw direct.error;
-        if (linked.error) throw linked.error;
-        if (!cancelled) setPackageItems([...new Map([...(direct.data || []), ...(linked.data || [])].map(item => [item.id, item])).values()]);
+        const items = [...new Map([...direct, ...linked].map(item => [item.id, item])).values()];
+        if (ids.some(id => !items.some(item => item.id === id))) throw new Error('Missing linked repair items');
+        if (!cancelled) setPackageItems(items);
       } catch (error) {
         if (!cancelled) setPackageItems([]);
       } finally { if (!cancelled) setResolutionLoading(false); }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { InboundPackageCard, InboundPackage, RepairItemSummary } from "./InboundPackageCard";
 import { filterRepairQueuePackages } from "@/lib/repair-queue-filter";
+import { readQueuePages, readQueueRelations } from '@/lib/queue-data';
 import { isRepairPackageArchived, matchesArchiveFilter } from '@/lib/queue-lifecycle';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -43,7 +44,7 @@ export const RepairOrderQueueKanban: React.FC<{ fullWidth?: boolean }> = ({ full
       setLoading(true);
       console.log("RepairOrderQueueKanban: Starting data fetch at", new Date().toISOString());
       
-      const { data: pkgs, error } = await supabase
+      const pkgs = await readQueuePages((from, to) => supabase
         .from("inbound_packages")
         .select(`
           id, tracking_number, status, intake_notes, item_count, created_at, received_at, initiated_via, company_id, shipping_preference, assigned_tray,
@@ -51,9 +52,7 @@ export const RepairOrderQueueKanban: React.FC<{ fullWidth?: boolean }> = ({ full
         `)
         .eq("initiated_via", "repair")
         .not("company_id", "is", null)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
+        .order("created_at", { ascending: false }).order("id").range(from, to));
       console.log("RepairOrderQueueKanban: Packages fetched:", pkgs?.length);
 
       // Don't set packages here - we'll filter them after fetching items
@@ -65,22 +64,16 @@ export const RepairOrderQueueKanban: React.FC<{ fullWidth?: boolean }> = ({ full
         return;
       }
 
-      const { data: links, error: linkErr } = await supabase
-        .from("inbound_package_items")
-        .select("package_id, repair_item_id, unboxing_order")
-        .in("package_id", pkgIds as string[]);
-      if (linkErr) throw linkErr;
-      console.log("RepairOrderQueueKanban: Package items links fetched:", links?.length);
+      const links = await readQueueRelations(pkgIds, (ids, from, to) => supabase.from('inbound_package_items').select('package_id, repair_item_id, unboxing_order').in('package_id', ids).order('id').range(from, to));
 
       const itemIds = Array.from(new Set((links || []).map(link => link.repair_item_id).filter((id): id is string => Boolean(id))));
       const grouped: Record<string, RepairItemSummary[]> = {};
-      const [directResult, linkedResult] = await Promise.all([
-        supabase.from('repair_items').select('*').in('package_id', pkgIds),
-        itemIds.length ? supabase.from('repair_items').select('*').in('id', itemIds) : Promise.resolve({ data: [], error: null }),
+      const [directItems, linkedItems] = await Promise.all([
+        readQueueRelations(pkgIds, (ids, from, to) => supabase.from('repair_items').select('*').in('package_id', ids).order('id').range(from, to)),
+        readQueueRelations(itemIds, (ids, from, to) => supabase.from('repair_items').select('*').in('id', ids).order('id').range(from, to)),
       ]);
-      if (directResult.error) throw directResult.error;
-      if (linkedResult.error) throw linkedResult.error;
-      const allItems = [...new Map([...(directResult.data || []), ...(linkedResult.data || [])].map(item => [item.id, item])).values()];
+      const allItems = [...new Map([...directItems, ...linkedItems].map(item => [item.id, item])).values()];
+      if (itemIds.some(id => !allItems.some(item => item.id === id))) throw new Error('Unable to load every linked repair item. Please refresh.');
       for (const pkg of pkgs || []) {
         const packageLinks = (links || []).filter(link => link.package_id === pkg.id);
         grouped[pkg.id] = sortItemsByNumber(allItems.filter(item => item.package_id === pkg.id || packageLinks.some(link => link.repair_item_id === item.id)).map(item => ({
