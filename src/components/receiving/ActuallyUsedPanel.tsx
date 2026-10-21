@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
-import { getCurrentTaxRate } from "@/lib/tax-utils";
 import { Package, ShoppingCart, Search, Minus, Trash2, Wrench, Box, Plus, Copy } from "lucide-react";
 
 interface RepairItem {
@@ -51,12 +50,9 @@ export const ActuallyUsedPanel: React.FC<ActuallyUsedPanelProps> = ({
   const [showQuantityInput, setShowQuantityInput] = useState<string | null>(null);
   const [tempQuantity, setTempQuantity] = useState("1");
   const [loading, setLoading] = useState(true);
-  const [taxRate, setTaxRate] = useState(0);
   const { toast } = useToast();
 
-  // Fetch tax rate on mount
   useEffect(() => {
-    getCurrentTaxRate().then(setTaxRate);
   }, []);
 
   // Load available items and existing actuals
@@ -486,11 +482,7 @@ export const ActuallyUsedPanel: React.FC<ActuallyUsedPanelProps> = ({
             </div>
             {cartItems.length > 0 && (() => {
               const subtotal = cartItems.reduce((sum, item) => sum + item.total, 0);
-              const taxableSubtotal = customerIsTaxable 
-                ? cartItems.filter(item => item.isTaxable !== false).reduce((sum, item) => sum + item.total, 0)
-                : 0;
-              const taxAmount = (taxableSubtotal * taxRate) / 100;
-              const total = subtotal + taxAmount;
+              const total = subtotal; // Sales tax is set per jurisdiction on the invoice
               
               return (
                 <div className="mt-2 pt-2 border-t space-y-0.5">
@@ -500,14 +492,14 @@ export const ActuallyUsedPanel: React.FC<ActuallyUsedPanelProps> = ({
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Tax:</span>
-                    <span><FinancialGuard kind="revenue">{formatCurrency(taxAmount)}</FinancialGuard></span>
+                    <span className="text-muted-foreground italic">Calculated on invoice</span>
                   </div>
                   <div className="flex justify-between text-sm font-semibold pt-1">
                     <span>Total:</span>
                     <span><FinancialGuard kind="revenue">{formatCurrency(total)}</FinancialGuard></span>
                   </div>
                   <div className="text-xs text-muted-foreground text-right mt-0.5">
-                    Plus shipping
+                    Plus tax & shipping
                   </div>
                 </div>
               );

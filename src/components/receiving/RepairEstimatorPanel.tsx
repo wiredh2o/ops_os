@@ -9,7 +9,6 @@ import { Search, Plus, Minus, Trash2, Package, Wrench, Box } from "lucide-react"
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
-import { getCurrentTaxRate } from "@/lib/tax-utils";
 import { useCompanies } from "@/hooks/useCompanies";
 
 interface RepairItem {
@@ -45,7 +44,6 @@ export const RepairEstimatorPanel: React.FC<RepairEstimatorPanelProps> = ({
   const [draggedItem, setDraggedItem] = useState<RepairItem | null>(null);
   const [showQuantityInput, setShowQuantityInput] = useState<string | null>(null);
   const [tempQuantity, setTempQuantity] = useState("1");
-  const [taxRate, setTaxRate] = useState(0);
   const { toast } = useToast();
   const { data: companies } = useCompanies();
 
@@ -54,7 +52,6 @@ export const RepairEstimatorPanel: React.FC<RepairEstimatorPanelProps> = ({
 
   useEffect(() => {
     fetchAvailableItems();
-    getCurrentTaxRate().then(setTaxRate);
   }, []);
 
   useEffect(() => {
@@ -298,11 +295,7 @@ export const RepairEstimatorPanel: React.FC<RepairEstimatorPanelProps> = ({
           </div>
           {cartItems.length > 0 && (() => {
             const subtotal = cartItems.reduce((sum, item) => sum + item.total, 0);
-            const taxableSubtotal = customerIsTaxable 
-              ? cartItems.filter(item => item.isTaxable !== false).reduce((sum, item) => sum + item.total, 0)
-              : 0;
-            const taxAmount = (taxableSubtotal * taxRate) / 100;
-            const total = subtotal + taxAmount;
+            const total = subtotal; // Sales tax is set per jurisdiction on the invoice
             
             return (
               <div className="mt-2 pt-2 border-t space-y-0.5">
@@ -312,14 +305,14 @@ export const RepairEstimatorPanel: React.FC<RepairEstimatorPanelProps> = ({
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Tax:</span>
-                  <span><FinancialGuard kind="revenue">{formatCurrency(taxAmount)}</FinancialGuard></span>
+                  <span className="text-muted-foreground italic">Calculated on invoice</span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold pt-1">
                   <span>Total:</span>
                   <span><FinancialGuard kind="revenue">{formatCurrency(total)}</FinancialGuard></span>
                 </div>
                 <div className="text-xs text-muted-foreground text-right mt-0.5">
-                  Plus shipping
+                  Plus tax & shipping
                 </div>
                 {discountRate > 0 && (
                   <div className="text-xs text-muted-foreground text-right">
