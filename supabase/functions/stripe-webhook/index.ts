@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { queueContactNotification } from '../_shared/notification-outbox.ts';
+import { queuePaymentFailure } from '../_shared/payment-failure-notification.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -115,13 +115,9 @@ serve(async (req) => {
 
     if (['invoice.payment_failed', 'payment_intent.payment_failed', 'checkout.session.async_payment_failed'].includes(event.type)) {
       const failed = event.data.object;
-      const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const email = failed.customer_email || failed.receipt_email || failed.last_payment_error?.payment_method?.billing_details?.email;
-      if (email) await queueContactNotification(email, 'email', 'Failed payment', '<table role="presentation"><tr><td>Your payment failed. Please update your payment method or contact us.</td></tr></table>', 'failed_payment', `stripe-failure:${event.id}`);
-      else if (failed.metadata?.order_id) {
-        const { data: order } = await db.from('production_orders').select('customer_email').eq('id', failed.metadata.order_id).maybeSingle();
-        if (order?.customer_email) await queueContactNotification(order.customer_email, 'email', 'Failed payment', '<table role="presentation"><tr><td>Your payment failed. Please update your payment method or contact us.</td></tr></table>', 'failed_payment', `stripe-failure:${event.id}`);
-      }
+      const paymentId = failed.payment_intent?.id || failed.payment_intent || (event.type === 'payment_intent.payment_failed' ? failed.id : event.id);
+      await queuePaymentFailure({ email, orderId: failed.metadata?.order_id, customerId: typeof failed.customer === 'string' ? failed.customer : failed.customer?.id, eventKey: `payment-failed:${paymentId}` });
       return new Response(JSON.stringify({ received: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
