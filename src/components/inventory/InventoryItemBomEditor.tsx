@@ -239,8 +239,8 @@ export const InventoryItemBomEditor = ({
                             {component.component_item_id ? (
                               <span className="truncate">
                                 {component.component_sku}
-                                <FinancialGuard kind="supplier_price">{component.component_description &&
-                                  ` - ${component.component_description}`}</FinancialGuard>
+                                {component.component_description &&
+                                  ` - ${component.component_description}`}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">
@@ -276,8 +276,8 @@ export const InventoryItemBomEditor = ({
                                     />
                                     <span className="truncate">
                                       {item.sku}
-                                      <FinancialGuard kind="supplier_price">{item.sales_description &&
-                                        ` - ${item.sales_description}`}</FinancialGuard>
+                                      {item.sales_description &&
+                                        ` - ${item.sales_description}`}
                                     </span>
                                   </CommandItem>
                                 ))}

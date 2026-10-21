@@ -399,7 +399,7 @@ export const InventoryManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <FinancialGuard kind="revenue">{filteredItems.map((item) => (
+                {filteredItems.map((item) => (
                   <TableRow key={item.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{item.sku}</TableCell>
                     <TableCell className="max-w-xs truncate" title={item.description}>
@@ -470,7 +470,7 @@ export const InventoryManagement = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}</FinancialGuard>
+                ))}
               </TableBody>
             </Table>
           </div>
@@ -494,7 +494,7 @@ export const InventoryManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <FinancialGuard kind="revenue">{filteredAssemblies.map((assembly) => (
+                {filteredAssemblies.map((assembly) => (
                   <TableRow key={assembly.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{assembly.sku}</TableCell>
                     <TableCell className="max-w-xs truncate" title={assembly.description}>
@@ -565,7 +565,7 @@ export const InventoryManagement = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}</FinancialGuard>
+                ))}
               </TableBody>
             </Table>
           </div>
@@ -586,7 +586,7 @@ export const InventoryManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <FinancialGuard kind="revenue">{filteredLaborItems.map((item) => (
+                {filteredLaborItems.map((item) => (
                   <TableRow key={item.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{item.item_number}</TableCell>
                     <TableCell>{item.name}</TableCell>
@@ -622,7 +622,7 @@ export const InventoryManagement = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}</FinancialGuard>
+                ))}
               </TableBody>
             </Table>
           </div>

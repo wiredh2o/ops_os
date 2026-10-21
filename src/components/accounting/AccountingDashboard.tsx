@@ -229,7 +229,7 @@ export const AccountingDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <FinancialGuard kind="margin">{filteredAccounts.map((account) => (
+                {filteredAccounts.map((account) => (
                   <div key={account.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       <FieldGuard 
@@ -286,7 +286,7 @@ export const AccountingDashboard = () => {
                       </FieldGuard>
                     </div>
                   </div>
-                ))}</FinancialGuard>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -299,7 +299,7 @@ export const AccountingDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <FinancialGuard kind="margin">{filteredTransactions.map((transaction) => (
+                {filteredTransactions.map((transaction) => (
                   <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className="text-sm text-muted-foreground">
@@ -332,7 +332,7 @@ export const AccountingDashboard = () => {
                       </div>
                     </div>
                   </div>
-                ))}</FinancialGuard>
+                ))}
                 {filteredTransactions.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     No transactions found

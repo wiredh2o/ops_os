@@ -651,7 +651,7 @@ export const EnhancedProductionOrderForm: React.FC<EnhancedProductionOrderFormPr
                             <SelectContent>
                               {salesUoms[item.inventory_item_id].map((uom) => (
                                 <SelectItem key={uom.id} value={uom.id}>
-                                  <FinancialGuard kind="revenue">{uom.description || `${uom.quantity}pc`}</FinancialGuard>
+                                  {uom.description || `${uom.quantity}pc`}
                                 </SelectItem>
                               ))}
                             </SelectContent>

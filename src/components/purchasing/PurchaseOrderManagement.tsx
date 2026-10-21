@@ -276,7 +276,7 @@ export function PurchaseOrderManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <FinancialGuard kind="supplier_price">{filteredPOs.map((po) => (
+                {filteredPOs.map((po) => (
                   <Card key={po.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
@@ -337,7 +337,7 @@ export function PurchaseOrderManagement() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}</FinancialGuard>
+                ))}
                 {filteredPOs.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">
                     No purchase orders found

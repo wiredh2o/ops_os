@@ -1025,7 +1025,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                    <Label>Density (oz/in³)</Label>
                    <div className="p-3 rounded-md border bg-background">
                      <div className="text-sm font-medium">
-                       <FinancialGuard kind="supplier_price">{assembly?.density ? `${assembly.density.toFixed(3)} oz/in³` : 'N/A'}</FinancialGuard>
+                       {assembly?.density ? `${assembly.density.toFixed(3)} oz/in³` : 'N/A'}
                      </div>
                      <p className="text-xs text-muted-foreground mt-1">
                        Auto-calculated: Weight ÷ Volume
@@ -1121,7 +1121,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                     <Label>Packed Density (oz/in³)</Label>
                     <div className="p-3 rounded-md border bg-background">
                       <div className="text-sm font-medium">
-                        <FinancialGuard kind="supplier_price">{assembly?.packed_density ? `${assembly.packed_density.toFixed(3)} oz/in³` : 'N/A'}</FinancialGuard>
+                        {assembly?.packed_density ? `${assembly.packed_density.toFixed(3)} oz/in³` : 'N/A'}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Auto-calculated: Weight ÷ Packed Volume
@@ -1408,10 +1408,10 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                           </Tooltip>
                         </TooltipProvider>
                         <span className="text-sm font-medium">
-                          <FinancialGuard kind="supplier_price">{safetyStockLoading ? "Calculating..." : 
+                          {safetyStockLoading ? "Calculating..." : 
                            safetyStock !== null ? 
                            `${Math.ceil(safetyStock)} units${calculateDaysOfSupply(Math.ceil(safetyStock).toString(), formData.daily_consumption_rate) ? ` (${calculateDaysOfSupply(Math.ceil(safetyStock).toString(), formData.daily_consumption_rate)} days)` : ''}` : 
-                           "N/A"}</FinancialGuard>
+                           "N/A"}
                         </span>
                       </div>
 

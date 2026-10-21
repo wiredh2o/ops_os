@@ -2290,7 +2290,7 @@ function formatDeliveryDate(isoString: string): string {
                         <div className="flex flex-col">
                           <span>{company.name}</span>
                           <span className="text-xs text-muted-foreground">
-                            <FinancialGuard kind="revenue">{company.customer_number && `#${company.customer_number}`}</FinancialGuard>
+                            {company.customer_number && `#${company.customer_number}`}
                             {company.customer_number && company.owners_name && " • "}
                             {company.owners_name}
                           </span>
@@ -2722,7 +2722,7 @@ function formatDeliveryDate(isoString: string): string {
                       <SelectContent className="bg-popover z-50">
                         {availableUoms.map((uom) => (
                           <SelectItem key={uom.id} value={uom.id}>
-                            <FinancialGuard kind="revenue">{uom.description || `${uom.quantity}pc Lot`}</FinancialGuard>
+                            {uom.description || `${uom.quantity}pc Lot`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2855,7 +2855,7 @@ function formatDeliveryDate(isoString: string): string {
             <CollapsibleTrigger className="flex items-center justify-between w-full group cursor-pointer">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs font-semibold">
-                  <FinancialGuard kind="revenue">{savedOrderNumber ? `#${savedOrderNumber}` : "New Order"}</FinancialGuard>
+                  {savedOrderNumber ? `#${savedOrderNumber}` : "New Order"}
                 </Badge>
                 {formData.customer_po && (
                   <Badge variant="secondary" className="text-xs">
@@ -2891,7 +2891,7 @@ function formatDeliveryDate(isoString: string): string {
                       {selectedAddress.name && <p className="font-medium">{selectedAddress.name}</p>}
                       {selectedAddress.address && <p className="text-muted-foreground">{selectedAddress.address}</p>}
                       <p className="text-muted-foreground">
-                        {[selectedAddress.city, selectedAddress.state].filter(Boolean).join(', ')}<FinancialGuard kind="revenue">{selectedAddress.zip ? ` ${selectedAddress.zip}` : ''}</FinancialGuard>
+                        {[selectedAddress.city, selectedAddress.state].filter(Boolean).join(', ')}{selectedAddress.zip ? ` ${selectedAddress.zip}` : ''}
                       </p>
                     </>
                   )}

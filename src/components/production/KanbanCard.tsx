@@ -275,7 +275,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
                   className="w-full justify-start gap-1 p-0 h-auto text-xs text-muted-foreground hover:text-foreground hover:bg-transparent"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <span>Details (<FinancialGuard kind="revenue">{hasGroupedItems ? `${groupedByRepairItem.length} repaired` : `${lineItems.length} items`}</FinancialGuard>)</span>
+                  <span>Details ({hasGroupedItems ? `${groupedByRepairItem.length} repaired` : `${lineItems.length} items`})</span>
                   {isExpanded ? (
                     <ChevronDown className="h-3 w-3" />
                   ) : (

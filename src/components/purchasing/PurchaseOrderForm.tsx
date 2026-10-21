@@ -770,7 +770,7 @@ export function PurchaseOrderForm({ purchaseOrder, suppliers, onClose, onSuccess
                               <SelectContent>
                                 {purchaseUoms[item.inventory_item_id].map((uom) => (
                                   <SelectItem key={uom.id} value={uom.id}>
-                                    <FinancialGuard kind="supplier_price">{`${uom.quantity}pc`}</FinancialGuard>
+                                    {`${uom.quantity}pc`}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
