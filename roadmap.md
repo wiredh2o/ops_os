@@ -1,4 +1,9 @@
 # Tasks
+## Sales tax jurisdictions
+- [ ] Add jurisdiction settings, ZIP assignments, authoritative calculation and order tax snapshots.
+- [ ] Integrate order forms, cards and invoice/receipt tax lines; scoped company visibility.
+- [ ] Add monthly ZIP change review and management for Admin/Accounting.
+- [ ] Test eligibility, precedence, fees and access; identify live checks blocked by external sign-in.
 ## External RMA workflow
 - [x] Add company-scoped requests, staff approval/appointment invitation, and requester status access.
 - [x] Feed issued RMA data into existing receiving packages without rebuilding unboxing or diagnosis.
