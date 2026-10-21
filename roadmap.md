@@ -2,7 +2,7 @@
 ## External notification preferences
 - [ ] Add preferences and company-admin employee locks with server-side enforcement.
 - [ ] Add own preference settings and staff failure list with manual retry.
-- [ ] Integrate existing sends and mandatory account/RMA/payment events; bounded retries and contact blocking.
+- [ ] Integrate existing sends and mandatory account/RMA/payment events; bounded retries and contact blocking — blocked: Resend and Twilio credentials are missing; secure credential request was declined.
 - [ ] Test rules and available end-to-end flows; identify credential/sign-in blockers.
 ## Sales tax jurisdictions
 - [ ] Add jurisdiction settings, ZIP assignments, authoritative calculation and order tax snapshots.
