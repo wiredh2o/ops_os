@@ -5,6 +5,8 @@
 - Staff financial displays use FinancialGuard with independently loaded per-user profile flags; role-level View permissions must never unlock those displays.
 - Queue archives are derived from physical handoff or complete item resolutions without deleting records; shared lifecycle predicates keep queue entry points consistent, and paginated relation reads prevent incomplete archives.
 - External RMAs use authorized company-scoped RPCs and issued inbound packages; receipt updates that package instead of duplicating it, and the existing unboxing and diagnosis flows remain authoritative.
+- Tax jurisdictions and ZIP assignments are authoritative settings; server-side order triggers calculate snapshots, paid invoices lock them, and all displays consume separate tax lines instead of a global rate. Private-schema tax RPC implementations retain role/company checks while public wrappers use invoker permissions.
+- Monthly ZIP comparison uses a free community directory, transactional completeness guards and review alerts; source changes never overwrite ZIP jurisdiction assignments.
 
 ## Backend
 - This project is a remix; it runs on the user's own Supabase project named "Ops_OS" (connected manually in the editor, not from chat). The baked-in client URL may still point at the original project's Supabase — it must be repointed after Ops_OS is connected.

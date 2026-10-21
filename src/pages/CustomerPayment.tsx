@@ -48,6 +48,7 @@ interface OrderData {
   totals: {
     subtotal: number;
     tax: number;
+    tax_lines?: unknown;
     shipping: number;
     total: number;
   };

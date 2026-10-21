@@ -1,6 +1,7 @@
 import React from "react";
 import { RepairPhotosGallery } from "./RepairPhotosGallery";
 import { Separator } from "@/components/ui/separator";
+import { TaxLines } from '@/components/production/TaxLines';
 
 interface OrderDetailsDisplayProps {
   order: {
@@ -44,6 +45,7 @@ interface OrderDetailsDisplayProps {
   totals: {
     subtotal: number;
     tax: number;
+    tax_lines?: unknown;
     shipping: number;
     total: number;
   };
@@ -169,12 +171,7 @@ export function OrderDetailsDisplay({
           <span className="text-muted-foreground">Subtotal</span>
           <span>{formatCurrency(totals.subtotal)}</span>
         </div>
-        {totals.tax > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Tax</span>
-            <span>{formatCurrency(totals.tax)}</span>
-          </div>
-        )}
+        <TaxLines lines={totals.tax_lines} legacyAmount={totals.tax}/>
         {totals.shipping > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Shipping</span>
