@@ -1135,6 +1135,7 @@ export type Database = {
           id: string
           inventory_item_id: string | null
           inventory_sales_uom_id: string | null
+          is_taxable: boolean
           item_type: string
           labor_item_id: string | null
           notes: string | null
@@ -1159,6 +1160,7 @@ export type Database = {
           id?: string
           inventory_item_id?: string | null
           inventory_sales_uom_id?: string | null
+          is_taxable?: boolean
           item_type: string
           labor_item_id?: string | null
           notes?: string | null
@@ -1183,6 +1185,7 @@ export type Database = {
           id?: string
           inventory_item_id?: string | null
           inventory_sales_uom_id?: string | null
+          is_taxable?: boolean
           item_type?: string
           labor_item_id?: string | null
           notes?: string | null
@@ -1298,6 +1301,10 @@ export type Database = {
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
           stripe_payment_method_id: string | null
+          tax_amount: number
+          tax_destination: Json | null
+          tax_lines: Json
+          tax_review_required: boolean
           updated_at: string
         }
         Insert: {
@@ -1335,6 +1342,10 @@ export type Database = {
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
           stripe_payment_method_id?: string | null
+          tax_amount?: number
+          tax_destination?: Json | null
+          tax_lines?: Json
+          tax_review_required?: boolean
           updated_at?: string
         }
         Update: {
@@ -1372,6 +1383,10 @@ export type Database = {
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
           stripe_payment_method_id?: string | null
+          tax_amount?: number
+          tax_destination?: Json | null
+          tax_lines?: Json
+          tax_review_required?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -3006,6 +3021,10 @@ export type Database = {
           store_at_point_of_use: boolean
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
+          tax_amount: number
+          tax_destination: Json | null
+          tax_lines: Json
+          tax_review_required: boolean
           total_amount: number | null
           updated_at: string
         }
@@ -3062,6 +3081,10 @@ export type Database = {
           store_at_point_of_use?: boolean
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          tax_amount?: number
+          tax_destination?: Json | null
+          tax_lines?: Json
+          tax_review_required?: boolean
           total_amount?: number | null
           updated_at?: string
         }
@@ -3118,6 +3141,10 @@ export type Database = {
           store_at_point_of_use?: boolean
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          tax_amount?: number
+          tax_destination?: Json | null
+          tax_lines?: Json
+          tax_review_required?: boolean
           total_amount?: number | null
           updated_at?: string
         }
@@ -4900,6 +4927,204 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_jurisdictions: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          is_taxable: boolean
+          kind: string
+          name: string
+          rate: number | null
+          shipment_fee: number
+          state: string
+          tax_shipping: boolean
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_taxable?: boolean
+          kind: string
+          name: string
+          rate?: number | null
+          shipment_fee?: number
+          state: string
+          tax_shipping?: boolean
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_taxable?: boolean
+          kind?: string
+          name?: string
+          rate?: number | null
+          shipment_fee?: number
+          state?: string
+          tax_shipping?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tax_zip_changes: {
+        Row: {
+          change_type: string
+          created_at: string
+          detected_at: string
+          id: string
+          resolved_at: string | null
+          state: string
+          updated_at: string
+          zip: string
+        }
+        Insert: {
+          change_type: string
+          created_at?: string
+          detected_at?: string
+          id?: string
+          resolved_at?: string | null
+          state: string
+          updated_at?: string
+          zip: string
+        }
+        Update: {
+          change_type?: string
+          created_at?: string
+          detected_at?: string
+          id?: string
+          resolved_at?: string | null
+          state?: string
+          updated_at?: string
+          zip?: string
+        }
+        Relationships: []
+      }
+      tax_zip_codes: {
+        Row: {
+          created_at: string
+          is_taxable: boolean
+          reviewed: boolean
+          state: string
+          updated_at: string
+          zip: string
+        }
+        Insert: {
+          created_at?: string
+          is_taxable?: boolean
+          reviewed?: boolean
+          state: string
+          updated_at?: string
+          zip: string
+        }
+        Update: {
+          created_at?: string
+          is_taxable?: boolean
+          reviewed?: boolean
+          state?: string
+          updated_at?: string
+          zip?: string
+        }
+        Relationships: []
+      }
+      tax_zip_directory: {
+        Row: {
+          created_at: string
+          last_seen_at: string
+          present: boolean
+          state: string
+          updated_at: string
+          zip: string
+        }
+        Insert: {
+          created_at?: string
+          last_seen_at?: string
+          present?: boolean
+          state: string
+          updated_at?: string
+          zip: string
+        }
+        Update: {
+          created_at?: string
+          last_seen_at?: string
+          present?: boolean
+          state?: string
+          updated_at?: string
+          zip?: string
+        }
+        Relationships: []
+      }
+      tax_zip_jurisdictions: {
+        Row: {
+          created_at: string
+          jurisdiction_id: string
+          state: string
+          updated_at: string
+          zip: string
+        }
+        Insert: {
+          created_at?: string
+          jurisdiction_id: string
+          state: string
+          updated_at?: string
+          zip: string
+        }
+        Update: {
+          created_at?: string
+          jurisdiction_id?: string
+          state?: string
+          updated_at?: string
+          zip?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_zip_jurisdictions_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "tax_jurisdictions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_zip_jurisdictions_zip_state_fkey"
+            columns: ["zip", "state"]
+            isOneToOne: false
+            referencedRelation: "tax_zip_codes"
+            referencedColumns: ["zip", "state"]
+          },
+        ]
+      }
+      tax_zip_sync_runs: {
+        Row: {
+          created_at: string
+          id: string
+          new_count: number
+          removed_count: number
+          source_url: string
+          updated_at: string
+          zip_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_count: number
+          removed_count: number
+          source_url: string
+          updated_at?: string
+          zip_count: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_count?: number
+          removed_count?: number
+          source_url?: string
+          updated_at?: string
+          zip_count?: number
+        }
+        Relationships: []
+      }
       transaction_lines: {
         Row: {
           account_id: string
@@ -5352,6 +5577,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_manage_tax: { Args: never; Returns: boolean }
       can_manage_user: {
         Args: {
           _action: string
@@ -5373,6 +5599,28 @@ export type Database = {
       check_waste_threshold_alerts: {
         Args: { threshold_pct?: number }
         Returns: string
+      }
+      compute_jurisdiction_tax: {
+        Args: {
+          p_company_id: string
+          p_destination: Json
+          p_items: Json
+          p_shipments?: number
+          p_shipping?: number
+        }
+        Returns: Json
+      }
+      get_company_order_tax_summaries: {
+        Args: never
+        Returns: {
+          created_at: string
+          order_id: string
+          order_kind: string
+          order_number: string
+          tax_amount: number
+          tax_lines: Json
+          tax_review_required: boolean
+        }[]
       }
       get_component_cost_trend: {
         Args: { assembly_id_param: string; date_from: string; date_to: string }
@@ -5486,6 +5734,16 @@ export type Database = {
       }
       is_admin_or_owner: { Args: never; Returns: boolean }
       populate_weekly_component_prices: { Args: never; Returns: string }
+      quote_order_tax: {
+        Args: {
+          p_company_id: string
+          p_destination: Json
+          p_items: Json
+          p_shipments?: number
+          p_shipping?: number
+        }
+        Returns: Json
+      }
       recalculate_customer_order_fulfillment: {
         Args: { p_customer_order_id: string }
         Returns: undefined
@@ -5503,6 +5761,10 @@ export type Database = {
       }
       recompute_subassembly_requirements: {
         Args: { target_order_id: string }
+        Returns: undefined
+      }
+      refresh_order_tax: {
+        Args: { p_invoice?: boolean; p_order_id: string }
         Returns: undefined
       }
       resolve_permission_conflicts: {
@@ -5581,6 +5843,7 @@ export type Database = {
         }
         Returns: string
       }
+      sync_tax_zip_directory: { Args: never; Returns: Json }
       update_committed_inventory: { Args: never; Returns: undefined }
       update_daily_consumption_rates: { Args: never; Returns: string }
       update_daily_ttm_values: { Args: never; Returns: string }
