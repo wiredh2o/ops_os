@@ -1,4 +1,5 @@
 import { FinancialGuard } from '@/components/permissions/FinancialGuard';
+import { TaxLines } from "./TaxLines";
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,8 @@ interface KanbanCardProps {
     customer_po?: string;
     line_items?: OrderLineItem[];
     tax_total?: number;
+    tax_lines?: unknown;
+    tax_review_required?: boolean;
     shipping_cost?: number;
     payment_status?: string;
     payment_terms?: string;
@@ -100,7 +103,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete, archived = false }
   const lineItems = order.line_items || [];
   const hasLineItems = lineItems.length > 0;
   const subtotal = lineItems.reduce((sum, item) => sum + (item.total_price || 0), 0);
-  const taxTotal = order.tax_total || lineItems.reduce((sum, item) => sum + (item.tax_amount || 0), 0);
+  const taxTotal = order.tax_total ?? lineItems.reduce((sum, item) => sum + (item.tax_amount || 0), 0);
   const hasLabel = order.status === 'label_created' || order.status === 'shipped';
   const shippingCost = order.shipping_cost || 0;
 
@@ -377,10 +380,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete, archived = false }
                         <span className="text-muted-foreground">Subtotal:</span>
                         <span className="text-foreground"><FinancialGuard kind="revenue">{formatCurrency(subtotal)}</FinancialGuard></span>
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Tax:</span>
-                        <span className="text-foreground"><FinancialGuard kind="revenue">{formatCurrency(taxTotal)}</FinancialGuard></span>
-                      </div>
+                      <TaxLines lines={order.tax_lines} legacyAmount={taxTotal} reviewRequired={order.tax_review_required} />
                       {hasLabel && shippingCost > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Shipping:</span>

@@ -8,6 +8,8 @@ import { PermissionMatrix } from "@/components/permissions/PermissionMatrix";
 import { RLSPermissionMatrix } from "@/components/permissions/RLSPermissionMatrix";
 import { FieldSecurityMatrix } from "@/components/permissions/FieldSecurityMatrix";
 import { HierarchicalPermissionManager } from "@/components/permissions/HierarchicalPermissionManager";
+import { TaxSettings } from "@/components/settings/TaxSettings";
+import { useAuth } from "@/hooks/useAuth";
 import { SystemSettings } from "@/components/settings/SystemSettings";
 import { PendingRefundsManager } from "@/components/accounting/PendingRefundsManager";
 // BoxSizeManager is now imported inside ShippingMaterialsSettings
@@ -23,6 +25,8 @@ const BRANDING_BUCKET = "branding";
 const COMPANY_LOGO_PATH = "company-logo.png";
 
 const Settings = () => {
+  const { roles } = useAuth();
+  const accountingOnly = roles.includes("accounting") && !roles.includes("admin");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -76,6 +80,8 @@ const Settings = () => {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  if (accountingOnly) return <div className="container py-6"><TaxSettings /></div>;
 
   return (
     <div className="bg-gradient-to-br from-gray-50 to-white p-6">

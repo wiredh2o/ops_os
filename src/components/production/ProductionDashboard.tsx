@@ -19,7 +19,7 @@ import { CustomerOrderCard, CustomerOrderSummary, CustomerOrderLineItem } from '
 import { FulfillCustomerOrderModal } from './FulfillCustomerOrderModal';
 import { CustomerOrderForm } from './CustomerOrderForm';
 import { PendingSerialsDashboardWidget } from './PendingSerialsDashboardWidget';
-import { getCurrentTaxRate } from '@/lib/tax-utils';
+
 
 import { OrderLineItem } from './KanbanCard';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,9 @@ interface KanbanOrder {
   customer_po?: string;
   line_items?: OrderLineItem[];
   tax_total?: number;
+  tax_lines?: unknown;
+  tax_amount?: number;
+  tax_review_required?: boolean;
   shipping_cost?: number;
   payment_status?: string;
   payment_terms?: string;
@@ -124,14 +127,14 @@ export const ProductionDashboard = () => {
       setLoading(true);
       
       // Fetch data in parallel
-      const [buildRes, subBuildRes, shipRes, customerOrdersRes, taxRate] = await Promise.all([
+      const [buildRes, subBuildRes, shipRes, customerOrdersRes] = await Promise.all([
         supabase.rpc('get_ready_to_build_production_orders'),
         supabase.rpc('get_ready_to_build_subassembly_orders'),
         (async () => {
           const orders = [];
           for (let from = 0; ; from += 1000) {
             const { data, error } = await supabase.from('production_orders')
-              .select('id, order_number, customer_name, created_at, priority, status, total_amount, notes, customer_email, customer_phone, shipping_preference, store_at_point_of_use, customer_po, picked_up_at, customer_company_id')
+              .select('id, order_number, customer_name, created_at, priority, status, total_amount, tax_lines, tax_amount, tax_review_required, notes, customer_email, customer_phone, shipping_preference, store_at_point_of_use, customer_po, picked_up_at, customer_company_id')
               .in('order_type', ['customer', 'repair'])
               .neq('status', 'cancelled')
               .or(`status.in.(${SHIPPING_QUEUE_STATUSES.join(',')}),picked_up_at.not.is.null`)
@@ -148,12 +151,11 @@ export const ProductionDashboard = () => {
             id, order_number, order_status, payment_status, priority, 
             shipping_preference, due_date, deposit_paid, deposit_amount,
             estimated_shipping, notes, created_at, customer_company_id,
-            customer_po, is_one_time_card, stripe_payment_method_id,
+            customer_po, is_one_time_card, stripe_payment_method_id, tax_lines, tax_amount, tax_review_required,
             company:companies(id, name, is_taxable, stripe_customer_id)
           `)
           .in('order_status', ['pending', 'partially_fulfilled'])
           .order('created_at', { ascending: true }),
-        getCurrentTaxRate(),
       ]);
 
       if (buildRes.error) throw buildRes.error;
@@ -223,12 +225,8 @@ export const ProductionDashboard = () => {
             line_total: item.quantity_ordered * item.unit_price,
           }));
 
-          // Calculate tax (assemblies and inventory are taxable, labor is not)
-          const isTaxable = order.company?.is_taxable ?? true;
-          const taxableTotal = lineItems
-            .filter(li => li.item_type === 'assembly' || li.item_type === 'inventory_item')
-            .reduce((sum, li) => sum + li.line_total, 0);
-          const taxAmount = isTaxable ? (taxableTotal * taxRate) / 100 : 0;
+          const isTaxable = order.company?.is_taxable === true;
+          const taxAmount = order.tax_amount || 0;
 
           return {
             id: order.id,
@@ -255,6 +253,8 @@ export const ProductionDashboard = () => {
             line_items: lineItems,
             is_taxable: isTaxable,
             tax_amount: taxAmount,
+            tax_lines: order.tax_lines,
+            tax_review_required: order.tax_review_required,
             customer_po: order.customer_po || null,
             is_one_time_card: order.is_one_time_card || false,
             stripe_payment_method_id: order.stripe_payment_method_id || null,
@@ -392,7 +392,7 @@ export const ProductionDashboard = () => {
           return {
             ...order,
             line_items: items,
-            tax_total: items.reduce((sum, li) => sum + (li.tax_amount || 0), 0),
+            tax_total: order.tax_amount ?? items.reduce((sum, li) => sum + (li.tax_amount || 0), 0),
             shipping_cost: orderDetail?.shipping_cost || 0,
             payment_status: orderDetail?.payment_status,
             payment_terms: paymentTerms,

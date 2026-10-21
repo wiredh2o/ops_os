@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Settings, LogOut, ClipboardCheck } from "lucide-react";
+import { Home, Settings, LogOut, ClipboardCheck, Receipt } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { canRequestRma, canReceiveRma } from '@/lib/rma';
 
@@ -12,6 +12,7 @@ export function Header() {
   const navigation = [
     { name: "Dashboard", href: "/", icon: Home },
     { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Order taxes", href: "/order-taxes", icon: Receipt },
     ...(canRequestRma(roles) || canReceiveRma(roles) ? [{ name: 'RMAs', href: '/rma', icon: ClipboardCheck }] : []),
   ];
 

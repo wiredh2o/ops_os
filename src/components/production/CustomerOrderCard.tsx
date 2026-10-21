@@ -1,4 +1,5 @@
 import { FinancialGuard } from '@/components/permissions/FinancialGuard';
+import { TaxLines } from "./TaxLines";
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,8 @@ export interface CustomerOrderSummary {
   line_items: CustomerOrderLineItem[];
   is_taxable: boolean;
   tax_amount: number;
+  tax_lines?: unknown;
+  tax_review_required?: boolean;
   customer_po: string | null;
   is_one_time_card?: boolean;
   stripe_payment_method_id?: string | null;
@@ -225,10 +228,7 @@ interface CustomerOrderCardProps {
                       <span className="text-muted-foreground">Subtotal:</span>
                       <span className="text-foreground"><FinancialGuard kind="revenue">{formatCurrency(order.order_total)}</FinancialGuard></span>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Tax:</span>
-                      <span className="text-foreground"><FinancialGuard kind="revenue">{formatCurrency(order.tax_amount)}</FinancialGuard></span>
-                    </div>
+                    <TaxLines lines={order.tax_lines} legacyAmount={order.tax_amount} reviewRequired={order.tax_review_required} />
                     <div className="border-t border-border pt-1 mt-1">
                       <div className="flex justify-end text-xs font-semibold">
                         <span className="text-foreground">

@@ -59,7 +59,8 @@ import { AddAddressForm } from "@/components/shipping/AddAddressForm";
 import { EditAddressForm } from "@/components/shipping/EditAddressForm";
 import { US_STATES } from "@/lib/us-states";
 import { useShipFromAddress } from "@/hooks/useCompanySettings";
-import { getCurrentTaxRate } from "@/lib/tax-utils";
+import { calculateJurisdictionTax, getTaxModel, type TaxModel } from "@/lib/tax-utils";
+import { TaxLines } from "./TaxLines";
 import { usePaymentStatus } from "@/hooks/usePaymentStatus";
 import { PaymentStatusAlert } from "@/components/production/PaymentStatusAlert";
 import { ManageCardsModal } from "@/components/production/ManageCardsModal";
@@ -154,6 +155,7 @@ interface Company {
   signature_required: boolean;
   billing_address: string | null;
   is_taxable?: boolean;
+  is_distributor?: boolean;
   customer_number?: number;
   owners_name?: string | null;
   stripe_customer_id?: string | null;
@@ -163,6 +165,7 @@ interface Company {
 }
 
 interface ShippingAddress {
+  is_taxable?: boolean;
   id: string;
   name?: string;
   address: string;
@@ -189,6 +192,7 @@ interface CombinedItem {
   sales_description?: string | null;
   serial_tracking_type?: string | null;
   quantity_ats?: number | null;
+  is_taxable?: boolean;
 }
 
 interface SalesUom {
@@ -208,6 +212,7 @@ interface OrderItem {
   item_name: string;
   item_sku: string;
   quantity_ordered: number;
+  is_taxable?: boolean;
   quantity_invoiced: number;
   unit_price: number;
   notes?: string;
@@ -416,7 +421,9 @@ function formatDeliveryDate(isoString: string): string {
   const [combinedItems, setCombinedItems] = useState<CombinedItem[]>([]);
   const [inventorySalesUoms, setInventorySalesUoms] = useState<Record<string, SalesUom[]>>({});
   const [assemblySalesUoms, setAssemblySalesUoms] = useState<Record<string, SalesUom[]>>({});
-  const [taxRate, setTaxRate] = useState(0);
+  const [taxModel, setTaxModel] = useState<TaxModel>({ jurisdictions: [], zips: [], assignments: [] });
+  const [taxLoading, setTaxLoading] = useState(false);
+  const [taxError, setTaxError] = useState("");
 
   const [formData, setFormData] = useState({
     customer_company_id: "",
@@ -441,6 +448,8 @@ function formatDeliveryDate(isoString: string): string {
   const [packingConfig, setPackingConfig] = useState<PackingConfig | null>(null);
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddress[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<ShippingAddress | null>(null);
+  const shippingAddressesRef = useRef(shippingAddresses);
+  shippingAddressesRef.current = shippingAddresses;
 
   // Auto-save state and refs
   const [savedOrderId, setSavedOrderId] = useState<string | null>(null);
@@ -601,7 +610,7 @@ function formatDeliveryDate(isoString: string): string {
       resetForm();
       fetchCompanies();
       fetchInventoryData();
-      getCurrentTaxRate().then(setTaxRate);
+
        
        // If editing an existing order, load its data
        if (orderId) {
@@ -681,7 +690,7 @@ function formatDeliveryDate(isoString: string): string {
       const { data, error } = await supabase
         .from("companies")
         .select(
-          "id, name, shipping_addresses, default_shipping_address_id, preferred_shipping_carrier, signature_required, billing_address, is_taxable, customer_number, owners_name, stripe_customer_id, email, phone, payment_terms",
+          "id, name, shipping_addresses, default_shipping_address_id, preferred_shipping_carrier, signature_required, billing_address, is_taxable, is_distributor, customer_number, owners_name, stripe_customer_id, email, phone, payment_terms",
         )
         .eq("is_active", true)
         .order("name");
@@ -701,7 +710,7 @@ function formatDeliveryDate(isoString: string): string {
          .from("customer_orders")
          .select(`
            *,
-           company:companies(id, name, shipping_addresses, default_shipping_address_id, preferred_shipping_carrier, signature_required, billing_address, is_taxable, customer_number, owners_name)
+           company:companies(id, name, shipping_addresses, default_shipping_address_id, preferred_shipping_carrier, signature_required, billing_address, is_taxable, is_distributor, customer_number, owners_name)
          `)
          .eq("id", orderIdToLoad)
          .single();
@@ -897,6 +906,7 @@ function formatDeliveryDate(isoString: string): string {
              labor_item_id: item.labor_item_id || undefined,
              item_name: itemName,
              item_sku: itemSku,
+             is_taxable: item.is_taxable,
              quantity_ordered: item.quantity_ordered,
              quantity_invoiced: item.quantity_invoiced || 0,
              unit_price: item.unit_price,
@@ -981,13 +991,13 @@ function formatDeliveryDate(isoString: string): string {
       const [itemsResponse, assembliesResponse, laborResponse, invUomsResponse, asmUomsResponse] = await Promise.all([
         supabase
           .from("inventory_items")
-          .select("id, sku, unit_price, sales_description, serial_tracking_type, quantity_ats")
+          .select("id, sku, unit_price, sales_description, serial_tracking_type, quantity_ats, is_taxable")
           .eq("is_active", true)
           .eq("visible_for_sale", true)
           .order("sku"),
         supabase
           .from("assemblies")
-          .select("id, sku, selling_price, sales_description, serial_tracking_type, quantity_ats")
+          .select("id, sku, selling_price, sales_description, serial_tracking_type, quantity_ats, taxable")
           .eq("active", true)
           .eq("visible_for_sale", true)
           .order("sku"),
@@ -1045,6 +1055,7 @@ function formatDeliveryDate(isoString: string): string {
           sales_description: item.sales_description,
           serial_tracking_type: item.serial_tracking_type,
           quantity_ats: item.quantity_ats,
+          is_taxable: item.is_taxable,
         })),
         ...(assembliesResponse.data || []).map((assembly) => ({
           id: assembly.id,
@@ -1055,6 +1066,7 @@ function formatDeliveryDate(isoString: string): string {
           sales_description: assembly.sales_description,
           serial_tracking_type: assembly.serial_tracking_type,
           quantity_ats: assembly.quantity_ats,
+          is_taxable: assembly.taxable,
         })),
         ...(laborResponse.data || []).map((labor) => ({
           id: labor.id,
@@ -1065,6 +1077,7 @@ function formatDeliveryDate(isoString: string): string {
           sales_description: labor.description,
           serial_tracking_type: null,
           quantity_ats: null,
+          is_taxable: false,
         })),
       ];
 
@@ -1579,6 +1592,7 @@ function formatDeliveryDate(isoString: string): string {
            .update({
             customer_company_id: currentFormData.customer_company_id,
             shipping_address_id: currentFormData.shipping_address_id || null,
+            tax_destination: shippingAddressesRef.current.find(a => a.id === currentFormData.shipping_address_id) as any || null,
             signature_option: currentFormData.signature_option,
             shipping_preference: currentFormData.shipping_preference,
             priority: currentFormData.priority,
@@ -1625,6 +1639,7 @@ function formatDeliveryDate(isoString: string): string {
               inventory_item_id: item.inventory_item_id || null,
               assembly_id: item.assembly_id || null,
               labor_item_id: item.labor_item_id || null,
+              is_taxable: item.item_type !== "labor" && item.is_taxable !== false,
               quantity_ordered: item.quantity_ordered,
               unit_price: item.unit_price,
               notes: item.notes || null,
@@ -1656,6 +1671,7 @@ function formatDeliveryDate(isoString: string): string {
             order_number: orderNumber,
             customer_company_id: currentFormData.customer_company_id,
             shipping_address_id: currentFormData.shipping_address_id || null,
+            tax_destination: shippingAddressesRef.current.find(a => a.id === currentFormData.shipping_address_id) as any || null,
             signature_option: currentFormData.signature_option,
             shipping_preference: currentFormData.shipping_preference,
             priority: currentFormData.priority,
@@ -1704,6 +1720,7 @@ function formatDeliveryDate(isoString: string): string {
               inventory_item_id: item.inventory_item_id || null,
               assembly_id: item.assembly_id || null,
               labor_item_id: item.labor_item_id || null,
+              is_taxable: item.item_type !== "labor" && item.is_taxable !== false,
               quantity_ordered: item.quantity_ordered,
               unit_price: item.unit_price,
               notes: item.notes || null,
@@ -1800,6 +1817,7 @@ function formatDeliveryDate(isoString: string): string {
         if (field === "selectedItemId") {
           const combinedItem = combinedItems.find((ci) => ci.id === value);
           if (combinedItem) {
+            updated.is_taxable = combinedItem.type !== "labor" && combinedItem.is_taxable === true;
             updated.item_type = combinedItem.type;
             updated.item_name = combinedItem.name.replace(/ \((Inventory|Assembly|Labor)\)/, "");
             updated.item_sku = combinedItem.sku;
@@ -1912,24 +1930,31 @@ function formatDeliveryDate(isoString: string): string {
     return orderItems.reduce((total, item) => total + item.quantity_ordered * item.unit_price, 0);
   };
 
-  const calculateTax = () => {
-    // Get customer taxability from selected company
-    const customerIsTaxable = selectedCompany?.is_taxable !== false;
-
-    if (!customerIsTaxable || taxRate === 0) return 0;
-
-    // Sum tax for taxable items only (labor items are non-taxable)
-    return orderItems.reduce((total, item) => {
-      const itemIsTaxable = item.item_type !== "labor";
-      if (itemIsTaxable) {
-        return total + (item.quantity_ordered * item.unit_price * taxRate) / 100;
-      }
-      return total;
-    }, 0);
-  };
+  const taxQuote = calculateJurisdictionTax(taxModel, {
+    customerIsTaxable: companies.find(c => c.id === formData.customer_company_id)?.is_taxable === true,
+    distributor: companies.find(c => c.id === formData.customer_company_id)?.is_distributor,
+    destination: selectedAddress,
+    items: orderItems.map(item => ({ amount: item.quantity_ordered * item.unit_price, item_type: item.item_type,
+      is_taxable: item.is_taxable !== false && combinedItems.find(i => i.id === (item.inventory_item_id || item.assembly_id || item.labor_item_id))?.is_taxable === true })),
+    shipping: formData.estimated_shipping,
+    shipments: companies.find(c => c.id === formData.customer_company_id)?.preferred_shipping_carrier === 'Pick-Up' ? 0 : 1,
+  });
+  const calculateTax = () => taxQuote.taxAmount;
+  useEffect(() => {
+    if (!selectedAddress?.state) return;
+    let cancelled = false;
+    setTaxLoading(true); setTaxError('');
+    getTaxModel(selectedAddress.state, selectedAddress.zip).then(model => { if (!cancelled) setTaxModel(model); })
+      .catch(e => { if (!cancelled) setTaxError(e.message); }).finally(() => { if (!cancelled) setTaxLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedAddress?.state, selectedAddress?.zip]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (taxLoading || taxError || taxQuote.reviewRequired) {
+      toast({ title: "Tax review required", description: taxError || "Admin or Accounting must configure the destination tax rules before confirmation.", variant: "destructive" }); return;
+    }
 
     if (!savedOrderId) {
       toast({ title: "Error", description: "Order not saved yet. Please wait and try again.", variant: "destructive" });
@@ -1988,6 +2013,7 @@ function formatDeliveryDate(isoString: string): string {
           notes: formData.notes || null,
           internal_notes: formData.internal_notes || null,
           customer_po: formData.customer_po || null,
+          tax_destination: selectedAddress as any,
           packing_mode: packingConfig?.mode || null,
           selected_box_id: packingConfig?.packages?.[0]?.box?.id || null,
           package_weight_oz: packingConfig?.packages?.[0]?.totalPackageWeightOz || null,
@@ -2013,6 +2039,7 @@ function formatDeliveryDate(isoString: string): string {
         assembly_id: item.assembly_id || null,
         labor_item_id: item.labor_item_id || null,
         quantity_ordered: item.quantity_ordered,
+        is_taxable: item.item_type !== "labor" && item.is_taxable !== false,
         unit_price: item.unit_price,
         notes: item.notes || null,
         requested_serial: item.requested_serial || null,
@@ -2750,8 +2777,8 @@ function formatDeliveryDate(isoString: string): string {
                 /></FinancialGuard>
               </div>
 
-              {/* Spacer */}
-              <div></div>
+              {/* Line taxability */}
+              <div className="flex justify-center"><Checkbox aria-label={`Taxable line ${item.item_sku || item.id}`} disabled={item.item_type === 'labor'} checked={item.item_type !== 'labor' && item.is_taxable !== false} onCheckedChange={checked => updateOrderItem(item.id, 'is_taxable', checked === true)}/></div>
 
               {/* Amount */}
               <div className="flex items-center justify-center whitespace-nowrap">
@@ -2804,10 +2831,7 @@ function formatDeliveryDate(isoString: string): string {
             <span className="text-muted-foreground">Subtotal</span>
             <span><FinancialGuard kind="revenue">{formatCurrency(calculateSubtotal())}</FinancialGuard></span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Tax ({taxRate}%)</span>
-            <span><FinancialGuard kind="revenue">{formatCurrency(calculateTax())}</FinancialGuard></span>
-          </div>
+          <TaxLines lines={taxQuote.taxLines} reviewRequired={taxQuote.reviewRequired || !!taxError} />
           <Separator />
           <div className="flex justify-between font-semibold">
             <span>Total</span>
@@ -2959,10 +2983,7 @@ function formatDeliveryDate(isoString: string): string {
                   <span>Subtotal</span>
                   <span className="font-medium text-foreground"><FinancialGuard kind="revenue">{formatCurrency(subtotal)}</FinancialGuard></span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Tax</span>
-                  <span className="font-medium text-foreground"><FinancialGuard kind="revenue">{formatCurrency(tax)}</FinancialGuard></span>
-                </div>
+                <TaxLines lines={taxQuote.taxLines} reviewRequired={taxQuote.reviewRequired || !!taxError} />
                 <div className="flex justify-between text-muted-foreground">
                   <span>Shipping</span>
                   <span className="font-medium text-foreground">
@@ -3244,8 +3265,8 @@ function formatDeliveryDate(isoString: string): string {
               stripe_customer_id: selectedCompany.stripe_customer_id || null,
               customer_number: selectedCompany.customer_number,
             }}
-            amountDue={subtotal + shippingCost}
-            orderSubtotal={subtotal}
+            amountDue={subtotal + calculateTax() + shippingCost}
+            orderSubtotal={subtotal + calculateTax()}
             shippingCost={shippingCost}
             depositPaid={formData.deposit_paid}
             depositAmount={formData.deposit_amount}
@@ -3328,6 +3349,7 @@ function formatDeliveryDate(isoString: string): string {
       })),
       subtotal,
       tax,
+      taxLines: taxQuote.taxLines,
       shipping,
       total,
       shippingAddress: addressBlock,

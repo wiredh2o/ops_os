@@ -18,6 +18,7 @@ interface AddAddressFormProps {
     zip: string;
     country: string;
     signature_required: boolean;
+    is_taxable?: boolean;
   }, setAsDefault: boolean) => Promise<void>;
   onCancel: () => void;
   defaultSignatureRequired?: boolean;
@@ -27,6 +28,7 @@ export function AddAddressForm({ onSave, onCancel, defaultSignatureRequired = fa
   const [saving, setSaving] = useState(false);
   const [setAsDefault, setSetAsDefault] = useState(true);
   const [formData, setFormData] = useState({
+    is_taxable: true,
     name: '',
     address: '',
     city: '',
@@ -128,6 +130,8 @@ export function AddAddressForm({ onSave, onCancel, defaultSignatureRequired = fa
               />
             </div>
           </div>
+
+          <div className="flex items-center gap-2"><Switch id="address-taxable" checked={formData.is_taxable} onCheckedChange={is_taxable => setFormData({ ...formData, is_taxable })}/><Label htmlFor="address-taxable">Taxable ship-to address</Label></div>
 
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center space-x-2">

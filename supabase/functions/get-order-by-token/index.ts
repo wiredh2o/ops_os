@@ -41,7 +41,9 @@ serve(async (req) => {
         payment_received_at,
         payment_token_expires_at,
         shipping_cost,
-        tax_rate,
+        tax_amount,
+        tax_lines,
+        tax_review_required,
         customer_id,
         created_at,
         companies:customer_id (
@@ -147,7 +149,8 @@ serve(async (req) => {
 
     // Calculate totals
     const subtotal = lineItems?.reduce((sum, item) => sum + (item.total_price || 0), 0) || 0;
-    const taxAmount = lineItems?.reduce((sum, item) => sum + (item.tax_amount || 0), 0) || 0;
+    if (order.tax_review_required) return new Response(JSON.stringify({ error: 'Tax jurisdiction review is required before payment' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const taxAmount = order.tax_amount || 0;
     const shippingCost = order.shipping_cost || 0;
     const total = subtotal + taxAmount + shippingCost;
 
@@ -204,6 +207,7 @@ serve(async (req) => {
         totals: {
           subtotal,
           tax: taxAmount,
+          tax_lines: order.tax_lines || [],
           shipping: shippingCost,
           total,
         },
