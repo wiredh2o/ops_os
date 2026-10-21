@@ -1468,9 +1468,9 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                             </SelectTrigger>
                             <SelectContent>
                                {inventoryItems.map((item) => (
-                                 <FinancialGuard kind="supplier_price"><SelectItem key={item.id} value={item.id}>
-                                   {item.sku} (${item.unit_price})
-                                </SelectItem></FinancialGuard>
+                                 <SelectItem key={item.id} value={item.id}>
+                                   {item.sku} <FinancialGuard kind="supplier_price">(${item.unit_price})</FinancialGuard>
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
