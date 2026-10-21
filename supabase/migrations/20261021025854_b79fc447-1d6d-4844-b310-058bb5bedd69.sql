@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.protect_marketing_financial_flags() FROM anon, authenticated, service_role;
