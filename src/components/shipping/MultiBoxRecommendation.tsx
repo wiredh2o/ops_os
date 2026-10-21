@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -232,7 +233,7 @@ export function MultiBoxRecommendation({
             <div className="flex items-center gap-1.5">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <span>
-                Materials: <strong>${recommendation.totalMaterialCost.toFixed(2)}</strong>
+                Materials: <FinancialGuard kind="supplier_price"><strong>${recommendation.totalMaterialCost.toFixed(2)}</strong></FinancialGuard>
               </span>
             </div>
           )}

@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -210,11 +211,11 @@ export function PackageCard({
 
           {/* Material cost */}
           {!isSelfPackaged && result.totalMaterialCost > 0 && (
-            <div className="text-xs text-muted-foreground">
+            <FinancialGuard kind="supplier_price"><div className="text-xs text-muted-foreground">
               Materials: ${result.totalMaterialCost.toFixed(2)}
               {result.boxCost > 0 && ` (box: $${result.boxCost.toFixed(2)})`}
               {result.paperCost > 0 && ` (paper: $${result.paperCost.toFixed(2)})`}
-            </div>
+            </div></FinancialGuard>
           )}
         </div>
 

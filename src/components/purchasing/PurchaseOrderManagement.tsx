@@ -299,7 +299,7 @@ export function PurchaseOrderManagement() {
                             </p>
                           )}
                           <p className="font-semibold mt-2">
-                            Total: {formatCurrency(Number(po.total_amount))}
+                            Total: <FinancialGuard kind="supplier_price">{formatCurrency(Number(po.total_amount))}</FinancialGuard>
                           </p>
                         </div>
                         <div className="flex gap-2">

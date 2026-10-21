@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -28,15 +29,15 @@ export function USPSBalanceWarning({
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">Required</p>
-            <p className="font-semibold">{formatCurrency(requiredAmount)}</p>
+            <p className="font-semibold"><FinancialGuard kind="supplier_price">{formatCurrency(requiredAmount)}</FinancialGuard></p>
           </div>
           <div>
             <p className="text-muted-foreground">Current Balance</p>
-            <p className="font-semibold text-amber-600">{formatCurrency(currentBalance)}</p>
+            <p className="font-semibold text-amber-600"><FinancialGuard kind="supplier_price">{formatCurrency(currentBalance)}</FinancialGuard></p>
           </div>
           <div>
             <p className="text-muted-foreground">Shortfall</p>
-            <p className="font-semibold text-destructive">{formatCurrency(shortfall)}</p>
+            <p className="font-semibold text-destructive"><FinancialGuard kind="supplier_price">{formatCurrency(shortfall)}</FinancialGuard></p>
           </div>
         </div>
 

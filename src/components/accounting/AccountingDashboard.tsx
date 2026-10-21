@@ -281,7 +281,7 @@ export const AccountingDashboard = () => {
                         <div className={`text-lg font-semibold ${
                           (account.current_balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {formatCurrency(account.current_balance || 0)}
+                          <FinancialGuard kind="revenue">{formatCurrency(account.current_balance || 0)}</FinancialGuard>
                         </div>
                       </FieldGuard>
                     </div>
@@ -328,7 +328,7 @@ export const AccountingDashboard = () => {
                       <div className={`text-lg font-semibold ${
                         transaction.total_amount >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {formatCurrency(transaction.total_amount)}
+                        <FinancialGuard kind="revenue">{formatCurrency(transaction.total_amount)}</FinancialGuard>
                       </div>
                     </div>
                   </div>

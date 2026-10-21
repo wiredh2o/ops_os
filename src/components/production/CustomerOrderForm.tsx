@@ -3181,7 +3181,7 @@ function formatDeliveryDate(isoString: string): string {
                                   ? 'text-green-600 dark:text-green-400'
                                   : 'text-amber-600 dark:text-amber-400'
                             }`}>
-                              {`Arrives ${Math.round(option.hours_saved ?? 0)} business hrs faster at additional cost of ${
+                              <FinancialGuard kind="supplier_price">{`Arrives ${Math.round(option.hours_saved ?? 0)} business hrs faster at additional cost of ${
                                 (option.hours_saved ?? 0) > 0
                                   ? (option.marginal_cost_per_hour <= 0
                                       ? `-$${Math.abs(option.marginal_cost_per_hour).toFixed(2)}`
@@ -3189,7 +3189,7 @@ function formatDeliveryDate(isoString: string): string {
                                   : (option.price_diff != null && option.price_diff < 0
                                       ? `-$${Math.abs(option.price_diff).toFixed(2)}`
                                       : `$${Math.abs(option.price_diff ?? 0).toFixed(2)}`)
-                              }/hr`}
+                              }/hr`}</FinancialGuard>
                             </p>
                           )}
                         </div>
