@@ -1635,6 +1635,7 @@ export type Database = {
           received_at: string | null
           received_by: string | null
           return_shipping_address: string | null
+          rma_request_id: string | null
           shipping_preference: string
           status: string
           tracking_number: string
@@ -1656,6 +1657,7 @@ export type Database = {
           received_at?: string | null
           received_by?: string | null
           return_shipping_address?: string | null
+          rma_request_id?: string | null
           shipping_preference?: string
           status?: string
           tracking_number: string
@@ -1677,6 +1679,7 @@ export type Database = {
           received_at?: string | null
           received_by?: string | null
           return_shipping_address?: string | null
+          rma_request_id?: string | null
           shipping_preference?: string
           status?: string
           tracking_number?: string
@@ -1688,6 +1691,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_packages_rma_request_id_fkey"
+            columns: ["rma_request_id"]
+            isOneToOne: true
+            referencedRelation: "rma_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -4356,6 +4366,87 @@ export type Database = {
         }
         Relationships: []
       }
+      rma_requests: {
+        Row: {
+          appointment_at: string | null
+          appointment_url: string | null
+          carrier: string | null
+          company_id: string
+          created_at: string
+          customer_po: string | null
+          id: string
+          inbound_package_id: string | null
+          issued_at: string | null
+          items: Json
+          problem_reported: string
+          requester_id: string
+          return_shipping_address: string | null
+          review_notes: string | null
+          reviewed_by: string | null
+          rma_number: string
+          status: string
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_at?: string | null
+          appointment_url?: string | null
+          carrier?: string | null
+          company_id: string
+          created_at?: string
+          customer_po?: string | null
+          id?: string
+          inbound_package_id?: string | null
+          issued_at?: string | null
+          items: Json
+          problem_reported: string
+          requester_id: string
+          return_shipping_address?: string | null
+          review_notes?: string | null
+          reviewed_by?: string | null
+          rma_number?: string
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_at?: string | null
+          appointment_url?: string | null
+          carrier?: string | null
+          company_id?: string
+          created_at?: string
+          customer_po?: string | null
+          id?: string
+          inbound_package_id?: string | null
+          issued_at?: string | null
+          items?: Json
+          problem_reported?: string
+          requester_id?: string
+          return_shipping_address?: string | null
+          review_notes?: string | null
+          reviewed_by?: string | null
+          rma_number?: string
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rma_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rma_requests_inbound_package_id_fkey"
+            columns: ["inbound_package_id"]
+            isOneToOne: true
+            referencedRelation: "inbound_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_hierarchy: {
         Row: {
           can_delegate_permissions: boolean
@@ -5269,6 +5360,9 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_receive_rma: { Args: never; Returns: boolean }
+      can_request_rma: { Args: never; Returns: boolean }
+      can_review_rma: { Args: never; Returns: boolean }
       can_role_manage_role: {
         Args: {
           _manager_role: Database["public"]["Enums"]["app_role"]
@@ -5288,6 +5382,7 @@ export type Database = {
         }[]
       }
       get_current_user_company_id: { Args: never; Returns: string }
+      get_my_rma_repairs: { Args: { p_id: string }; Returns: Json }
       get_next_repair_order_number: { Args: never; Returns: string }
       get_next_serial_sequence: {
         Args: { p_date: string; p_prefix: string }
@@ -5395,6 +5490,17 @@ export type Database = {
         Args: { p_customer_order_id: string }
         Returns: undefined
       }
+      receive_rma: {
+        Args: {
+          p_id: string
+          p_notes: string
+          p_received_at: string
+          p_return_address: string
+          p_tracking: string
+          p_tray?: string
+        }
+        Returns: string
+      }
       recompute_subassembly_requirements: {
         Args: { target_order_id: string }
         Returns: undefined
@@ -5406,6 +5512,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      review_rma: {
+        Args: {
+          p_action: string
+          p_appointment_at?: string
+          p_appointment_url?: string
+          p_id: string
+          p_notes?: string
+        }
+        Returns: undefined
+      }
+      rma_package_access: { Args: { p_id: string }; Returns: boolean }
       search_repair_items: {
         Args: { search_term: string }
         Returns: {
@@ -5430,6 +5547,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      set_rma_tracking: {
+        Args: { p_carrier: string; p_id: string; p_tracking: string }
+        Returns: undefined
+      }
       start_repair_timer: {
         Args: { p_repair_item_id: string; p_user_id: string }
         Returns: {
@@ -5450,6 +5571,15 @@ export type Database = {
           new_total_ms: number
           success: boolean
         }[]
+      }
+      submit_rma: {
+        Args: {
+          p_customer_po?: string
+          p_items: Json
+          p_problem: string
+          p_return_address?: string
+        }
+        Returns: string
       }
       update_committed_inventory: { Args: never; Returns: undefined }
       update_daily_consumption_rates: { Args: never; Returns: string }
