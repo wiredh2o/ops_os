@@ -10,24 +10,22 @@ import { Settings, ChevronDown, ChevronUp, DollarSign, CreditCard, Truck, Mail }
 import { useSystemSetting, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
 import { CompanyProfileSettings } from "./CompanyProfileSettings";
 import { EmailTemplateManager } from "./EmailTemplateManager";
+import { TaxSettings } from "./TaxSettings";
 
 
 export function SystemSettings() {
-  const { data: salesTaxSetting, isLoading: taxLoading } = useSystemSetting("sales_tax_percentage");
   const { data: stripeSetting, isLoading: stripeLoading } = useSystemSetting("stripe_publishable_key");
   const { data: fedexSetting, isLoading: fedexLoading } = useSystemSetting("carrier_fedex_enabled");
   const { data: upsSetting, isLoading: upsLoading } = useSystemSetting("carrier_ups_enabled");
   const { data: uspsSetting, isLoading: uspsLoading } = useSystemSetting("carrier_usps_enabled");
   const updateSystemSetting = useUpdateSystemSetting();
   
-  const [taxOpen, setTaxOpen] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);
   const [stripeOpen, setStripeOpen] = useState(false);
   const [carriersOpen, setCarriersOpen] = useState(false);
   const [emailTemplatesOpen, setEmailTemplatesOpen] = useState(false);
   
   const [formData, setFormData] = useState({
-    salesTaxPercentage: salesTaxSetting?.setting_value || "8.25",
     stripePublishableKey: stripeSetting?.setting_value || ""
   });
 
@@ -36,15 +34,6 @@ export function SystemSettings() {
     ups: upsSetting?.setting_value !== "false", 
     usps: uspsSetting?.setting_value !== "false",
   });
-
-  useEffect(() => {
-    if (salesTaxSetting) {
-      setFormData(prev => ({
-        ...prev,
-        salesTaxPercentage: salesTaxSetting.setting_value
-      }));
-    }
-  }, [salesTaxSetting]);
 
   useEffect(() => {
     if (stripeSetting) {
@@ -62,16 +51,6 @@ export function SystemSettings() {
       usps: uspsSetting?.setting_value !== "false",
     });
   }, [fedexSetting, upsSetting, uspsSetting]);
-
-  const handleTaxSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    await updateSystemSetting.mutateAsync({
-      settingKey: "sales_tax_percentage",
-      settingValue: formData.salesTaxPercentage,
-      description: "Default sales tax percentage applied to taxable items"
-    });
-  };
 
   const handleStripeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +84,7 @@ export function SystemSettings() {
     return key.substring(0, 7) + '•'.repeat(key.length - 11) + key.substring(key.length - 4);
   };
 
-  const isLoading = taxLoading || stripeLoading || fedexLoading || upsLoading || uspsLoading;
+  const isLoading = stripeLoading || fedexLoading || upsLoading || uspsLoading;
 
   if (isLoading) {
     return <div>Loading system settings...</div>;
@@ -321,67 +300,7 @@ export function SystemSettings() {
         </Card>
       </Collapsible>
 
-      {/* Tax Configuration Section */}
-      <Collapsible open={taxOpen} onOpenChange={setTaxOpen}>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <div>
-                    <CardTitle className="text-lg">Default Sales Tax Rate</CardTitle>
-                    <CardDescription>
-                      Set the default sales tax percentage for new orders and estimates.
-                    </CardDescription>
-                  </div>
-                </div>
-                {taxOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent>
-              <form onSubmit={handleTaxSubmit} className="space-y-4">
-                <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Label htmlFor="salesTaxPercentage">Sales Tax Percentage</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="salesTaxPercentage"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={formData.salesTaxPercentage}
-                      onChange={(e) => handleChange("salesTaxPercentage", e.target.value)}
-                      placeholder="8.25"
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Current rate: {salesTaxSetting?.setting_value || "Not set"}%
-                  </p>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    disabled={updateSystemSetting.isPending}
-                  >
-                    {updateSystemSetting.isPending ? "Updating..." : "Update Tax Rate"}
-                  </Button>
-                </div>
-              </form>
-
-              <div className="mt-4 p-4 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 rounded-lg">
-                <p className="text-sm text-amber-700 dark:text-amber-300">
-                  <strong>Note:</strong> Changing the tax rate only affects new orders. Existing orders retain their original tax rates for accurate historical records.
-                </p>
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+      <TaxSettings />
 
       {/* Email Templates Section */}
       <Collapsible open={emailTemplatesOpen} onOpenChange={setEmailTemplatesOpen}>

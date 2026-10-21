@@ -19,6 +19,7 @@ interface ShippingAddress {
   zip: string;
   country: string;
   signature_required: boolean;
+  is_taxable?: boolean;
 }
 
 interface EditAddressFormProps {
@@ -42,6 +43,7 @@ export function EditAddressForm({
   const [deleting, setDeleting] = useState(false);
   const [setAsDefault, setSetAsDefault] = useState(isDefault);
   const [formData, setFormData] = useState({
+    is_taxable: address.is_taxable !== false,
     id: address.id,
     name: address.name || '',
     address: address.address || '',
@@ -153,6 +155,8 @@ export function EditAddressForm({
               />
             </div>
           </div>
+
+          <div className="flex items-center gap-2"><Switch id="edit-address-taxable" checked={formData.is_taxable} onCheckedChange={is_taxable => setFormData({ ...formData, is_taxable })}/><Label htmlFor="edit-address-taxable">Taxable ship-to address</Label></div>
 
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center space-x-2">
