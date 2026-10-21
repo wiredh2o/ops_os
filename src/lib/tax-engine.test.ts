@@ -19,4 +19,8 @@ test('shipping is untaxed unless a rule requires it',()=>{ const next={...model,
 test('fee is per shipment, not per package or item',()=>assert.equal(calculateJurisdictionTax(model,{...input,shipments:2}).taxAmount,8.58));
 test('pickup has no shipment fee',()=>assert.equal(calculateJurisdictionTax(model,{...input,shipments:0}).taxAmount,8));
 test('unmatched ZIP requires review without inventing local rates',()=>{ const r=calculateJurisdictionTax(model,{...input,destination:{state:'CO',zip:'99999'}}); assert.equal(r.taxAmount,2.29); assert.equal(r.reviewRequired,true); });
-test('unset state rate requires review',()=>assert.equal(calculateJurisdictionTax({...model,jurisdictions:model.jurisdictions.map(j=>j.id==='s'?{...j,rate:null}:j)},input).reviewRequired,true));
+test('unset state rate requires review',()=>assert.equal(calculateJurisdictionTax({...model,jurisdictions:model.jurisdictions.map(j=>j.id==='s'?{...j,rate:null}:j)},input).reviewRequired,true));test('non-taxable ZIP keeps state tax but drops local taxes (state trumps ZIP)',()=>{
+  const r=calculateJurisdictionTax({...model,zips:[{ zip:'80202',state:'CO',is_taxable:false,reviewed:true }]},input);
+  assert.deepEqual(r.taxLines.map(l=>l.name),['Colorado','Colorado delivery fee']);
+  assert.equal(r.taxAmount,2.29);
+});

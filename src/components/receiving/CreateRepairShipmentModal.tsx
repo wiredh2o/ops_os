@@ -11,7 +11,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency, formatCurrencyPrecise } from "@/lib/utils";
-import { getCurrentTaxRate } from "@/lib/tax-utils";
 import { Package, Truck, CheckCircle2, Wrench, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 
 interface RepairItemWithActuals {
@@ -69,7 +68,6 @@ export const CreateRepairShipmentModal: React.FC<CreateRepairShipmentModalProps>
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [taxRate, setTaxRate] = useState<number>(0);
   const [customerIsTaxable, setCustomerIsTaxable] = useState<boolean>(true);
   const [expandedPackages, setExpandedPackages] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -81,9 +79,6 @@ export const CreateRepairShipmentModal: React.FC<CreateRepairShipmentModalProps>
     const loadData = async () => {
       setLoading(true);
       try {
-        // Fetch system tax rate
-        const systemTaxRate = await getCurrentTaxRate();
-        setTaxRate(systemTaxRate);
 
         // Fetch customer taxability
         const { data: company } = await supabase
@@ -266,17 +261,11 @@ export const CreateRepairShipmentModal: React.FC<CreateRepairShipmentModalProps>
     const selected = allRepairItems.filter(item => selectedItems.has(item.id));
     const subtotal = selected.reduce((sum, item) => sum + item.actualsTotal, 0);
     
-    // Only calculate tax if customer is taxable
-    let tax = 0;
-    if (customerIsTaxable && taxRate > 0) {
-      const taxableAmount = selected.reduce((sum, item) => 
-        sum + item.actuals.filter(a => a.is_taxable).reduce((s, a) => s + a.total_amount, 0)
-      , 0);
-      tax = (taxableAmount * taxRate) / 100;
-    }
+    // Jurisdiction sales tax is calculated by the server on the saved invoice.
+    const tax = 0;
     
     return { subtotal, tax, total: subtotal + tax };
-  }, [allRepairItems, selectedItems, taxRate, customerIsTaxable]);
+  }, [allRepairItems, selectedItems]);
 
   const toggleItem = (itemId: string) => {
     setSelectedItems(prev => {
@@ -700,10 +689,10 @@ export const CreateRepairShipmentModal: React.FC<CreateRepairShipmentModalProps>
           </div>
           <div className="flex justify-between text-muted-foreground">
             <span>
-              Tax ({taxRate}%)
+              Sales tax
               {!customerIsTaxable && <span className="ml-1 text-xs italic">Non-taxable customer</span>}
             </span>
-            <span><FinancialGuard kind="revenue">{formatCurrency(totals.tax)}</FinancialGuard></span>
+            <span className="text-muted-foreground italic">Calculated on invoice by jurisdiction</span>
           </div>
           <div className="flex justify-between font-semibold text-lg items-baseline">
             <div>
