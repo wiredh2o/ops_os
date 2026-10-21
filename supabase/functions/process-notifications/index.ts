@@ -16,12 +16,21 @@ Deno.serve(async req => {
     if (error) throw error;
     for (const job of jobs || []) {
       try {
-        const { data: p, error: profileError } = await client.from('profiles').select('email,phone,notification_method,account_notifications,offers_marketing').eq('id', job.user_id).single();
-        if (profileError || !p) throw profileError || new Error('Recipient unavailable');
-        if (!notificationAllowed(job.kind, p.account_notifications, p.offers_marketing)) {
-          await client.from('notification_outbox').update({ status: 'skipped', lease_until: null, next_attempt_at: null }).eq('id', job.id); continue;
+        // Drop-ship recipients are not app users: a stored email/phone is itself the notification request.
+        let p: { email: string | null; phone: string | null };
+        let channels: NotificationMethod[];
+        if (!job.user_id) {
+          p = { email: job.recipient_email, phone: job.recipient_phone };
+          channels = [...(p.email ? ['email'] : []), ...(p.phone ? ['text'] : [])] as NotificationMethod[];
+          if (!channels.length) { await client.from('notification_outbox').update({ status: 'skipped', lease_until: null, next_attempt_at: null }).eq('id', job.id); continue; }
+        } else {
+          const { data: profile, error: profileError } = await client.from('profiles').select('email,phone,notification_method,account_notifications,offers_marketing').eq('id', job.user_id).single();
+          if (profileError || !profile) throw profileError || new Error('Recipient unavailable');
+          if (!notificationAllowed(job.kind, profile.account_notifications, profile.offers_marketing)) {
+            await client.from('notification_outbox').update({ status: 'skipped', lease_until: null, next_attempt_at: null }).eq('id', job.id); continue;
+          }
+          p = profile; channels = notificationMethods(profile.notification_method as NotificationMethod);
         }
-        const channels = notificationMethods(p.notification_method as NotificationMethod);
         let success = false, completed = 0, attempted = false, missing = false, blocked = false, lastError = '';
         for (const channel of channels) {
           const contact = channel === 'email' ? (p.email || '').trim().toLowerCase() : (p.phone || '').replace(/[^+0-9]/g, '');
