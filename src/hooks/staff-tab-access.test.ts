@@ -1,5 +1,7 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, it as test } from 'node:test';
+import { deepStrictEqual } from 'node:assert/strict';
 import { getVisibleStaffTabs } from './staff-tab-access';
+const expect = (actual: unknown) => ({ toEqual: (expected: unknown) => deepStrictEqual(actual, expected) });
 
 describe('staff tab role rules', () => {
   test('admin sees all ten tabs', () => {
