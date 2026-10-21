@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { HIDDEN_FINANCIAL_FLAGS, MarketingFinancialFlags } from '@/hooks/financial-visibility';
 import { useQueryClient } from '@tanstack/react-query';
+import { NotificationPreferences } from '@/components/settings/NotificationPreferences';
 
 interface Profile {
   id: string;
@@ -1179,6 +1180,7 @@ export function UserManagement() {
             <Button onClick={handleUpdateUser} className="w-full">
               Update User
             </Button>
+            {editingProfile && <NotificationPreferences targetId={editingProfile.id} allowLock={currentUserRoles.includes('admin') || (editingProfile.company_id === profiles.find(p => p.id === user?.id)?.company_id && currentUserRoles.some(role => ['car_wash_admin', 'distributor_admin', 'vendor_admin'].includes(role)))} />}
           </div>
         </DialogContent>
       </Dialog>

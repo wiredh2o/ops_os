@@ -11,6 +11,8 @@ import { HierarchicalPermissionManager } from "@/components/permissions/Hierarch
 import { TaxSettings } from "@/components/settings/TaxSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { SystemSettings } from "@/components/settings/SystemSettings";
+import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
+import { NotificationFailureList } from "@/components/settings/NotificationFailureList";
 import { PendingRefundsManager } from "@/components/accounting/PendingRefundsManager";
 // BoxSizeManager is now imported inside ShippingMaterialsSettings
 import { ShippingMaterialsSettings } from "@/components/settings/ShippingMaterialsSettings";
@@ -25,7 +27,8 @@ const BRANDING_BUCKET = "branding";
 const COMPANY_LOGO_PATH = "company-logo.png";
 
 const Settings = () => {
-  const { roles } = useAuth();
+  const { roles, rolesLoading } = useAuth();
+  const staff = roles.some(role => ['admin', 'sales_support', 'production', 'accounting', 'marketing', 'tech_support'].includes(role));
   const accountingOnly = roles.includes("accounting") && !roles.includes("admin");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -81,7 +84,9 @@ const Settings = () => {
     }
   };
 
-  if (accountingOnly) return <div className="container py-6"><TaxSettings /></div>;
+  if (rolesLoading) return <div className="container py-6">Loading settings…</div>;
+  if (!staff) return <div className="container max-w-3xl py-6"><h1 className="text-2xl font-bold">My settings</h1><NotificationPreferences />{roles.some(role => ['car_wash_admin','distributor_admin','vendor_admin'].includes(role)) && <UserManagement />}</div>;
+  if (accountingOnly) return <div className="container py-6"><NotificationFailureList /><TaxSettings /></div>;
 
   return (
     <div className="bg-gradient-to-br from-gray-50 to-white p-6">
@@ -90,6 +95,7 @@ const Settings = () => {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Settings</h1>
           <p className="text-gray-600">Manage your system configuration and preferences</p>
         </div>
+        <NotificationFailureList />
 
         <Tabs defaultValue="users" className="space-y-6">
           <TabsList className="grid w-full grid-cols-10">
