@@ -16,6 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { readQueuePages, readQueueRelations } from '@/lib/queue-data';
 import { isRepairPackageArchived, isRepairItemResolved } from '@/lib/queue-lifecycle';
 import type { InboundPackage } from "./InboundPackageCard";
+import { useRmaRequests } from '@/hooks/useRmaRequests';
+import { rmaIntakeNotes, type RmaRequest } from '@/lib/rma';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UnifiedPackageModalProps {
   open: boolean;
@@ -23,9 +26,13 @@ interface UnifiedPackageModalProps {
   mode: 'receive' | 'edit';
   package?: InboundPackage;
   onSuccess?: () => void;
+  rma?: RmaRequest;
 }
 
-export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, onSuccess }: UnifiedPackageModalProps) {
+export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, onSuccess, rma }: UnifiedPackageModalProps) {
+  const pendingRmas = useRmaRequests(true);
+  const [selectedRmaId, setSelectedRmaId] = useState('');
+  const selectedRma = rma || pendingRmas.data?.find(entry => entry.id === selectedRmaId);
   const [packageItems, setPackageItems] = useState<Array<{ id: string; status: string; completion_outcome: string | null }>>([]);
   const [resolutionLoading, setResolutionLoading] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -42,6 +49,15 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
   
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!open || mode !== 'receive' || !selectedRma) return;
+    setTrackingNumber(selectedRma.tracking_number || '');
+    setSelectedCustomer(selectedRma.company_id);
+    setNotes(rmaIntakeNotes(selectedRma));
+    setReturnShippingAddress(selectedRma.return_shipping_address || '');
+    setDateReceived(new Date());
+  }, [open, mode, selectedRma]);
 
   useEffect(() => {
     if (!open || mode !== 'edit' || !pkg) { setPackageItems([]); return; }
@@ -140,10 +156,10 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
       } else {
         // Default values for receive mode
         setDateReceived(new Date());
-        setTrackingNumber("");
-        setSelectedCustomer("");
-        setNotes("");
-        setReturnShippingAddress("");
+        setTrackingNumber(selectedRma?.tracking_number || "");
+        setSelectedCustomer(selectedRma?.company_id || "");
+        setNotes(selectedRma ? rmaIntakeNotes(selectedRma) : "");
+        setReturnShippingAddress(selectedRma?.return_shipping_address || "");
         setPackageImages([]);
       }
     }
@@ -225,8 +241,18 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
 
     try {
       if (mode === 'receive') {
-        // Create new package
-        const { data: packageData, error: packageError } = await supabase
+        // An issued RMA already has a package; receive it rather than creating a duplicate.
+        let packageData: { id: string };
+        if (selectedRma) {
+          const { data, error } = await supabase.rpc('receive_rma', {
+            p_id: selectedRma.id, p_tracking: trackingNumber.trim(), p_received_at: dateReceived.toISOString(),
+            p_notes: notes, p_return_address: returnShippingAddress,
+          });
+          if (error) throw error;
+          packageData = { id: data };
+          pendingRmas.refetch();
+        } else {
+        const { data, error: packageError } = await supabase
           .from('inbound_packages')
           .insert({
             tracking_number: trackingNumber,
@@ -242,6 +268,8 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
           .single();
 
         if (packageError) throw packageError;
+        packageData = data;
+        }
 
         // Upload new images if any
         if (packageImages.length > 0) {
@@ -351,6 +379,7 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
   };
 
   const handleCancel = () => {
+    setSelectedRmaId('');
     setTrackingNumber("");
     setDateReceived(mode === 'receive' ? new Date() : undefined);
     setSelectedCustomer("");
@@ -469,6 +498,8 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
         </DialogHeader>
         
         <div className="space-y-4">
+          {mode === 'receive' && !rma && <div className="space-y-2"><Label>Approved RMA</Label><Select value={selectedRmaId || 'manual'} onValueChange={value => setSelectedRmaId(value === 'manual' ? '' : value)}><SelectTrigger aria-label="Approved RMA"><SelectValue placeholder="Select RMA or manual receipt" /></SelectTrigger><SelectContent><SelectItem value="manual">Manual receipt</SelectItem>{(pendingRmas.data || []).map(entry => <SelectItem key={entry.id} value={entry.id}>{entry.rma_number}{entry.tracking_number ? ` · ${entry.tracking_number}` : ''}</SelectItem>)}</SelectContent></Select>{pendingRmas.error && <p className="text-destructive text-sm">Unable to load approved RMAs.</p>}</div>}
+          {selectedRma && <p className="text-sm font-medium">{selectedRma.rma_number}</p>}
           {mode === 'edit' && pkg && <div className="text-sm text-muted-foreground" role="status">
             {resolutionLoading ? 'Loading item resolutions…' : isRepairPackageArchived(pkg, packageItems) ? 'Archived — all items resolved' : `${packageItems.filter(item => !isRepairItemResolved(item)).length + Math.max(0, (pkg.item_count || 0) - packageItems.length)} unresolved items`}
           </div>}
@@ -494,7 +525,7 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
                   role="combobox"
                   aria-expanded={customerOpen}
                   className="w-full justify-between"
-                  disabled={companiesLoading}
+                  disabled={companiesLoading || Boolean(selectedRma)}
                 >
                   {selectedCustomer
                     ? companies.find((c) => c.id === selectedCustomer)?.name
