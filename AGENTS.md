@@ -7,6 +7,7 @@
 - External RMAs use authorized company-scoped RPCs and issued inbound packages; receipt updates that package instead of duplicating it, and the existing unboxing and diagnosis flows remain authoritative.
 - Tax jurisdictions and ZIP assignments are authoritative settings; server-side order triggers calculate snapshots, paid invoices lock them, and all displays consume separate tax lines instead of a global rate. Private-schema tax RPC implementations retain role/company checks while public wrappers use invoker permissions.
 - Monthly ZIP comparison uses a free community directory, transactional completeness guards and review alerts; source changes never overwrite ZIP jurisdiction assignments.
+- External notifications use a service-only outbox and private authorization RPCs; a leased worker applies recipient preferences, contact blocking and bounded retries so delivery credentials can be added independently.
 
 ## Backend
 - This project is a remix; it runs on the user's own Supabase project named "Ops_OS" (connected manually in the editor, not from chat). The baked-in client URL may still point at the original project's Supabase — it must be repointed after Ops_OS is connected.

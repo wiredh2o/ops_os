@@ -11,6 +11,7 @@ import { useSystemSetting, useUpdateSystemSetting } from "@/hooks/useSystemSetti
 import { CompanyProfileSettings } from "./CompanyProfileSettings";
 import { EmailTemplateManager } from "./EmailTemplateManager";
 import { TaxSettings } from "./TaxSettings";
+import { NotificationFailureList } from './NotificationFailureList';
 
 
 export function SystemSettings() {
@@ -99,6 +100,7 @@ export function SystemSettings() {
         </p>
       </div>
       <Separator />
+      <NotificationFailureList />
 
       {/* Company Profile Section */}
       <Collapsible open={companyOpen} onOpenChange={setCompanyOpen}>
