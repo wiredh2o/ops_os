@@ -320,6 +320,7 @@ Deno.serve(async (req) => {
               </div>`;
 
             const resetResult = await sendResendEmail({
+              bypassPreferences: true,
               to: email,
               subject: "Set your password - Wash Gear",
               html: resetHtml,
@@ -425,6 +426,7 @@ Deno.serve(async (req) => {
         </div>`;
 
       const welcomeResult = await sendResendEmail({
+        bypassPreferences: true,
         to: email,
         subject: `Welcome to WashGear${firstName ? `, ${firstName}` : ''}!`,
         html: html,

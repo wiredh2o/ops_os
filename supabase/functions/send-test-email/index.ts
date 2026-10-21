@@ -253,6 +253,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending test email to ${recipient_email} for template: ${template_id}`);
 
     const result = await sendResendEmail({
+      bypassPreferences: true,
       to: recipient_email,
       subject: `[TEST] ${finalSubject}`,
       html: finalHtml,
