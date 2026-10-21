@@ -1,4 +1,10 @@
 # Tasks
+## External RMA workflow
+- [ ] Add company-scoped requests, staff approval/appointment invitation, and requester status access.
+- [ ] Feed issued RMA data into existing receiving packages without rebuilding unboxing or diagnosis.
+- [ ] Add return tracking and UPS/FedEx paid-label path; exclude USPS.
+- [ ] Test authorization and lifecycle rules; record unavailable signed-in checks.
+
 - [x] Read existing role and marketing flags.
 - [x] Add admin-only per-user marketing revenue, margin and supplier-price flags if missing, independently of View switches.
 - [x] Hide marketing financial fields inside permitted tabs unless the corresponding per-user flag is enabled.
