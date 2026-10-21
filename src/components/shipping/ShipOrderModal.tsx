@@ -1,3 +1,5 @@
+import { calculateJurisdictionTax, getTaxModel, type TaxModel } from '@/lib/tax-utils';
+import { TaxLines } from '@/components/production/TaxLines';
 import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -46,11 +48,13 @@ interface ShippingAddress {
   zip: string;
   country: string;
   signature_required: boolean;
+  is_taxable?: boolean;
 }
 
 interface Customer {
   id: string;
   name: string;
+  is_taxable?: boolean;
   email: string;
   phone: string;
   payment_terms: string;
@@ -100,8 +104,9 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [customerIsTaxable, setCustomerIsTaxable] = useState(true);
-  const [systemTaxRate, setSystemTaxRate] = useState(0);
+  const [taxModel, setTaxModel] = useState<TaxModel>({ jurisdictions: [], zips: [], assignments: [] });
+  const [taxPending, setTaxPending] = useState(true);
+  const [taxError, setTaxError] = useState('');
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [step, setStep] = useState<'address' | 'packing' | 'select_rate' | 'payment' | 'manual_entry' | 'creating_label' | 'print_label' | 'pickup_complete'>('address');
   const [isPickUpOrder, setIsPickUpOrder] = useState(false);
@@ -306,18 +311,6 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
     try {
       setLoading(true);
       
-      // Fetch system tax rate
-      const { data: taxSetting } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'sales_tax_percentage')
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      if (taxSetting?.setting_value) {
-        setSystemTaxRate(parseFloat(taxSetting.setting_value));
-      }
-      
       // Fetch full order details with customer info and line items
       const { data: orderData, error: orderError } = await supabase
         .from('production_orders')
@@ -429,7 +422,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
           : (resolvedCompany.shipping_addresses || []);
         
         // Set customer taxability status
-        setCustomerIsTaxable(resolvedCompany.is_taxable !== false);
+
         
         // Check if this is a Pick-Up customer
         const pickUp = resolvedCompany.preferred_shipping_carrier === 'Pick-Up';
@@ -536,40 +529,26 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
     );
   };
 
-  // Get the tax rate - use stored rate if available, otherwise use system rate
-  const getTaxRate = () => {
-    // If customer is not taxable, return 0
-    if (!customerIsTaxable) return 0;
-    // Check if any item has a stored tax rate > 0
-    if (orderDetails?.items) {
-      const storedRate = orderDetails.items.find((item: any) => item.is_taxable && item.tax_rate > 0)?.tax_rate;
-      if (storedRate) return storedRate;
-    }
-    // Fall back to system tax rate
-    return systemTaxRate;
-  };
-
-  // Get total sales tax - calculate dynamically if stored values are 0
-  const getTotalTax = () => {
-    if (!orderDetails?.items || !customerIsTaxable) return 0;
-    
-    // Check if items have stored tax amounts
-    const storedTaxTotal = orderDetails.items.reduce(
-      (sum: number, item: any) => sum + (item.tax_amount || 0), 
-      0
-    );
-    if (storedTaxTotal > 0) return storedTaxTotal;
-    
-    // Calculate dynamically from taxable items using system rate
-    const rate = getTaxRate();
-    return orderDetails.items.reduce((sum: number, item: any) => {
-      if (item.is_taxable) {
-        const itemTotal = item.total_price || (item.unit_price * item.quantity) || 0;
-        return sum + (itemTotal * rate / 100);
-      }
-      return sum;
-    }, 0);
-  };
+  const taxLocked = !!(orderDetails?.payment_received_at || orderDetails?.label_created_at || orderDetails?.picked_up_at);
+  const liveTax = calculateJurisdictionTax(taxModel, {
+    customerIsTaxable: customer?.is_taxable === true, distributor: customer?.is_distributor,
+    destination: selectedAddress, shipping: selectedRate?.total_charge || 0, shipments: isPickUpOrder ? 0 : 1,
+    items: (orderDetails?.items || []).map((i: any) => ({ amount: i.total_price || 0, item_type: i.item_type, is_taxable: i.is_taxable === true })),
+  });
+  const taxLines = taxLocked ? orderDetails?.tax_lines : liveTax.taxLines;
+  const taxReview = taxLocked ? orderDetails?.tax_review_required : liveTax.reviewRequired;
+  const getTotalTax = () => taxLocked ? orderDetails?.tax_amount || 0 : liveTax.taxAmount;
+  useEffect(() => {
+    if (!customer || !selectedAddress || taxLocked) { if (taxLocked) setTaxPending(false); return; }
+    let cancelled = false; setTaxPending(true); setTaxError('');
+    (async () => {
+      const model = await getTaxModel(selectedAddress.state, selectedAddress.zip);
+      const { error } = await supabase.from('production_orders').update({ tax_destination: selectedAddress as any, shipping_cost: selectedRate?.total_charge || 0 }).eq('id', order.id);
+      if (error) throw error;
+      if (!cancelled) setTaxModel(model);
+    })().catch(e => { if (!cancelled) setTaxError(e.message); }).finally(() => { if (!cancelled) setTaxPending(false); });
+    return () => { cancelled = true; };
+  }, [customer?.id, selectedAddress, selectedRate?.total_charge, taxLocked]);
 
   const getOrderSubtotal = () => {
     return getItemsSubtotal() + getTotalTax();
@@ -850,6 +829,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
     saveCard?: boolean,
     hasExistingCards?: boolean
   ) => {
+    if (taxPending || taxError || taxReview) { toast({ title: 'Tax review required', description: taxError || 'Admin or Accounting must complete destination tax settings.', variant: 'destructive' }); return; }
     setSelectedPaymentMethod(methodId);
     setPaymentMethodType(type);
     setPaymentAmountOption(amountOption);
@@ -882,6 +862,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
   // Charge payment only (after label created)
   const handleChargePayment = async () => {
     if (!customer) return;
+    if (taxPending || taxError || taxReview) { setPaymentError(taxError || 'Tax jurisdiction review is required before payment.'); return; }
     
     setIsProcessingPayment(true);
     setPaymentError(null);
@@ -1253,10 +1234,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                     <span>Subtotal:</span>
                     <span><FinancialGuard kind="revenue">{formatCurrency(getItemsSubtotal())}</FinancialGuard></span>
                   </div>
-                  <div className="flex justify-between gap-4">
-                    <span>Tax ({getTaxRate()}%):</span>
-                    <span><FinancialGuard kind="revenue">{formatCurrency(getTotalTax())}</FinancialGuard></span>
-                  </div>
+                  <TaxLines lines={taxLines} legacyAmount={getTotalTax()} reviewRequired={taxReview || !!taxError}/>
                   {selectedRate && (
                     <div className="flex justify-between gap-4">
                       <span>Shipping:</span>

@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
       items,
       subtotal,
       tax,
+      taxLines = [],
       shipping,
       total,
       shippingAddress,
@@ -48,6 +49,8 @@ Deno.serve(async (req) => {
       getEmailTemplate(supabase, "email_order_confirmation_subject", "email_order_confirmation_body"),
     ]);
 
+    const escape = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c] || c));
+    const taxRows = Array.isArray(taxLines) ? taxLines.map((line: any) => `<tr><td style="padding:6px 0;">${escape(line.name)}${line.type === 'sales_tax' ? ` (${Number(line.rate)}%)` : ''}</td><td style="padding:6px 0;text-align:right;">$${Number(line.amount).toFixed(2)}</td></tr>`).join('') : '';
     let html: string;
     let subject: string;
 
@@ -79,7 +82,7 @@ Deno.serve(async (req) => {
         company_name: companyName,
       };
 
-      const bodyContent = replaceTemplateVariables(customTemplate.body, templateVars);
+      const bodyContent = replaceTemplateVariables(customTemplate.body, templateVars) + (taxRows ? `<table style="width:100%;">${taxRows}</table>` : "");
       const titleText = customTemplate.subject
         ? replaceTemplateVariables(customTemplate.subject, templateVars)
         : `Order Confirmation — #${orderNumber}`;
@@ -92,7 +95,7 @@ Deno.serve(async (req) => {
       const totalsRows = [
         `<tr><td style="padding: 6px 0; color: #6b7280;">Subtotal</td><td style="padding: 6px 0; text-align: right; font-weight: 500;">$${Number(subtotal).toFixed(2)}</td></tr>`,
       ];
-      if (tax > 0) {
+      if (taxRows) { totalsRows.push(taxRows); } else if (tax > 0) {
         totalsRows.push(
           `<tr><td style="padding: 6px 0; color: #6b7280;">Tax</td><td style="padding: 6px 0; text-align: right;">$${Number(tax).toFixed(2)}</td></tr>`
         );

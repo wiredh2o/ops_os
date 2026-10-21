@@ -143,7 +143,7 @@ async function sendEmail(
   // Fetch order details for tax and shipping
   const { data: orderData, error: orderError } = await supabase
     .from("production_orders")
-    .select("subtotal, tax_amount, shipping_cost, total_amount")
+    .select("tax_amount, tax_lines, shipping_cost, total_amount")
     .eq("id", orderId)
     .single();
 
@@ -155,9 +155,11 @@ async function sendEmail(
   const itemsTable = buildItemsTable(orderItems || []);
   
   // Calculate totals
-  const subtotal = orderData?.subtotal || amount;
+  const subtotal = (orderItems || []).reduce((sum: number, item: any) => sum + (item.total_price || 0), 0) || amount;
   const taxAmount = orderData?.tax_amount || 0;
   const shippingCost = orderData?.shipping_cost || 0;
+  const escapeTax = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c] || c));
+  const taxRows = (orderData?.tax_lines || []).map((line: any) => `<tr><td style="padding:4px 0;">${escapeTax(line.name)}${line.type === 'sales_tax' ? ` (${Number(line.rate)}%)` : ''}</td><td style="padding:4px 0;text-align:right;">$${Number(line.amount).toFixed(2)}</td></tr>`).join('');
 
   // Fetch company info and logo
   const [logoUrl, templates] = await Promise.all([
@@ -183,7 +185,7 @@ async function sendEmail(
 
   if (templates.subject && templates.body) {
     emailSubject = replaceTemplateVariables(templates.subject, templateVars);
-    htmlContent = replaceTemplateVariables(templates.body, templateVars);
+    htmlContent = replaceTemplateVariables(templates.body, templateVars) + (taxRows ? `<table style="width:100%;">${taxRows}</table>` : "");
   } else {
     // Default template with detailed invoice
     emailSubject = `Payment Request - Order #${orderNumber}`;
@@ -230,12 +232,12 @@ async function sendEmail(
                     <td style="padding: 4px 0; color: #6b7280;">Subtotal:</td>
                     <td style="padding: 4px 0; text-align: right; color: #1f2937;">$${subtotal.toFixed(2)}</td>
                   </tr>
-                  ${taxAmount > 0 ? `
+                  ${taxRows || (taxAmount > 0 ? `
                   <tr>
                     <td style="padding: 4px 0; color: #6b7280;">Tax:</td>
                     <td style="padding: 4px 0; text-align: right; color: #1f2937;">$${taxAmount.toFixed(2)}</td>
                   </tr>
-                  ` : ''}
+                  ` : '')}
                   ${shippingCost > 0 ? `
                   <tr>
                     <td style="padding: 4px 0; color: #6b7280;">Shipping:</td>
