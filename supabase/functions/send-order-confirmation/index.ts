@@ -1,3 +1,4 @@
+import { requireNotificationStaff } from "../_shared/notification-auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
 import { sendResendEmail } from "../_shared/resend-email.ts";
 import {
@@ -21,6 +22,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await requireNotificationStaff(req);
     const {
       orderNumber,
       customerEmail,
@@ -39,8 +41,8 @@ Deno.serve(async (req) => {
     } = await req.json();
 
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
     );
 
     const [logoUrl, companyName, customTemplate] = await Promise.all([

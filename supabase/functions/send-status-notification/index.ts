@@ -1,3 +1,4 @@
+import { requireNotificationStaff } from "../_shared/notification-auth.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
 import { queueContactNotification } from "../_shared/notification-outbox.ts";
@@ -162,6 +163,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    await requireNotificationStaff(req);
     const { order_type, order_id, order_number, status, customer_email, customer_phone, customer_name }: NotificationRequest = await req.json();
 
     console.log(`Processing notification for ${order_type} order ${order_number} - Status: ${status}`);

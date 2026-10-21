@@ -1,3 +1,4 @@
+import { requireNotificationStaff } from "../_shared/notification-auth.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
 import { queueContactNotification } from "../_shared/notification-outbox.ts";
@@ -336,6 +337,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireNotificationStaff(req);
     const { order_id, order_number, customer_email, customer_phone, customer_name, amount }: PaymentLinkRequest = await req.json();
 
     console.log("Processing payment link request:", { order_id, order_number, customer_email, customer_phone, amount });
