@@ -14,6 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import { UserPlus, Edit, Trash2, Shield, Users, Mail, RotateCcw } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { HIDDEN_FINANCIAL_FLAGS, MarketingFinancialFlags } from '@/hooks/financial-visibility';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Profile {
   id: string;
@@ -24,6 +27,9 @@ interface Profile {
   is_active: boolean;
   company_id: string | null;
   price_level_id: string | null;
+  marketing_view_revenue?: boolean;
+  marketing_view_margin?: boolean;
+  marketing_view_supplier_price?: boolean;
   
   created_at: string;
   updated_at: string;
@@ -55,6 +61,9 @@ interface PendingInvite {
 
 const ROLE_DESCRIPTIONS = {
   admin: 'Full system access',
+  production: 'Production and inventory',
+  accounting: 'Accounting',
+  marketing: 'Marketing with per-user financial visibility',
   sales_support: 'Sales and customer management',
   car_wash_admin: 'Car wash administrative functions',
   car_wash_employee: 'Car wash employee access',
@@ -77,6 +86,8 @@ const ROLE_COLORS = {
 
 export function UserManagement() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [financialFlags, setFinancialFlags] = useState<MarketingFinancialFlags>(HIDDEN_FINANCIAL_FLAGS);
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
@@ -279,6 +290,15 @@ export function UserManagement() {
 
         if (rolesError) throw rolesError;
       }
+
+      if (currentUserRoles.includes('admin') && formData.roles.includes('marketing')) {
+        const { error: flagsError } = await supabase.from('profiles')
+          .update(financialFlags).eq('id', editingProfile.id);
+        if (flagsError) throw flagsError;
+        await queryClient.invalidateQueries({ queryKey: ['marketing-financial-flags', editingProfile.id] });
+      }
+      await queryClient.invalidateQueries({ queryKey: ['staff-user-roles', editingProfile.id] });
+      await queryClient.invalidateQueries({ queryKey: ['staff-marketing-view-permissions', editingProfile.id] });
 
       toast({
         title: 'Success',
@@ -600,6 +620,11 @@ export function UserManagement() {
 
   const openEditDialog = (profile: Profile) => {
     setEditingProfile(profile);
+    setFinancialFlags({
+      marketing_view_revenue: profile.marketing_view_revenue === true,
+      marketing_view_margin: profile.marketing_view_margin === true,
+      marketing_view_supplier_price: profile.marketing_view_supplier_price === true,
+    });
     const roles = getUserRoles(profile.id);
     setFormData({
       email: profile.email,
@@ -1136,6 +1161,21 @@ export function UserManagement() {
                 })}
               </div>
             </div>
+            {currentUserRoles.includes('admin') && formData.roles.includes('marketing') && (
+              <fieldset className="space-y-3">
+                <legend className="text-sm font-medium">Marketing financial visibility</legend>
+                {([
+                  ['marketing_view_revenue', 'Revenue'],
+                  ['marketing_view_margin', 'Margin'],
+                  ['marketing_view_supplier_price', 'Supplier price'],
+                ] as const).map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between gap-4">
+                    <Label htmlFor={key}>{label}</Label>
+                    <Switch id={key} checked={financialFlags[key]} onCheckedChange={checked => setFinancialFlags(previous => ({ ...previous, [key]: checked }))} />
+                  </div>
+                ))}
+              </fieldset>
+            )}
             <Button onClick={handleUpdateUser} className="w-full">
               Update User
             </Button>
