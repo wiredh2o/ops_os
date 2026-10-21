@@ -68,6 +68,8 @@ import { StripeCustomerLink } from "@/components/customers/StripeCustomerLink";
 import { PaymentSelector } from "@/components/shipping/PaymentSelector";
 import { PackingStepContent, type PackingConfig } from "@/components/shipping/PackingStepContent";
 import type { PackingResult } from "@/lib/box-packing-utils";
+import { DropShipAddressPanel } from "@/components/shipping/DropShipAddressPanel";
+import { carrierAllowedForDropShip, isDropShipSnapshot, toDropShipSnapshot, type DropShipAddress } from "@/lib/drop-ship";
 
 // Build the serializable packing payload (used by all save paths).
 // Returns a plain JS array — Supabase handles jsonb serialization automatically.
@@ -428,6 +430,7 @@ function formatDeliveryDate(isoString: string): string {
   const [formData, setFormData] = useState({
     customer_company_id: "",
     shipping_address_id: "",
+    drop_ship_address_id: "",
     carrier_preference: "",
     shipping_method_preference: "",
     signature_option: "indirect",
@@ -448,6 +451,8 @@ function formatDeliveryDate(isoString: string): string {
   const [packingConfig, setPackingConfig] = useState<PackingConfig | null>(null);
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddress[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<ShippingAddress | null>(null);
+  // Distributor-owned drop-ship address (not linked to any car-wash account)
+  const [dropShipAddress, setDropShipAddress] = useState<DropShipAddress | null>(null);
   const shippingAddressesRef = useRef(shippingAddresses);
   shippingAddressesRef.current = shippingAddresses;
 
@@ -621,9 +626,9 @@ function formatDeliveryDate(isoString: string): string {
 
   // Filter and sort shipping options
   const filteredOptions = useMemo(() => {
-    const filtered = availableShippingOptions.filter((opt) => carrierFilters.has(opt.carrier));
+    const filtered = availableShippingOptions.filter((opt) => carrierFilters.has(opt.carrier) && carrierAllowedForDropShip(opt.carrier, dropShipAddress));
     return calculateValueScores(filtered);
-  }, [availableShippingOptions, carrierFilters]);
+  }, [availableShippingOptions, carrierFilters, dropShipAddress]);
 
   const sortedOptions = useMemo(() => {
     const sorted = [...filteredOptions];
@@ -735,6 +740,7 @@ function formatDeliveryDate(isoString: string): string {
        setFormData({
          customer_company_id: orderData.customer_company_id,
          shipping_address_id: orderData.shipping_address_id || "",
+         drop_ship_address_id: (orderData as any).drop_ship_address_id || "",
          carrier_preference: orderData.carrier_preference || "",
          shipping_method_preference: orderData.shipping_method_preference || "",
          signature_option: orderData.signature_option || "indirect",
@@ -763,7 +769,12 @@ function formatDeliveryDate(isoString: string): string {
          
          // Set selected address
          const selectedAddr = addresses.find(a => a.id === orderData.shipping_address_id);
-         if (selectedAddr) {
+         const savedDropShip = (orderData as any).drop_ship_snapshot;
+         if (isDropShipSnapshot(savedDropShip)) {
+           setDropShipAddress(savedDropShip);
+           setSelectedAddress(savedDropShip as unknown as ShippingAddress);
+         } else if (selectedAddr) {
+           setDropShipAddress(null);
            setSelectedAddress(selectedAddr);
          }
 
@@ -1294,6 +1305,8 @@ function formatDeliveryDate(isoString: string): string {
       setShowAddAddressForm(false);
       setEditingAddress(null);
       setShowEditBillingForm(false);
+      setDropShipAddress(null);
+      setFormData((prev) => ({ ...prev, drop_ship_address_id: "" }));
 
       const defaultAddr =
         addresses.find((a: ShippingAddress) => a.id === company.default_shipping_address_id) || addresses[0];
@@ -1325,8 +1338,23 @@ function formatDeliveryDate(isoString: string): string {
 
   const handleAddressSelect = (address: ShippingAddress) => {
     setSelectedAddress(address);
-    setFormData((prev) => ({ ...prev, shipping_address_id: address.id }));
+    setDropShipAddress(null);
+    setFormData((prev) => ({ ...prev, shipping_address_id: address.id, drop_ship_address_id: "" }));
     setEditingAddress(null);
+  };
+
+  const handleDropShipSelect = (address: DropShipAddress) => {
+    setDropShipAddress(address);
+    setSelectedAddress(toDropShipSnapshot(address) as unknown as ShippingAddress);
+    setFormData((prev) => ({
+      ...prev,
+      shipping_address_id: "",
+      drop_ship_address_id: address.id,
+      // USPS is not allowed until the drop-ship address is flagged USPS eligible
+      ...(prev.carrier_preference === "usps" && !address.usps_eligible ? { carrier_preference: "", shipping_method_preference: "" } : {}),
+    }));
+    setEditingAddress(null);
+    setShowAddAddressForm(false);
   };
 
   const handleSaveNewAddress = async (
@@ -1534,6 +1562,7 @@ function formatDeliveryDate(isoString: string): string {
       formData: {
         customer_company_id: currentFormData.customer_company_id,
         shipping_address_id: currentFormData.shipping_address_id,
+        drop_ship_address_id: currentFormData.drop_ship_address_id,
         signature_option: currentFormData.signature_option,
         shipping_preference: currentFormData.shipping_preference,
         priority: currentFormData.priority,
@@ -1591,7 +1620,8 @@ function formatDeliveryDate(isoString: string): string {
           .from("customer_orders")
            .update({
             customer_company_id: currentFormData.customer_company_id,
-            shipping_address_id: currentFormData.shipping_address_id || null,
+            shipping_address_id: currentFormData.drop_ship_address_id ? null : currentFormData.shipping_address_id || null,
+            drop_ship_address_id: currentFormData.drop_ship_address_id || null,
             tax_destination: shippingAddressesRef.current.find(a => a.id === currentFormData.shipping_address_id) as any || null,
             signature_option: currentFormData.signature_option,
             shipping_preference: currentFormData.shipping_preference,
@@ -1670,7 +1700,8 @@ function formatDeliveryDate(isoString: string): string {
            .insert({
             order_number: orderNumber,
             customer_company_id: currentFormData.customer_company_id,
-            shipping_address_id: currentFormData.shipping_address_id || null,
+            shipping_address_id: currentFormData.drop_ship_address_id ? null : currentFormData.shipping_address_id || null,
+            drop_ship_address_id: currentFormData.drop_ship_address_id || null,
             tax_destination: shippingAddressesRef.current.find(a => a.id === currentFormData.shipping_address_id) as any || null,
             signature_option: currentFormData.signature_option,
             shipping_preference: currentFormData.shipping_preference,
@@ -1961,8 +1992,13 @@ function formatDeliveryDate(isoString: string): string {
       return;
     }
 
-    if (!formData.shipping_address_id) {
+    if (!formData.shipping_address_id && !formData.drop_ship_address_id) {
       toast({ title: "Error", description: "Please select a shipping address", variant: "destructive" });
+      return;
+    }
+
+    if (formData.carrier_preference && !carrierAllowedForDropShip(formData.carrier_preference, dropShipAddress)) {
+      toast({ title: "Error", description: "USPS cannot be used until this drop-ship address is flagged USPS eligible", variant: "destructive" });
       return;
     }
 
@@ -2000,7 +2036,8 @@ function formatDeliveryDate(isoString: string): string {
           carrier_preference: formData.carrier_preference || null,
           shipping_method_preference: formData.shipping_method_preference || null,
           customer_company_id: formData.customer_company_id,
-          shipping_address_id: formData.shipping_address_id,
+          shipping_address_id: formData.drop_ship_address_id ? null : formData.shipping_address_id,
+          drop_ship_address_id: formData.drop_ship_address_id || null,
           signature_option: formData.signature_option,
           shipping_preference: formData.shipping_preference,
           priority: formData.priority,
@@ -2109,6 +2146,7 @@ function formatDeliveryDate(isoString: string): string {
     setFormData({
       customer_company_id: "",
       shipping_address_id: "",
+      drop_ship_address_id: "",
       carrier_preference: "",
       shipping_method_preference: "",
       signature_option: "indirect",
@@ -2128,6 +2166,7 @@ function formatDeliveryDate(isoString: string): string {
     setPackingConfig(null);
     setShippingAddresses([]);
     setSelectedAddress(null);
+    setDropShipAddress(null);
     setBillingAddress(null);
     setShowAddAddressForm(false);
     setEditingAddress(null);
@@ -2573,6 +2612,17 @@ function formatDeliveryDate(isoString: string): string {
                 </div>
               )}
             </>
+          )}
+
+          {formData.customer_company_id && selectedCompany?.is_distributor && !showAddAddressForm && !editingAddress && (
+            <div className="pt-2 border-t space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Or drop-ship to</Label>
+              <DropShipAddressPanel
+                ownerCompanyId={formData.customer_company_id}
+                selectedId={formData.drop_ship_address_id || null}
+                onSelect={handleDropShipSelect}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -3119,7 +3169,7 @@ function formatDeliveryDate(isoString: string): string {
           {/* Carrier filter badges */}
           {(() => {
             const carriers = ["fedex", "ups", "usps"] as const;
-            const availableCarriers = carriers.filter((c) => availableShippingOptions.some((o) => o.carrier === c));
+            const availableCarriers = carriers.filter((c) => carrierAllowedForDropShip(c, dropShipAddress) && availableShippingOptions.some((o) => o.carrier === c));
             if (availableCarriers.length <= 1) return null;
 
             return (

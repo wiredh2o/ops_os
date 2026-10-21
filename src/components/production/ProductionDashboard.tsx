@@ -15,6 +15,7 @@ import { ShipOrderModal } from '@/components/shipping/ShipOrderModal';
 import { DeleteOrderDialog } from './DeleteOrderDialog';
  import { DeleteCustomerOrderDialog } from './DeleteCustomerOrderDialog';
 import { BackorderAlertWidget } from './BackorderAlertWidget';
+import { isDropShipSnapshot } from '@/lib/drop-ship';
 import { CustomerOrderCard, CustomerOrderSummary, CustomerOrderLineItem } from './CustomerOrderCard';
 import { FulfillCustomerOrderModal } from './FulfillCustomerOrderModal';
 import { CustomerOrderForm } from './CustomerOrderForm';
@@ -151,7 +152,7 @@ export const ProductionDashboard = () => {
             id, order_number, order_status, payment_status, priority, 
             shipping_preference, due_date, deposit_paid, deposit_amount,
             estimated_shipping, notes, created_at, customer_company_id,
-            customer_po, is_one_time_card, stripe_payment_method_id, tax_lines, tax_amount, tax_review_required,
+            customer_po, is_one_time_card, stripe_payment_method_id, tax_lines, tax_amount, tax_review_required, drop_ship_snapshot,
             company:companies(id, name, is_taxable, stripe_customer_id)
           `)
           .in('order_status', ['pending', 'partially_fulfilled'])
@@ -256,6 +257,7 @@ export const ProductionDashboard = () => {
             tax_lines: order.tax_lines,
             tax_review_required: order.tax_review_required,
             customer_po: order.customer_po || null,
+            drop_ship_snapshot: isDropShipSnapshot(order.drop_ship_snapshot) ? order.drop_ship_snapshot : null,
             is_one_time_card: order.is_one_time_card || false,
             stripe_payment_method_id: order.stripe_payment_method_id || null,
             stripe_customer_id: order.company?.stripe_customer_id || null,

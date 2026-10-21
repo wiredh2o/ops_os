@@ -20,6 +20,9 @@ interface ShippingAddress {
   country: string;
   signature_required: boolean;
   is_taxable?: boolean;
+  usps_eligible?: boolean;
+  email?: string | null;
+  phone?: string | null;
 }
 
 interface EditAddressFormProps {
@@ -29,6 +32,8 @@ interface EditAddressFormProps {
   onSave: (address: ShippingAddress, setAsDefault: boolean) => Promise<void>;
   onDelete: (addressId: string) => Promise<void>;
   onCancel: () => void;
+  /** Distributor-owned drop-ship address: not tied to a car-wash account. */
+  dropShip?: boolean;
 }
 
 export function EditAddressForm({ 
@@ -37,7 +42,8 @@ export function EditAddressForm({
   canDelete,
   onSave, 
   onDelete, 
-  onCancel 
+  onCancel,
+  dropShip = false,
 }: EditAddressFormProps) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -52,6 +58,9 @@ export function EditAddressForm({
     zip: address.zip || '',
     country: address.country || 'US',
     signature_required: address.signature_required || false,
+    usps_eligible: address.usps_eligible === true,
+    email: address.email || '',
+    phone: address.phone || '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,7 +93,7 @@ export function EditAddressForm({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
-            Edit Shipping Address
+            {dropShip ? 'Edit Drop-Ship Address' : 'Edit Shipping Address'}
           </CardTitle>
           <Button variant="ghost" size="icon" onClick={onCancel}>
             <X className="h-4 w-4" />
@@ -94,10 +103,10 @@ export function EditAddressForm({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Location Name</Label>
+            <Label htmlFor="name">{dropShip ? 'Car wash name (label recipient)' : 'Location Name'}</Label>
             <Input
               id="name"
-              placeholder="e.g., Main Store, Warehouse"
+              placeholder={dropShip ? "e.g., Sparkle Car Wash" : "e.g., Main Store, Warehouse"}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
@@ -158,6 +167,18 @@ export function EditAddressForm({
 
           <div className="flex items-center gap-2"><Switch id="edit-address-taxable" checked={formData.is_taxable} onCheckedChange={is_taxable => setFormData({ ...formData, is_taxable })}/><Label htmlFor="edit-address-taxable">Taxable ship-to address</Label></div>
 
+          {dropShip && (
+            <div className="space-y-3 rounded-md border p-3">
+              <div className="flex items-center gap-2"><Switch id="edit-usps-eligible" checked={formData.usps_eligible} onCheckedChange={usps_eligible => setFormData({ ...formData, usps_eligible })}/><Label htmlFor="edit-usps-eligible">USPS eligible</Label></div>
+              <p className="text-xs text-muted-foreground">USPS cannot be selected for this address until it is flagged USPS eligible.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2"><Label htmlFor="edit-ds-email">Notification email (optional)</Label><Input id="edit-ds-email" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}/></div>
+                <div className="space-y-2"><Label htmlFor="edit-ds-phone">Notification phone (optional)</Label><Input id="edit-ds-phone" type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })}/></div>
+              </div>
+              <p className="text-xs text-muted-foreground">If an email or phone is entered, a shipment notice is sent to each one provided.</p>
+            </div>
+          )}
+
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center space-x-2">
               <Switch
@@ -168,14 +189,14 @@ export function EditAddressForm({
               <Label htmlFor="signature" className="text-sm">Signature Required</Label>
             </div>
             
-            <div className="flex items-center space-x-2">
+            {!dropShip && <div className="flex items-center space-x-2">
               <Checkbox 
                 id="setDefault" 
                 checked={setAsDefault}
                 onCheckedChange={(checked) => setSetAsDefault(checked === true)}
               />
               <Label htmlFor="setDefault" className="text-sm">Set as default address</Label>
-            </div>
+            </div>}
           </div>
 
           <div className="flex gap-2 pt-2">

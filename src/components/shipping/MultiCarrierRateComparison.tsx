@@ -123,6 +123,8 @@ interface MultiCarrierRateComparisonProps {
   onThirdPartyBillingError?: (carrier: string, accountNumber: string, errorMessage: string, retryWithCompanyAccount: () => void) => void;
   /** When true, dims/weight come from the packing algorithm — inputs are read-only and rates auto-fetch */
   autoPackaging?: boolean;
+  /** Carriers that may not be offered (e.g. USPS for a drop-ship address not flagged USPS eligible). */
+  excludedCarriers?: string[];
 }
 
 const CARRIER_LOGOS: Record<string, string> = {
@@ -241,12 +243,20 @@ export function MultiCarrierRateComparison({
   onBack,
   shipFrom,
   shipToDetails,
+  excludedCarriers,
   orderId,
   thirdPartyBilling,
   onThirdPartyBillingError,
   autoPackaging = false,
 }: MultiCarrierRateComparisonProps) {
-  const enabledCarriers = useEnabledCarriers();
+  const configuredCarriers = useEnabledCarriers();
+  const excludedKey = (excludedCarriers || []).join(',');
+  const enabledCarriers = useMemo(() => ({
+    ...configuredCarriers,
+    fedex: configuredCarriers.fedex && !excludedKey.split(',').includes('fedex'),
+    ups: configuredCarriers.ups && !excludedKey.split(',').includes('ups'),
+    usps: configuredCarriers.usps && !excludedKey.split(',').includes('usps'),
+  }), [configuredCarriers.fedex, configuredCarriers.ups, configuredCarriers.usps, excludedKey]);
   const [rates, setRates] = useState<UnifiedRate[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);

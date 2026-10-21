@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { Calendar, Package, Truck, AlertCircle, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getCustomerOrderRibbon } from "@/lib/repair-item-status-ui";
+import type { DropShipSnapshot } from "@/lib/drop-ship";
 
 export interface CustomerOrderLineItem {
   id: string;
@@ -50,6 +51,8 @@ export interface CustomerOrderSummary {
   tax_lines?: unknown;
   tax_review_required?: boolean;
   customer_po: string | null;
+  /** Distributor drop-ship destination, when the order ships to a non-account address. */
+  drop_ship_snapshot?: DropShipSnapshot | null;
   is_one_time_card?: boolean;
   stripe_payment_method_id?: string | null;
   stripe_customer_id?: string | null;
@@ -115,6 +118,13 @@ interface CustomerOrderCardProps {
             <p className="text-xs text-muted-foreground">{order.order_number}</p>
             {order.customer_po && (
               <p className="text-xs text-muted-foreground">PO# {order.customer_po}</p>
+            )}
+            {order.drop_ship_snapshot && (
+              <div className="mt-1 text-xs">
+                <Badge variant="outline" className="text-[10px] px-1 py-0 mr-1"><Truck className="w-3 h-3 mr-1" />Drop-ship</Badge>
+                <span className="font-medium text-foreground">{order.drop_ship_snapshot.recipient_name}</span>
+                <p className="text-muted-foreground truncate">{order.drop_ship_snapshot.address}, {order.drop_ship_snapshot.city}, {order.drop_ship_snapshot.state} {order.drop_ship_snapshot.zip}</p>
+              </div>
             )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
