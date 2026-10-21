@@ -182,7 +182,7 @@ interface CustomerOrderCardProps {
           </div>
 
           {/* Expandable Details */}
-          <FinancialGuard kind="revenue">{order.line_items && order.line_items.length > 0 && (
+          {order.line_items && order.line_items.length > 0 && (
             <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
               <CollapsibleTrigger asChild>
                 <Button
@@ -205,7 +205,7 @@ interface CustomerOrderCardProps {
                           <span className="text-foreground truncate max-w-[140px]">
                             {item.item_name} <span className="text-muted-foreground">×{item.quantity_ordered}</span>
                           </span>
-                          <span className="text-muted-foreground">{formatCurrency(item.line_total)}</span>
+                          <span className="text-muted-foreground"><FinancialGuard kind="revenue">{formatCurrency(item.line_total)}</FinancialGuard></span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="left">
@@ -213,7 +213,7 @@ interface CustomerOrderCardProps {
                           <div><strong>SKU:</strong> {item.item_name}</div>
                           <div><strong>Item:</strong> {item.item_description}</div>
                           <div><strong>Quantity:</strong> {item.quantity_ordered}</div>
-                          <div><strong>Line Total:</strong> {formatCurrency(item.line_total)}</div>
+                          <div><strong>Line Total:</strong> <FinancialGuard kind="revenue">{formatCurrency(item.line_total)}</FinancialGuard></div>
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -223,16 +223,16 @@ interface CustomerOrderCardProps {
                   <div className="border-t border-border pt-1.5 mt-1.5 space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Subtotal:</span>
-                      <span className="text-foreground">{formatCurrency(order.order_total)}</span>
+                      <span className="text-foreground"><FinancialGuard kind="revenue">{formatCurrency(order.order_total)}</FinancialGuard></span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Tax:</span>
-                      <span className="text-foreground">{formatCurrency(order.tax_amount)}</span>
+                      <span className="text-foreground"><FinancialGuard kind="revenue">{formatCurrency(order.tax_amount)}</FinancialGuard></span>
                     </div>
                     <div className="border-t border-border pt-1 mt-1">
                       <div className="flex justify-end text-xs font-semibold">
                         <span className="text-foreground">
-                          Total: {formatCurrency(order.order_total + order.tax_amount)}
+                          Total: <FinancialGuard kind="revenue">{formatCurrency(order.order_total + order.tax_amount)}</FinancialGuard>
                         </span>
                         <span className="font-normal text-muted-foreground ml-1">(Plus Shipping)</span>
                       </div>
@@ -241,15 +241,15 @@ interface CustomerOrderCardProps {
                 </div>
               </CollapsibleContent>
             </Collapsible>
-          )}</FinancialGuard>
+          )}
 
           {/* Total when collapsed */}
-          <FinancialGuard kind="revenue">{!isExpanded && (
+          {!isExpanded && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              {formatCurrency(order.order_total + order.tax_amount)}
+              <FinancialGuard kind="revenue">{formatCurrency(order.order_total + order.tax_amount)}</FinancialGuard>
               <span className="text-muted-foreground">(Plus Shipping)</span>
             </div>
-          )}</FinancialGuard>
+          )}
 
           {/* Notes */}
           {order.notes && (

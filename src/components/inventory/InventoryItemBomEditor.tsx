@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -238,8 +239,8 @@ export const InventoryItemBomEditor = ({
                             {component.component_item_id ? (
                               <span className="truncate">
                                 {component.component_sku}
-                                {component.component_description &&
-                                  ` - ${component.component_description}`}
+                                <FinancialGuard kind="supplier_price">{component.component_description &&
+                                  ` - ${component.component_description}`}</FinancialGuard>
                               </span>
                             ) : (
                               <span className="text-muted-foreground">
@@ -275,8 +276,8 @@ export const InventoryItemBomEditor = ({
                                     />
                                     <span className="truncate">
                                       {item.sku}
-                                      {item.sales_description &&
-                                        ` - ${item.sales_description}`}
+                                      <FinancialGuard kind="supplier_price">{item.sales_description &&
+                                        ` - ${item.sales_description}`}</FinancialGuard>
                                     </span>
                                   </CommandItem>
                                 ))}
@@ -316,13 +317,13 @@ export const InventoryItemBomEditor = ({
                       />
                     </td>
                     <td className="p-2 text-right text-sm">
-                      {component.unit_cost
+                      <FinancialGuard kind="supplier_price">{component.unit_cost
                         ? `$${component.unit_cost.toFixed(4)}`
-                        : "-"}
+                        : "-"}</FinancialGuard>
                     </td>
-                    <td className="p-2 text-right text-sm font-medium">
+                    <FinancialGuard kind="supplier_price"><td className="p-2 text-right text-sm font-medium">
                       ${calculateExtendedCost(component).toFixed(4)}
-                    </td>
+                    </td></FinancialGuard>
                     <td className="p-2">
                       <Button
                         type="button"
@@ -343,9 +344,9 @@ export const InventoryItemBomEditor = ({
                 <td colSpan={4} className="p-3 text-right font-medium">
                   Total BOM Cost per Unit:
                 </td>
-                <td className="p-3 text-right font-bold">
+                <FinancialGuard kind="supplier_price"><td className="p-3 text-right font-bold">
                   ${calculateTotalBomCost().toFixed(4)}
-                </td>
+                </td></FinancialGuard>
                 <td></td>
               </tr>
             </tfoot>

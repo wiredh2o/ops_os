@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -2289,7 +2290,7 @@ function formatDeliveryDate(isoString: string): string {
                         <div className="flex flex-col">
                           <span>{company.name}</span>
                           <span className="text-xs text-muted-foreground">
-                            {company.customer_number && `#${company.customer_number}`}
+                            <FinancialGuard kind="revenue">{company.customer_number && `#${company.customer_number}`}</FinancialGuard>
                             {company.customer_number && company.owners_name && " • "}
                             {company.owners_name}
                           </span>
@@ -2721,7 +2722,7 @@ function formatDeliveryDate(isoString: string): string {
                       <SelectContent className="bg-popover z-50">
                         {availableUoms.map((uom) => (
                           <SelectItem key={uom.id} value={uom.id}>
-                            {uom.description || `${uom.quantity}pc Lot`}
+                            <FinancialGuard kind="revenue">{uom.description || `${uom.quantity}pc Lot`}</FinancialGuard>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2742,11 +2743,11 @@ function formatDeliveryDate(isoString: string): string {
 
               {/* Rate */}
               <div className="flex justify-center">
-                <RateInput
+                <FinancialGuard kind="revenue"><RateInput
                   value={item.unit_price}
                   onChange={(value) => updateOrderItem(item.id, "unit_price", value)}
                   className="h-8 w-[10ch] px-1 py-0 text-center text-sm font-mono tabular-nums focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary focus-visible:border-2"
-                />
+                /></FinancialGuard>
               </div>
 
               {/* Spacer */}
@@ -2755,7 +2756,7 @@ function formatDeliveryDate(isoString: string): string {
               {/* Amount */}
               <div className="flex items-center justify-center whitespace-nowrap">
                 <span className="w-[11ch] text-sm font-medium text-center font-mono tabular-nums">
-                  {formatCurrency(item.quantity_ordered * item.unit_price)}
+                  <FinancialGuard kind="revenue">{formatCurrency(item.quantity_ordered * item.unit_price)}</FinancialGuard>
                 </span>
               </div>
 
@@ -2801,16 +2802,16 @@ function formatDeliveryDate(isoString: string): string {
         <div className="w-64 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
-            <span>{formatCurrency(calculateSubtotal())}</span>
+            <span><FinancialGuard kind="revenue">{formatCurrency(calculateSubtotal())}</FinancialGuard></span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Tax ({taxRate}%)</span>
-            <span>{formatCurrency(calculateTax())}</span>
+            <span><FinancialGuard kind="revenue">{formatCurrency(calculateTax())}</FinancialGuard></span>
           </div>
           <Separator />
           <div className="flex justify-between font-semibold">
             <span>Total</span>
-            <span>{formatCurrency(calculateSubtotal() + calculateTax())}</span>
+            <span><FinancialGuard kind="revenue">{formatCurrency(calculateSubtotal() + calculateTax())}</FinancialGuard></span>
           </div>
         </div>
       </div>
@@ -2854,7 +2855,7 @@ function formatDeliveryDate(isoString: string): string {
             <CollapsibleTrigger className="flex items-center justify-between w-full group cursor-pointer">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs font-semibold">
-                  {savedOrderNumber ? `#${savedOrderNumber}` : "New Order"}
+                  <FinancialGuard kind="revenue">{savedOrderNumber ? `#${savedOrderNumber}` : "New Order"}</FinancialGuard>
                 </Badge>
                 {formData.customer_po && (
                   <Badge variant="secondary" className="text-xs">
@@ -2863,7 +2864,7 @@ function formatDeliveryDate(isoString: string): string {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold">{formatCurrency(total)}</span>
+                <span className="font-semibold"><FinancialGuard kind="revenue">{formatCurrency(total)}</FinancialGuard></span>
                 <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
               </div>
             </CollapsibleTrigger>
@@ -2890,7 +2891,7 @@ function formatDeliveryDate(isoString: string): string {
                       {selectedAddress.name && <p className="font-medium">{selectedAddress.name}</p>}
                       {selectedAddress.address && <p className="text-muted-foreground">{selectedAddress.address}</p>}
                       <p className="text-muted-foreground">
-                        {[selectedAddress.city, selectedAddress.state].filter(Boolean).join(', ')}{selectedAddress.zip ? ` ${selectedAddress.zip}` : ''}
+                        {[selectedAddress.city, selectedAddress.state].filter(Boolean).join(', ')}<FinancialGuard kind="revenue">{selectedAddress.zip ? ` ${selectedAddress.zip}` : ''}</FinancialGuard>
                       </p>
                     </>
                   )}
@@ -2908,7 +2909,7 @@ function formatDeliveryDate(isoString: string): string {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground group-data-[state=closed]:inline hidden">
-                      {formatCurrency(subtotal)}
+                      <FinancialGuard kind="revenue">{formatCurrency(subtotal)}</FinancialGuard>
                     </span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </div>
@@ -2939,8 +2940,8 @@ function formatDeliveryDate(isoString: string): string {
                                   {unfulfilled > 0 ? unfulfilled : '✓'}
                                 </span>
                               )}
-                              <span className="text-right text-muted-foreground">{formatCurrency(item.unit_price)}</span>
-                              <span className="text-right font-medium">{formatCurrency(item.unit_price * item.quantity_ordered)}</span>
+                              <span className="text-right text-muted-foreground"><FinancialGuard kind="revenue">{formatCurrency(item.unit_price)}</FinancialGuard></span>
+                              <span className="text-right font-medium"><FinancialGuard kind="revenue">{formatCurrency(item.unit_price * item.quantity_ordered)}</FinancialGuard></span>
                             </div>
                           );
                         })}
@@ -2956,22 +2957,22 @@ function formatDeliveryDate(isoString: string): string {
               <div className="space-y-1">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
-                  <span className="font-medium text-foreground">{formatCurrency(subtotal)}</span>
+                  <span className="font-medium text-foreground"><FinancialGuard kind="revenue">{formatCurrency(subtotal)}</FinancialGuard></span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Tax</span>
-                  <span className="font-medium text-foreground">{formatCurrency(tax)}</span>
+                  <span className="font-medium text-foreground"><FinancialGuard kind="revenue">{formatCurrency(tax)}</FinancialGuard></span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Shipping</span>
                   <span className="font-medium text-foreground">
-                    {showShipping ? (shippingKnown ? formatCurrency(shipping!) : "Select a rate") : "—"}
+                    <FinancialGuard kind="revenue">{showShipping ? (shippingKnown ? formatCurrency(shipping!) : "Select a rate") : "—"}</FinancialGuard>
                   </span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span>{formatCurrency(total)}</span>
+                  <span><FinancialGuard kind="revenue">{formatCurrency(total)}</FinancialGuard></span>
                 </div>
               </div>
             </CollapsibleContent>
@@ -3168,9 +3169,9 @@ function formatDeliveryDate(isoString: string): string {
                       <div className="flex items-center gap-2">
                         {/* Pricing display */}
                         <div className="text-right mr-1">
-                          <p className="font-semibold text-sm">${option.total_charge?.toFixed(2) ?? '—'}</p>
+                          <FinancialGuard kind="revenue"><p className="font-semibold text-sm">${option.total_charge?.toFixed(2) ?? '—'}</p></FinancialGuard>
                           {option.marginal_cost_per_hour === undefined && option.cost_per_value_hour != null && option.cost_per_value_hour > 0 && (
-                            <p className="text-xs text-muted-foreground">${option.cost_per_value_hour.toFixed(2)}/hr</p>
+                            <FinancialGuard kind="revenue"><p className="text-xs text-muted-foreground">${option.cost_per_value_hour.toFixed(2)}/hr</p></FinancialGuard>
                           )}
                           {option.marginal_cost_per_hour !== undefined && (
                             <p className={`text-xs ${

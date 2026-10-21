@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -340,33 +341,33 @@ export function WasteTrackingInterface({
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="consumed-cost">Materials Consumed Cost</Label>
-                  <Input
+                  <FinancialGuard kind="supplier_price"><Input
                     id="consumed-cost"
                     type="number"
                     step="0.0001"
                     value={wasteData.materials_consumed_cost || 0}
                     onChange={(e) => handleInputChange('materials_consumed_cost', parseFloat(e.target.value) || 0)}
                     min="0"
-                  />
+                  /></FinancialGuard>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="wasted-cost">Materials Wasted Cost</Label>
-                  <Input
+                  <FinancialGuard kind="supplier_price"><Input
                     id="wasted-cost"
                     type="number"
                     step="0.0001"
                     value={wasteData.materials_wasted_cost || 0}
                     onChange={(e) => handleInputChange('materials_wasted_cost', parseFloat(e.target.value) || 0)}
                     min="0"
-                  />
+                  /></FinancialGuard>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Cost Per Good Unit</Label>
                   <div className="flex items-center h-10 px-3 py-2 border border-input bg-background rounded-md">
                     <span className="text-sm">
-                      {formatCurrency((wasteData.materials_consumed_cost || 0) / Math.max(wasteData.yield_quantity || 1, 1))}
+                      <FinancialGuard kind="supplier_price">{formatCurrency((wasteData.materials_consumed_cost || 0) / Math.max(wasteData.yield_quantity || 1, 1))}</FinancialGuard>
                     </span>
                   </div>
                 </div>

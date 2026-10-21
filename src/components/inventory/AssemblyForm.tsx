@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -772,7 +773,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="markup_percentage">Markup %</Label>
-                  <Input
+                  <FinancialGuard kind="margin"><Input
                     id="markup_percentage"
                     type="number"
                     step="0.1"
@@ -780,7 +781,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                     value={formData.markup_percentage}
                     onChange={(e) => setFormData(prev => ({ ...prev, markup_percentage: e.target.value }))}
                     placeholder="0"
-                  />
+                  /></FinancialGuard>
                 </div>
               </div>
 
@@ -1024,7 +1025,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                    <Label>Density (oz/in³)</Label>
                    <div className="p-3 rounded-md border bg-background">
                      <div className="text-sm font-medium">
-                       {assembly?.density ? `${assembly.density.toFixed(3)} oz/in³` : 'N/A'}
+                       <FinancialGuard kind="supplier_price">{assembly?.density ? `${assembly.density.toFixed(3)} oz/in³` : 'N/A'}</FinancialGuard>
                      </div>
                      <p className="text-xs text-muted-foreground mt-1">
                        Auto-calculated: Weight ÷ Volume
@@ -1120,7 +1121,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                     <Label>Packed Density (oz/in³)</Label>
                     <div className="p-3 rounded-md border bg-background">
                       <div className="text-sm font-medium">
-                        {assembly?.packed_density ? `${assembly.packed_density.toFixed(3)} oz/in³` : 'N/A'}
+                        <FinancialGuard kind="supplier_price">{assembly?.packed_density ? `${assembly.packed_density.toFixed(3)} oz/in³` : 'N/A'}</FinancialGuard>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Auto-calculated: Weight ÷ Packed Volume
@@ -1407,10 +1408,10 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                           </Tooltip>
                         </TooltipProvider>
                         <span className="text-sm font-medium">
-                          {safetyStockLoading ? "Calculating..." : 
+                          <FinancialGuard kind="supplier_price">{safetyStockLoading ? "Calculating..." : 
                            safetyStock !== null ? 
                            `${Math.ceil(safetyStock)} units${calculateDaysOfSupply(Math.ceil(safetyStock).toString(), formData.daily_consumption_rate) ? ` (${calculateDaysOfSupply(Math.ceil(safetyStock).toString(), formData.daily_consumption_rate)} days)` : ''}` : 
-                           "N/A"}
+                           "N/A"}</FinancialGuard>
                         </span>
                       </div>
 
@@ -1467,9 +1468,9 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                             </SelectTrigger>
                             <SelectContent>
                                {inventoryItems.map((item) => (
-                                 <SelectItem key={item.id} value={item.id}>
+                                 <FinancialGuard kind="supplier_price"><SelectItem key={item.id} value={item.id}>
                                    {item.sku} (${item.unit_price})
-                                </SelectItem>
+                                </SelectItem></FinancialGuard>
                               ))}
                             </SelectContent>
                           </Select>
@@ -1491,7 +1492,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                           <div className="h-10 flex items-center">
                             {component.inventory_item ? (
                               <Badge variant="secondary">
-                                {formatCurrency(component.inventory_item.unit_price * component.quantity_needed)}
+                                <FinancialGuard kind="supplier_price">{formatCurrency(component.inventory_item.unit_price * component.quantity_needed)}</FinancialGuard>
                               </Badge>
                             ) : (
                               <span className="text-sm text-muted-foreground">-</span>
@@ -1517,7 +1518,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                       <div className="flex justify-between items-center text-lg font-semibold">
                         <span>Total Component Cost:</span>
                         <Badge variant="outline" className="text-lg px-3 py-1">
-                          {formatCurrency(totalCost)}
+                          <FinancialGuard kind="supplier_price">{formatCurrency(totalCost)}</FinancialGuard>
                         </Badge>
                       </div>
                     </div>

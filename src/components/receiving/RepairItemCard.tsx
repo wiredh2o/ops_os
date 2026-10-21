@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -282,9 +283,9 @@ export const RepairItemCard: React.FC<RepairItemCardProps> = ({ item, packageId 
               {item.estimated_cost && (
                 <div className="text-xs">
                   <span className="font-medium">Est:</span>
-                  <span className="ml-1 font-mono">
+                  <FinancialGuard kind="revenue"><span className="ml-1 font-mono">
                     ${item.estimated_cost.toFixed(2)}
-                  </span>
+                  </span></FinancialGuard>
                 </div>
               )}
             </div>

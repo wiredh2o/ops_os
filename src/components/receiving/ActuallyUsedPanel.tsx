@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -443,7 +444,7 @@ export const ActuallyUsedPanel: React.FC<ActuallyUsedPanelProps> = ({
                       <div className="flex justify-between items-center text-xs text-muted-foreground">
                         <span>{item.sku}</span>
                         <span className="font-medium">
-                          {formatCurrency(calculateItemPrice(item))}
+                          <FinancialGuard kind="revenue">{formatCurrency(calculateItemPrice(item))}</FinancialGuard>
                         </span>
                       </div>
                       {item.type === 'labor' && (
@@ -495,15 +496,15 @@ export const ActuallyUsedPanel: React.FC<ActuallyUsedPanelProps> = ({
                 <div className="mt-2 pt-2 border-t space-y-0.5">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Subtotal:</span>
-                    <span>{formatCurrency(subtotal)}</span>
+                    <span><FinancialGuard kind="revenue">{formatCurrency(subtotal)}</FinancialGuard></span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Tax:</span>
-                    <span>{formatCurrency(taxAmount)}</span>
+                    <span><FinancialGuard kind="revenue">{formatCurrency(taxAmount)}</FinancialGuard></span>
                   </div>
                   <div className="flex justify-between text-sm font-semibold pt-1">
                     <span>Total:</span>
-                    <span>{formatCurrency(total)}</span>
+                    <span><FinancialGuard kind="revenue">{formatCurrency(total)}</FinancialGuard></span>
                   </div>
                   <div className="text-xs text-muted-foreground text-right mt-0.5">
                     Plus shipping
@@ -573,7 +574,7 @@ export const ActuallyUsedPanel: React.FC<ActuallyUsedPanelProps> = ({
                         </Button>
                       )}
                       <span className="text-xs text-muted-foreground ml-auto">
-                        {formatCurrency(item.total)}
+                        <FinancialGuard kind="revenue">{formatCurrency(item.total)}</FinancialGuard>
                       </span>
                     </div>
                   </div>

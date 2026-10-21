@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -513,7 +514,7 @@ export const ItemInRepairModal: React.FC<ItemInRepairModalProps> = ({
                   {/* Total */}
                   <div className="col-span-2">
                     <div className="h-8 flex items-center px-3 bg-muted rounded text-sm">
-                      {formatCurrency(estimate.total_amount)}
+                      <FinancialGuard kind="revenue">{formatCurrency(estimate.total_amount)}</FinancialGuard>
                       {estimate.eligible_for_distributor_discount && isDistributor && (
                         <Badge variant="secondary" className="ml-2 text-xs">10% OFF</Badge>
                       )}
@@ -544,9 +545,9 @@ export const ItemInRepairModal: React.FC<ItemInRepairModalProps> = ({
             {/* Totals */}
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-end space-x-8 text-sm">
-                <div>Subtotal: {formatCurrency(subtotal)}</div>
-                <div>Labor: {formatCurrency(laborTotal)}</div>
-                <div className="font-semibold">Grand Total: {formatCurrency(grandTotal)}</div>
+                <div>Subtotal: <FinancialGuard kind="revenue">{formatCurrency(subtotal)}</FinancialGuard></div>
+                <div>Labor: <FinancialGuard kind="revenue">{formatCurrency(laborTotal)}</FinancialGuard></div>
+                <div className="font-semibold">Grand Total: <FinancialGuard kind="revenue">{formatCurrency(grandTotal)}</FinancialGuard></div>
               </div>
             </div>
 

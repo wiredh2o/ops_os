@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,7 +154,7 @@ export const PurchaseUomEditor = ({
                     <td className="p-2">
                       <div className="relative">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
-                        <Input
+                        <FinancialGuard kind="supplier_price"><Input
                           type="number"
                           step="0.0001"
                           min="0"
@@ -161,12 +162,12 @@ export const PurchaseUomEditor = ({
                           onChange={(e) => updateUom(index, 'unit_cost', parseFloat(e.target.value) || 0)}
                           className="h-8 pl-5"
                           disabled={disabled}
-                        />
+                        /></FinancialGuard>
                       </div>
                     </td>
-                    <td className="p-2 text-muted-foreground text-xs">
+                    <FinancialGuard kind="supplier_price"><td className="p-2 text-muted-foreground text-xs">
                       ${costPerEach}
-                    </td>
+                    </td></FinancialGuard>
                     <td className="p-2 text-center">
                       <Checkbox
                         checked={uom.is_default}

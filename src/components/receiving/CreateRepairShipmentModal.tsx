@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -579,7 +580,7 @@ export const CreateRepairShipmentModal: React.FC<CreateRepairShipmentModalProps>
                                 <Package className="h-5 w-5 text-primary" />
                                 <div>
                                   <CardTitle className="text-base">
-                                    {pkg.assignedTray ? `Tray ${pkg.assignedTray}` : 'Unassigned Tray'}
+                                    <FinancialGuard kind="revenue">{pkg.assignedTray ? `Tray ${pkg.assignedTray}` : 'Unassigned Tray'}</FinancialGuard>
                                   </CardTitle>
                                   <p className="text-sm text-muted-foreground font-normal">
                                     {pkg.trackingNumber} • {pkg.repairItems.length} item{pkg.repairItems.length !== 1 ? 's' : ''}
@@ -656,11 +657,11 @@ export const CreateRepairShipmentModal: React.FC<CreateRepairShipmentModalProps>
                                     {item.actuals.map((actual) => (
                                       <div key={actual.id} className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">
-                                          {actual.item_sku && `${actual.item_sku} - `}
+                                          <FinancialGuard kind="revenue">{actual.item_sku && `${actual.item_sku} - `}</FinancialGuard>
                                           {actual.description}
                                           {actual.quantity > 1 && ` (×${actual.quantity})`}
                                         </span>
-                                        <span>{formatCurrencyPrecise(actual.total_amount)}</span>
+                                        <span><FinancialGuard kind="revenue">{formatCurrencyPrecise(actual.total_amount)}</FinancialGuard></span>
                                       </div>
                                     ))}
                                   </div>
@@ -672,7 +673,7 @@ export const CreateRepairShipmentModal: React.FC<CreateRepairShipmentModalProps>
                                       </span>
                                     </span>
                                     <span className="font-bold text-lg">
-                                      {formatCurrency(item.actualsTotal)}
+                                      <FinancialGuard kind="revenue">{formatCurrency(item.actualsTotal)}</FinancialGuard>
                                     </span>
                                   </div>
                                 </CardContent>
@@ -695,14 +696,14 @@ export const CreateRepairShipmentModal: React.FC<CreateRepairShipmentModalProps>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span>Subtotal - {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''}</span>
-            <span>{formatCurrency(totals.subtotal)}</span>
+            <span><FinancialGuard kind="revenue">{formatCurrency(totals.subtotal)}</FinancialGuard></span>
           </div>
           <div className="flex justify-between text-muted-foreground">
             <span>
               Tax ({taxRate}%)
               {!customerIsTaxable && <span className="ml-1 text-xs italic">Non-taxable customer</span>}
             </span>
-            <span>{formatCurrency(totals.tax)}</span>
+            <span><FinancialGuard kind="revenue">{formatCurrency(totals.tax)}</FinancialGuard></span>
           </div>
           <div className="flex justify-between font-semibold text-lg items-baseline">
             <div>
@@ -711,7 +712,7 @@ export const CreateRepairShipmentModal: React.FC<CreateRepairShipmentModalProps>
                 Before taxes & shipping
               </span>
             </div>
-            <span>{formatCurrency(totals.total)}</span>
+            <span><FinancialGuard kind="revenue">{formatCurrency(totals.total)}</FinancialGuard></span>
           </div>
         </div>
 

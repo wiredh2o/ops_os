@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,14 +134,14 @@ export const AssemblySalesUomEditor: React.FC<AssemblySalesUomEditorProps> = ({
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Input
+                    <FinancialGuard kind="revenue"><Input
                       type="number"
                       step="0.01"
                       min="0"
                       value={uom.unit_price}
                       onChange={(e) => updateUom(index, 'unit_price', parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                    />
+                    /></FinancialGuard>
                   </TableCell>
                   <TableCell>
                     <Checkbox

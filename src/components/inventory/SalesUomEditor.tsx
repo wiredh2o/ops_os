@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -162,19 +163,19 @@ export const SalesUomEditor = ({
                     <td className="p-2">
                       <div className="relative">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                        <Input
+                        <FinancialGuard kind="revenue"><Input
                           type="number"
                           step="0.0001"
                           min="0"
                           value={uom.unit_price}
                           onChange={(e) => updateUom(index, 'unit_price', parseFloat(e.target.value) || 0)}
                           className="h-8 pl-6"
-                        />
+                        /></FinancialGuard>
                       </div>
                     </td>
-                    <td className="p-2 text-muted-foreground text-xs">
+                    <FinancialGuard kind="revenue"><td className="p-2 text-muted-foreground text-xs">
                       ${pricePerEach}
-                    </td>
+                    </td></FinancialGuard>
                     <td className="p-2 text-center">
                       <Checkbox
                         checked={uom.is_default}
