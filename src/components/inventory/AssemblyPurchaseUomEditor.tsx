@@ -181,9 +181,9 @@ export const AssemblyPurchaseUomEditor = ({
                         /></FinancialGuard>
                       </div>
                     </td>
-                    <FinancialGuard kind="supplier_price"><td className="p-2 text-muted-foreground text-xs">
-                      ${costPerEach}
-                    </td></FinancialGuard>
+                    <td className="p-2 text-muted-foreground text-xs">
+                      <FinancialGuard kind="supplier_price">${costPerEach}</FinancialGuard>
+                    </td>
                     <td className="p-2 text-center">
                       <Checkbox
                         checked={uom.is_default}
