@@ -1,5 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useStaffTabPermissions } from '@/hooks/usePermissions';
+import { STAFF_TABS } from '@/hooks/staff-tab-access';
 import { ProductionDashboard } from '@/components/production/ProductionDashboard';
 import { InventoryManagement } from "@/components/inventory/InventoryManagement";
 import { WasteAnalyticsDashboard } from "@/components/inventory/WasteAnalyticsDashboard";
@@ -15,6 +17,11 @@ const Index = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const activeTab = pathname.replace(/\/$/, "").split("/")[2] || "orders";
+  const { visibleTabs, loading, error } = useStaffTabPermissions();
+  if (loading) return <div className="container mx-auto p-6" role="status">Loading...</div>;
+  if (error) return <div className="container mx-auto p-6 text-destructive" role="alert">Unable to load your access. Please refresh the page.</div>;
+  if (visibleTabs.length === 0) return <div className="container mx-auto p-6">No staff screens are available for your account.</div>;
+  if (!visibleTabs.some(tab => tab === activeTab)) return <Navigate to={`/staff/${visibleTabs[0]}`} replace />;
 
   return (
     <div className="bg-gradient-to-br from-slate-50 to-slate-100">
@@ -24,58 +31,51 @@ const Index = () => {
         </div>
         
         <Tabs value={activeTab} onValueChange={(tab) => navigate(`/staff/${tab}`)} className="w-full">
-          <TabsList className="grid w-full grid-cols-10">
-            <TabsTrigger value="orders">Customer Orders</TabsTrigger>
-            <TabsTrigger value="inventory">Inventory & Assemblies</TabsTrigger>
-            <TabsTrigger value="waste-analytics">Waste Analytics</TabsTrigger>
-            <TabsTrigger value="purchasing">Purchase Orders</TabsTrigger>
-            <TabsTrigger value="receiving">Receiving</TabsTrigger>
-            <TabsTrigger value="repair-lookup">Repair Lookup</TabsTrigger>
-            <TabsTrigger value="customers">Customer Management</TabsTrigger>
-            <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
-            <TabsTrigger value="accounting">Accounting</TabsTrigger>
-            <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsList className="flex w-full justify-start overflow-x-auto">
+            {STAFF_TABS.filter(tab => visibleTabs.includes(tab.id)).map(tab => (
+              <TabsTrigger key={tab.id} value={tab.id} className="flex-1">{tab.label}</TabsTrigger>
+            ))}
           </TabsList>
           
-          <TabsContent value="orders" className="mt-6">
+          {visibleTabs.includes('orders') && <TabsContent value="orders" className="mt-6">
             <ProductionDashboard />
-          </TabsContent>
+          </TabsContent>}
           
-        <TabsContent value="inventory" className="mt-6">
+        {visibleTabs.includes('inventory') && <TabsContent value="inventory" className="mt-6">
           <InventoryManagement />
-        </TabsContent>
+        </TabsContent>}
         
-        <TabsContent value="waste-analytics" className="mt-6">
+        {visibleTabs.includes('waste-analytics') && <TabsContent value="waste-analytics" className="mt-6">
           <WasteAnalyticsDashboard />
-        </TabsContent>
+        </TabsContent>}
         
-        <TabsContent value="purchasing" className="mt-6">
+        {visibleTabs.includes('purchasing') && <TabsContent value="purchasing" className="mt-6">
           <PurchaseOrderManagement />
-        </TabsContent>
+        </TabsContent>}
           
-          <TabsContent value="receiving" className="mt-6">
+          {visibleTabs.includes('receiving') && <TabsContent value="receiving" className="mt-6">
             <ReceivingDashboard />
-          </TabsContent>
+          </TabsContent>}
           
-          <TabsContent value="repair-lookup" className="mt-6">
+          {visibleTabs.includes('repair-lookup') && <TabsContent value="repair-lookup" className="mt-6">
             <RepairStatusLookup />
-          </TabsContent>
+          </TabsContent>}
           
-          <TabsContent value="customers" className="mt-6">
+          {visibleTabs.includes('customers') && <TabsContent value="customers" className="mt-6">
             <CustomerManagement />
-          </TabsContent>
+          </TabsContent>}
           
-          <TabsContent value="vendors" className="mt-6">
+          {visibleTabs.includes('vendors') && <TabsContent value="vendors" className="mt-6">
             <VendorManagement />
-          </TabsContent>
+          </TabsContent>}
           
-          <TabsContent value="accounting" className="mt-6">
+          {visibleTabs.includes('accounting') && <TabsContent value="accounting" className="mt-6">
             <AccountingDashboard />
-          </TabsContent>
+          </TabsContent>}
           
-          <TabsContent value="users" className="mt-6">
+          {visibleTabs.includes('users') && <TabsContent value="users" className="mt-6">
             <UserManagement />
-          </TabsContent>
+          </TabsContent>}
         </Tabs>
       </div>
     </div>
