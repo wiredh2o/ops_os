@@ -147,6 +147,26 @@ interface CustomerOrderCardProps {
             )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+             <TooltipProvider>
+               <Tooltip>
+                 <TooltipTrigger asChild>
+                   <Button
+                     variant="ghost"
+                     size="icon"
+                     className="h-6 w-6"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       handlePrintPackingSlip();
+                     }}
+                   >
+                     <Printer className="h-3 w-3" />
+                   </Button>
+                 </TooltipTrigger>
+                 <TooltipContent>
+                   <p>Print packing slip</p>
+                 </TooltipContent>
+               </Tooltip>
+             </TooltipProvider>
              <Button
                variant="ghost"
                size="icon"
