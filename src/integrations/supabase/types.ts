@@ -1274,6 +1274,8 @@ export type Database = {
           customer_po: string | null
           deposit_amount: number | null
           deposit_paid: boolean | null
+          drop_ship_address_id: string | null
+          drop_ship_snapshot: Json | null
           due_date: string | null
           estimated_shipping: number | null
           id: string
@@ -1315,6 +1317,8 @@ export type Database = {
           customer_po?: string | null
           deposit_amount?: number | null
           deposit_paid?: boolean | null
+          drop_ship_address_id?: string | null
+          drop_ship_snapshot?: Json | null
           due_date?: string | null
           estimated_shipping?: number | null
           id?: string
@@ -1356,6 +1360,8 @@ export type Database = {
           customer_po?: string | null
           deposit_amount?: number | null
           deposit_paid?: boolean | null
+          drop_ship_address_id?: string | null
+          drop_ship_snapshot?: Json | null
           due_date?: string | null
           estimated_shipping?: number | null
           id?: string
@@ -1395,6 +1401,13 @@ export type Database = {
             columns: ["customer_company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_orders_drop_ship_address_id_fkey"
+            columns: ["drop_ship_address_id"]
+            isOneToOne: false
+            referencedRelation: "drop_ship_addresses"
             referencedColumns: ["id"]
           },
           {
@@ -1510,6 +1523,74 @@ export type Database = {
           source_order_id?: string
         }
         Relationships: []
+      }
+      drop_ship_addresses: {
+        Row: {
+          address: string
+          city: string
+          country: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          is_taxable: boolean
+          owner_company_id: string
+          phone: string | null
+          recipient_name: string
+          signature_required: boolean
+          state: string
+          updated_at: string
+          usps_eligible: boolean
+          zip: string
+        }
+        Insert: {
+          address: string
+          city: string
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          is_taxable?: boolean
+          owner_company_id: string
+          phone?: string | null
+          recipient_name: string
+          signature_required?: boolean
+          state: string
+          updated_at?: string
+          usps_eligible?: boolean
+          zip: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          is_taxable?: boolean
+          owner_company_id?: string
+          phone?: string | null
+          recipient_name?: string
+          signature_required?: boolean
+          state?: string
+          updated_at?: string
+          usps_eligible?: boolean
+          zip?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drop_ship_addresses_owner_company_id_fkey"
+            columns: ["owner_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       furniture_items: {
         Row: {
@@ -2359,11 +2440,13 @@ export type Database = {
           lease_until: string | null
           manual_retry: boolean
           next_attempt_at: string | null
+          recipient_email: string | null
+          recipient_phone: string | null
           sms: string
           status: string
           subject: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           automatic_tries?: number
@@ -2376,11 +2459,13 @@ export type Database = {
           lease_until?: string | null
           manual_retry?: boolean
           next_attempt_at?: string | null
+          recipient_email?: string | null
+          recipient_phone?: string | null
           sms: string
           status?: string
           subject: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           automatic_tries?: number
@@ -2393,11 +2478,13 @@ export type Database = {
           lease_until?: string | null
           manual_retry?: boolean
           next_attempt_at?: string | null
+          recipient_email?: string | null
+          recipient_phone?: string | null
           sms?: string
           status?: string
           subject?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -3124,6 +3211,7 @@ export type Database = {
           customer_po: string | null
           deposit_amount: number | null
           deposit_paid: boolean | null
+          drop_ship_snapshot: Json | null
           due_date: string | null
           fedex_delivery_date: string | null
           fedex_estimated_delivery: string | null
@@ -3184,6 +3272,7 @@ export type Database = {
           customer_po?: string | null
           deposit_amount?: number | null
           deposit_paid?: boolean | null
+          drop_ship_snapshot?: Json | null
           due_date?: string | null
           fedex_delivery_date?: string | null
           fedex_estimated_delivery?: string | null
@@ -3244,6 +3333,7 @@ export type Database = {
           customer_po?: string | null
           deposit_amount?: number | null
           deposit_paid?: boolean | null
+          drop_ship_snapshot?: Json | null
           due_date?: string | null
           fedex_delivery_date?: string | null
           fedex_estimated_delivery?: string | null
@@ -5732,6 +5822,7 @@ export type Database = {
         Args: { p_target: string }
         Returns: boolean
       }
+      can_manage_drop_ship: { Args: { _owner: string }; Returns: boolean }
       can_manage_tax: { Args: never; Returns: boolean }
       can_manage_user: {
         Args: {
@@ -5914,11 +6005,13 @@ export type Database = {
           lease_until: string | null
           manual_retry: boolean
           next_attempt_at: string | null
+          recipient_email: string | null
+          recipient_phone: string | null
           sms: string
           status: string
           subject: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }[]
         SetofOptions: {
           from: "*"
