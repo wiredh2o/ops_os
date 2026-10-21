@@ -12,14 +12,18 @@ import { CustomerManagement } from "@/components/customers/CustomerManagement";
 import { VendorManagement } from "@/components/vendors/VendorManagement";
 import { ReceivingDashboard } from "@/components/receiving/ReceivingDashboard";
 import { RepairStatusLookup } from "@/components/customer-service/RepairStatusLookup";
+import { useAuth } from '@/hooks/useAuth';
+import { canRequestRma, canReceiveRma } from '@/lib/rma';
 
 const Index = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const activeTab = pathname.replace(/\/$/, "").split("/")[2] || "orders";
   const { visibleTabs, loading, error } = useStaffTabPermissions();
+  const { roles } = useAuth();
   if (loading) return <div className="container mx-auto p-6" role="status">Loading...</div>;
   if (error) return <div className="container mx-auto p-6 text-destructive" role="alert">Unable to load your access. Please refresh the page.</div>;
+  if (visibleTabs.length === 0 && (canRequestRma(roles) || canReceiveRma(roles))) return <Navigate to="/rma" replace />;
   if (visibleTabs.length === 0) return <div className="container mx-auto p-6">No staff screens are available for your account.</div>;
   if (!visibleTabs.some(tab => tab === activeTab)) return <Navigate to={`/staff/${visibleTabs[0]}`} replace />;
 

@@ -47,7 +47,7 @@ export const RepairOrderQueueKanban: React.FC<{ fullWidth?: boolean }> = ({ full
       const pkgs = await readQueuePages((from, to) => supabase
         .from("inbound_packages")
         .select(`
-          id, tracking_number, status, intake_notes, item_count, created_at, received_at, initiated_via, company_id, shipping_preference, assigned_tray,
+          id, tracking_number, status, intake_notes, item_count, created_at, received_at, initiated_via, company_id, shipping_preference, assigned_tray, rma_request_id, customer_po,
           company:companies(id, name, phone, email, owners_name)
         `)
         .eq("initiated_via", "repair")

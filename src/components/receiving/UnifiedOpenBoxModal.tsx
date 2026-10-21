@@ -49,10 +49,10 @@ export const UnifiedOpenBoxModal: React.FC<UnifiedOpenBoxModalProps> = ({
         loadExistingItemsCount();
         loadShippingPreference();
       } else {
-        setItemCount("1");
-        setSelectedTray("");
-        setUnboxingNotes("");
-        setCustomerPo("");
+        setItemCount(pkg.rma_request_id ? String(pkg.item_count || 1) : "1");
+        setSelectedTray(pkg.rma_request_id ? pkg.assigned_tray || "" : "");
+        setUnboxingNotes(pkg.rma_request_id ? pkg.intake_notes || "" : "");
+        setCustomerPo(pkg.rma_request_id ? pkg.customer_po || "" : "");
         setPackageImages([]);
         setExistingItemsCount(0);
         setShippingPreference(pkg?.shipping_preference === 'ship_as_available' ? 'ship_as_available' : 'ship_complete');
