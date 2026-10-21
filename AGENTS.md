@@ -2,6 +2,7 @@
 
 - Staff tab selection is driven by explicit `/staff/:tab` routes in App.tsx and the current pathname in Index.tsx, so direct links, refreshes, and browser history preserve the selected screen.
 - Staff tab filtering uses server-loaded user_roles in AuthProvider and the pure staff-tab-access helper; marketing View access uses has_permission so tab visibility never depends on editable profile metadata or browser storage.
+- Staff financial displays use FinancialGuard with independently loaded per-user profile flags; role-level View permissions must never unlock those displays.
 
 ## Backend
 - This project is a remix; it runs on the user's own Supabase project named "Ops_OS" (connected manually in the editor, not from chat). The baked-in client URL may still point at the original project's Supabase — it must be repointed after Ops_OS is connected.

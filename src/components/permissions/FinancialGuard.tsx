@@ -6,7 +6,7 @@ import { canViewFinancial, FinancialKind } from '@/hooks/financial-visibility';
 export function FinancialGuard({ kind, children, fallback = null }: {
   kind: FinancialKind; children: ReactNode; fallback?: ReactNode;
 }) {
-  const { roles, rolesLoading, financialFlags, financialFlagsLoading } = useAuth();
-  if (rolesLoading || financialFlagsLoading || !canViewFinancial(roles, financialFlags, kind)) return <>{fallback}</>;
+  const { roles, rolesLoading, rolesError, financialFlags, financialFlagsLoading } = useAuth();
+  if (rolesLoading || rolesError || financialFlagsLoading || !canViewFinancial(roles, financialFlags, kind)) return <>{fallback}</>;
   return <>{children}</>;
 }

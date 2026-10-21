@@ -291,15 +291,6 @@ export function UserManagement() {
         if (rolesError) throw rolesError;
       }
 
-      if (currentUserRoles.includes('admin') && formData.roles.includes('marketing')) {
-        const { error: flagsError } = await supabase.from('profiles')
-          .update(financialFlags).eq('id', editingProfile.id);
-        if (flagsError) throw flagsError;
-        await queryClient.invalidateQueries({ queryKey: ['marketing-financial-flags', editingProfile.id] });
-      }
-      await queryClient.invalidateQueries({ queryKey: ['staff-user-roles', editingProfile.id] });
-      await queryClient.invalidateQueries({ queryKey: ['staff-marketing-view-permissions', editingProfile.id] });
-
       toast({
         title: 'Success',
         description: 'User created successfully',
@@ -386,6 +377,7 @@ export function UserManagement() {
           last_name: formData.last_name || null,
           phone: formData.phone || null,
           company_id: formData.company_id === 'none' ? null : formData.company_id,
+          ...(currentUserRoles.includes('admin') ? (formData.roles.includes('marketing') ? financialFlags : HIDDEN_FINANCIAL_FLAGS) : {}),
         })
         .eq('id', editingProfile.id);
 
@@ -416,6 +408,12 @@ export function UserManagement() {
         title: 'Success',
         description: 'User updated successfully',
       });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['marketing-financial-flags', editingProfile.id] }),
+        queryClient.invalidateQueries({ queryKey: ['staff-user-roles', editingProfile.id] }),
+        queryClient.invalidateQueries({ queryKey: ['staff-marketing-view-permissions', editingProfile.id] }),
+      ]);
 
       // Close dialog and reset state first to prevent race conditions
       setIsEditOpen(false);
