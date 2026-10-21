@@ -51,11 +51,11 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!open || mode !== 'receive' || !selectedRma) return;
-    setTrackingNumber(selectedRma.tracking_number || '');
-    setSelectedCustomer(selectedRma.company_id);
-    setNotes(rmaIntakeNotes(selectedRma));
-    setReturnShippingAddress(selectedRma.return_shipping_address || '');
+    if (!open || mode !== 'receive') return;
+    setTrackingNumber(selectedRma?.tracking_number || '');
+    setSelectedCustomer(selectedRma?.company_id || '');
+    setNotes(selectedRma ? rmaIntakeNotes(selectedRma) : '');
+    setReturnShippingAddress(selectedRma?.return_shipping_address || '');
     setDateReceived(new Date());
   }, [open, mode, selectedRma]);
 

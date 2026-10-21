@@ -1,0 +1,4 @@
+CREATE POLICY external_rma_link_read_guard ON public.inbound_package_items AS RESTRICTIVE FOR SELECT TO authenticated USING (NOT public.can_request_rma() OR public.can_receive_rma() OR public.rma_package_access(package_id));
+CREATE POLICY external_rma_link_insert_guard ON public.inbound_package_items AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK (NOT public.can_request_rma() OR public.can_receive_rma());
+CREATE POLICY external_rma_link_update_guard ON public.inbound_package_items AS RESTRICTIVE FOR UPDATE TO authenticated USING (NOT public.can_request_rma() OR public.can_receive_rma()) WITH CHECK (NOT public.can_request_rma() OR public.can_receive_rma());
+CREATE POLICY external_rma_link_delete_guard ON public.inbound_package_items AS RESTRICTIVE FOR DELETE TO authenticated USING (NOT public.can_request_rma() OR public.can_receive_rma());
