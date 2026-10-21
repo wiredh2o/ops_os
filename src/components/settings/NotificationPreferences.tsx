@@ -35,7 +35,7 @@ export function NotificationPreferences({ targetId, allowLock = false }: { targe
     });
     return () => { active = false; };
   }, [id]);
-  const disabled = loading || saving || Boolean(error) || (value.locked && !allowLock);
+  const disabled = loading || saving || Boolean(error) || Boolean(targetId) || value.locked;
   const save = async () => {
     if (!id) return;
     setSaving(true);
@@ -67,7 +67,7 @@ export function NotificationPreferences({ targetId, allowLock = false }: { targe
     <Label htmlFor={`method-${id}`}>Preferred method</Label>
     <Select value={value.method} disabled={disabled} onValueChange={method => setValue(v => ({ ...v, method: method as NotificationMethod }))}><SelectTrigger id={`method-${id}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="email">Email</SelectItem><SelectItem value="text">Text</SelectItem><SelectItem value="both">Both</SelectItem></SelectContent></Select>
     {allowLock && <div className="flex items-center justify-between gap-4"><Label htmlFor={`lock-${id}`}>Lock employee preferences</Label><Switch id={`lock-${id}`} checked={value.locked} disabled={loading || saving} onCheckedChange={locked => setValue(v => ({ ...v, locked }))} /></div>}
-    <Button disabled={disabled} onClick={save}>{saving ? 'Saving…' : 'Save preferences'}</Button>
+    <Button disabled={allowLock ? loading || saving || Boolean(error) : disabled} onClick={save}>{saving ? 'Saving…' : allowLock ? 'Save employee lock' : 'Save preferences'}</Button>
     {!targetId && <div className="space-y-3 border-t pt-4"><h3 className="font-semibold">Contact information</h3><p className="text-sm text-muted-foreground">{email}</p><Label htmlFor="notification-phone">Phone</Label><Input id="notification-phone" type="tel" value={phone} maxLength={30} onChange={e => setPhone(e.target.value)} /><Button disabled={saving || loading} variant="outline" onClick={saveContact}>Update phone</Button><Button variant="outline" onClick={async () => { const next = window.prompt('New email address'); if (!next) return; const { error } = await supabase.auth.updateUser({ email: next }); toast({ title: error ? 'Unable to update email' : 'Check your email to confirm the change', description: error?.message, variant: error ? 'destructive' : 'default' }); }}>Change email</Button></div>}
   </section>;
 }

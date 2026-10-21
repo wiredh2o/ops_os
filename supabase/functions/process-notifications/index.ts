@@ -11,7 +11,6 @@ Deno.serve(async req => {
   if (req.method !== 'POST') return response(405, { error: 'POST required' });
   // Public wake signal: no payload, recipient, notification id or early retry accepted.
   // All work is selected by a service-only, deadline-checked lease RPC.
-  if (req.headers.get('apikey') !== Deno.env.get('SUPABASE_ANON_KEY') && req.headers.get('apikey') !== 'sb_publishable_NbSNBjDVVFnAeW40IemXOw_jrZmujd7') return response(401, { error: 'Invalid wake signal' });
   try {
     const { data: jobs, error } = await client.rpc('notification_claim');
     if (error) throw error;
@@ -23,12 +22,12 @@ Deno.serve(async req => {
           await client.from('notification_outbox').update({ status: 'skipped', lease_until: null, next_attempt_at: null }).eq('id', job.id); continue;
         }
         const channels = notificationMethods(p.notification_method as NotificationMethod);
-        let success = false, attempted = false, missing = false, blocked = false, lastError = '';
+        let success = false, completed = 0, attempted = false, missing = false, blocked = false, lastError = '';
         for (const channel of channels) {
           const contact = channel === 'email' ? (p.email || '').trim().toLowerCase() : (p.phone || '').replace(/[^+0-9]/g, '');
           if (!contact) { blocked = true; lastError = `${channel} contact is missing`; continue; }
           const { data: previous } = await client.from('notification_deliveries').select('status').eq('notification_id', job.id).eq('channel', channel).eq('contact', contact).maybeSingle();
-          if (previous?.status === 'sent') { success = true; continue; }
+          if (previous?.status === 'sent') { success = true; completed++; continue; }
           const configured = channel === 'email' ? Boolean(Deno.env.get('RESEND_API_KEY')) : Boolean(Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') && Deno.env.get('TWILIO_PHONE_NUMBER'));
           if (!configured) { missing = true; lastError = 'Delivery credentials are not configured'; continue; }
           const { data: claimed, error: claimError } = await client.rpc('notification_contact_claim', { p_channel: channel, p_contact: contact });
@@ -54,11 +53,12 @@ Deno.serve(async req => {
           const { data: delivery } = await client.from('notification_deliveries').select('attempts').eq('notification_id', job.id).eq('channel', channel).eq('contact', contact).maybeSingle();
           const { error: deliveryError } = await client.from('notification_deliveries').upsert({ notification_id: job.id, channel, contact, status: result.success ? 'sent' : 'failed', attempts: (delivery?.attempts || 0) + 1, last_error: result.error || null, provider_id: result.id || null }, { onConflict: 'notification_id,channel,contact' });
           if (deliveryError) throw deliveryError;
-          success ||= result.success; lastError = result.error || lastError;
+          success ||= result.success; if (result.success) completed++; lastError = result.error || lastError;
         }
         const tries = job.automatic_tries + (attempted && !job.manual_retry ? 1 : 0);
-        const status = success ? 'sent' : missing ? 'awaiting_credentials' : blocked ? 'blocked' : 'failed';
-        const { error: updateError } = await client.from('notification_outbox').update({ status, automatic_tries: tries, manual_retry: false, last_error: success ? null : lastError, lease_until: null, next_attempt_at: success || status === 'blocked' || tries >= 3 ? null : new Date(Date.now() + DAY).toISOString() }).eq('id', job.id);
+        const complete = completed === channels.length;
+        const status = complete ? 'sent' : success ? 'partial' : missing ? 'awaiting_credentials' : blocked ? 'blocked' : 'failed';
+        const { error: updateError } = await client.from('notification_outbox').update({ status, automatic_tries: tries, manual_retry: false, last_error: success ? null : lastError, lease_until: null, next_attempt_at: complete || blocked || tries >= 3 ? null : new Date(Date.now() + DAY).toISOString() }).eq('id', job.id);
         if (updateError) throw updateError;
       } catch {
         await client.from('notification_outbox').update({ lease_until: null, next_attempt_at: new Date(Date.now() + DAY).toISOString(), last_error: 'Notification processing failed' }).eq('id', job.id);
