@@ -407,7 +407,7 @@ serve(async (req) => {
         "email",
         customer_email,
         `Payment link sent for ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)}`,
-        emailResult.success ? "sent" : "failed",
+        emailResult.success ? "queued" : "failed",
         emailResult.error
       );
     }
@@ -425,7 +425,7 @@ serve(async (req) => {
         "sms",
         customer_phone,
         `Payment link sent for ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)}`,
-        smsResult.success ? "sent" : "failed",
+        smsResult.success ? "queued" : "failed",
         smsResult.error,
         smsResult.messageSid
       );

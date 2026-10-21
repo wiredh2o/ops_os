@@ -1,9 +1,11 @@
 # Tasks
 ## External notification preferences
-- [ ] Add preferences and company-admin employee locks with server-side enforcement.
-- [ ] Add own preference settings and staff failure list with manual retry.
-- [ ] Integrate existing sends and mandatory account/RMA/payment events; bounded retries and contact blocking — blocked: Resend and Twilio credentials are missing; secure credential request was declined.
-- [ ] Test rules and available end-to-end flows; identify credential/sign-in blockers.
+- [x] Add preferences and company-admin employee locks with server-side enforcement.
+- [x] Add own preference settings and staff failure list with manual retry.
+- [x] Integrate existing sends and mandatory account/RMA/payment events; bounded retries and contact blocking.
+- [x] Test notification rules and available signed-out flow; 36 focused notification/RMA/tax tests passed.
+- [ ] Verify actual email/text delivery and retries — user will add Resend/Twilio credentials later; Stripe failure webhook subscriptions also require configuration.
+- [ ] Verify signed-in preference saving, employee locks and staff failure list — external Supabase has no managed browser session.
 ## Sales tax jurisdictions
 - [ ] Add jurisdiction settings, ZIP assignments, authoritative calculation and order tax snapshots.
 - [x] Integrate order forms, cards and invoice/receipt tax lines; scoped company visibility.

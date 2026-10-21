@@ -117,7 +117,7 @@ async function sendEmailNotification(
   });
 
   if (result.success) {
-    await logNotification('production', '', 'email', email, subject, htmlContent, 'sent');
+    // The outbox records actual delivery; acceptance here means queued, not sent.
   }
 
   return result;

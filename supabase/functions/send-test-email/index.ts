@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
 import { sendResendEmail } from "../_shared/resend-email.ts";
+import { requireNotificationStaff } from '../_shared/notification-auth.ts';
 import {
   wrapEmailWithBranding,
   getCompanyLogoUrl,
@@ -205,6 +206,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    await requireNotificationStaff(req);
     const { template_id, subject, body, recipient_email }: TestEmailRequest = await req.json();
 
     if (!template_id || !subject || !body || !recipient_email) {

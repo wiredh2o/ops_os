@@ -292,7 +292,7 @@ serve(async (req) => {
         "email",
         customer.email,
         `Payment confirmation for ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amountPaid)}`,
-        emailResult.success ? "sent" : "failed",
+        emailResult.success ? "queued" : "failed",
         emailResult.error
       );
     }
@@ -312,7 +312,7 @@ serve(async (req) => {
         "sms",
         customer.phone,
         `Payment confirmation for ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amountPaid)}`,
-        smsResult.success ? "sent" : "failed",
+        smsResult.success ? "queued" : "failed",
         smsResult.error,
         smsResult.messageSid
       );
