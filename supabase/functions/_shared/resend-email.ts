@@ -1,10 +1,12 @@
 import { Resend } from "npm:resend@2.0.0";
+import { queueContactNotification } from './notification-outbox.ts';
 
 export interface EmailParams {
   to: string | string[];
   subject: string;
   html: string;
   from?: { email: string; name: string };
+  bypassPreferences?: boolean;
 }
 
 export interface EmailResult {
@@ -19,6 +21,18 @@ export interface EmailResult {
  * @returns Result with success status and optional ID or error
  */
 export async function sendResendEmail(params: EmailParams): Promise<EmailResult> {
+  if (!params.bypassPreferences) {
+    const recipients = Array.isArray(params.to) ? params.to : [params.to];
+    for (const to of recipients) {
+      const result = await queueContactNotification(to, 'email', params.subject, params.html);
+      if (!result.matched) return { success: false, error: 'Recipient has no user notification profile' };
+    }
+    return { success: true };
+  }
+  return deliverResendEmail(params);
+}
+
+export async function deliverResendEmail(params: EmailParams): Promise<EmailResult> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
     console.error("RESEND_API_KEY is not configured");
@@ -38,14 +52,11 @@ export async function sendResendEmail(params: EmailParams): Promise<EmailResult>
     });
 
     if (error) {
-      console.error("Resend API error:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: 'Email delivery failed' };
     }
 
-    console.log("Email sent successfully via Resend:", data?.id);
     return { success: true, id: data?.id };
   } catch (err: any) {
-    console.error("Resend send error:", err);
-    return { success: false, error: err.message || "Unknown error sending email" };
+    return { success: false, error: 'Email delivery failed' };
   }
 }
