@@ -1,0 +1,8 @@
+CREATE SCHEMA IF NOT EXISTS tax_private; REVOKE ALL ON SCHEMA tax_private FROM PUBLIC,anon; GRANT USAGE ON SCHEMA tax_private TO authenticated,service_role;
+ALTER FUNCTION public.can_manage_tax() SECURITY INVOKER;
+ALTER FUNCTION public.quote_order_tax(uuid,jsonb,jsonb,numeric,integer) SET SCHEMA tax_private;
+ALTER FUNCTION public.get_company_order_tax_summaries() SET SCHEMA tax_private;
+CREATE FUNCTION public.quote_order_tax(p_company_id uuid,p_destination jsonb,p_items jsonb,p_shipping numeric DEFAULT 0,p_shipments integer DEFAULT 1) RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public AS $$ SELECT tax_private.quote_order_tax(p_company_id,p_destination,p_items,p_shipping,p_shipments) $$;
+REVOKE ALL ON FUNCTION public.quote_order_tax(uuid,jsonb,jsonb,numeric,integer) FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.quote_order_tax(uuid,jsonb,jsonb,numeric,integer) TO authenticated,service_role;
+CREATE FUNCTION public.get_company_order_tax_summaries() RETURNS TABLE(order_id uuid,order_number text,order_kind text,tax_lines jsonb,tax_amount numeric,tax_review_required boolean,created_at timestamptz) LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public AS $$ SELECT * FROM tax_private.get_company_order_tax_summaries() $$;
+REVOKE ALL ON FUNCTION public.get_company_order_tax_summaries() FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.get_company_order_tax_summaries() TO authenticated,service_role;
