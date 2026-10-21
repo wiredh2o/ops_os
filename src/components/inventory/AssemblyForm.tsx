@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -772,7 +773,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="markup_percentage">Markup %</Label>
-                  <Input
+                  <FinancialGuard kind="margin"><Input
                     id="markup_percentage"
                     type="number"
                     step="0.1"
@@ -780,7 +781,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                     value={formData.markup_percentage}
                     onChange={(e) => setFormData(prev => ({ ...prev, markup_percentage: e.target.value }))}
                     placeholder="0"
-                  />
+                  /></FinancialGuard>
                 </div>
               </div>
 
@@ -1468,7 +1469,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                             <SelectContent>
                                {inventoryItems.map((item) => (
                                  <SelectItem key={item.id} value={item.id}>
-                                   {item.sku} (${item.unit_price})
+                                   {item.sku} <FinancialGuard kind="supplier_price">(${item.unit_price})</FinancialGuard>
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -1491,7 +1492,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                           <div className="h-10 flex items-center">
                             {component.inventory_item ? (
                               <Badge variant="secondary">
-                                {formatCurrency(component.inventory_item.unit_price * component.quantity_needed)}
+                                <FinancialGuard kind="supplier_price">{formatCurrency(component.inventory_item.unit_price * component.quantity_needed)}</FinancialGuard>
                               </Badge>
                             ) : (
                               <span className="text-sm text-muted-foreground">-</span>
@@ -1517,7 +1518,7 @@ export const AssemblyForm = ({ assembly, inventoryItems, onClose, onSuccess }: A
                       <div className="flex justify-between items-center text-lg font-semibold">
                         <span>Total Component Cost:</span>
                         <Badge variant="outline" className="text-lg px-3 py-1">
-                          {formatCurrency(totalCost)}
+                          <FinancialGuard kind="supplier_price">{formatCurrency(totalCost)}</FinancialGuard>
                         </Badge>
                       </div>
                     </div>

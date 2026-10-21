@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -139,13 +140,13 @@ export const ProductionOrderForm: React.FC<ProductionOrderFormProps> = ({ onClos
 
           <div>
             <Label htmlFor="total_amount">Total Amount ($)</Label>
-            <Input
+            <FinancialGuard kind="revenue"><Input
               id="total_amount"
               type="number"
               step="0.0001"
               value={formData.total_amount}
               onChange={(e) => setFormData({ ...formData, total_amount: e.target.value })}
-            />
+            /></FinancialGuard>
           </div>
 
           <div>

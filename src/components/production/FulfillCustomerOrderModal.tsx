@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -682,7 +683,7 @@ export const FulfillCustomerOrderModal = ({
                               </span>
                             </div>
                             <span className="font-medium">
-                              {formatCurrency(item.unit_price)} ea
+                              <FinancialGuard kind="revenue">{formatCurrency(item.unit_price)}</FinancialGuard> ea
                             </span>
                           </div>
 
@@ -743,7 +744,7 @@ export const FulfillCustomerOrderModal = ({
                                 className="w-20 h-7 text-xs"
                               />
                               <span className="text-xs text-muted-foreground">
-                                = {formatCurrency(selectedItems[item.id] * item.unit_price)}
+                                = <FinancialGuard kind="revenue">{formatCurrency(selectedItems[item.id] * item.unit_price)}</FinancialGuard>
                               </span>
                             </div>
                           )}
@@ -778,7 +779,7 @@ export const FulfillCustomerOrderModal = ({
               </div>
               <div className="flex items-center justify-between text-sm mt-1">
                 <span className="text-muted-foreground">Subtotal:</span>
-                <span className="font-semibold">{formatCurrency(totalValue)}</span>
+                <span className="font-semibold"><FinancialGuard kind="revenue">{formatCurrency(totalValue)}</FinancialGuard></span>
               </div>
             </div>
           )}

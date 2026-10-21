@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,7 +141,7 @@ export const LaborItemForm = ({ item, onClose, onSuccess }: LaborItemFormProps) 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="hourly_rate">Rate *</Label>
-              <Input
+              <FinancialGuard kind="revenue"><Input
                 id="hourly_rate"
                 type="number"
                 step="0.0001"
@@ -149,7 +150,7 @@ export const LaborItemForm = ({ item, onClose, onSuccess }: LaborItemFormProps) 
                 onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
                 placeholder="0.00"
                 required
-              />
+              /></FinancialGuard>
             </div>
 
             <div className="space-y-2">

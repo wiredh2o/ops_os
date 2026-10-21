@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -805,7 +806,7 @@ export function PurchaseOrderForm({ purchaseOrder, suppliers, onClose, onSuccess
                         <div>
                           <Label className="text-xs">Cost</Label>
                           <div className="h-9 flex items-center px-2 bg-muted rounded-md text-sm">
-                            {formatCurrency(item.unit_cost)}
+                            <FinancialGuard kind="supplier_price">{formatCurrency(item.unit_cost)}</FinancialGuard>
                           </div>
                         </div>
 
@@ -813,7 +814,7 @@ export function PurchaseOrderForm({ purchaseOrder, suppliers, onClose, onSuccess
                         <div>
                           <Label className="text-xs">Total</Label>
                           <div className="h-9 flex items-center px-2 bg-muted rounded-md text-sm font-medium">
-                            {formatCurrency(item.total_cost)}
+                            <FinancialGuard kind="supplier_price">{formatCurrency(item.total_cost)}</FinancialGuard>
                           </div>
                         </div>
 
@@ -858,7 +859,7 @@ export function PurchaseOrderForm({ purchaseOrder, suppliers, onClose, onSuccess
                   <div className="flex justify-end">
                     <div className="text-right">
                       <p className="text-lg font-semibold">
-                        Total: {formatCurrency(calculateTotal())}
+                        Total: <FinancialGuard kind="supplier_price">{formatCurrency(calculateTotal())}</FinancialGuard>
                       </p>
                     </div>
                   </div>

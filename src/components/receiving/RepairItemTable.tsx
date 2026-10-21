@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -305,9 +306,9 @@ export const RepairItemTable: React.FC<RepairItemTableProps> = ({ items, package
                   
                   <TableCell className="p-2 text-right">
                     {item.estimated_cost && (
-                      <span className="text-xs font-mono">
+                      <FinancialGuard kind="revenue"><span className="text-xs font-mono">
                         ${item.estimated_cost.toFixed(0)}
-                      </span>
+                      </span></FinancialGuard>
                     )}
                   </TableCell>
                   

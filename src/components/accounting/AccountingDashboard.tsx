@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -179,7 +180,7 @@ export const AccountingDashboard = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalAssets)}</div>
+            <div className="text-2xl font-bold text-green-600"><FinancialGuard kind="margin">{formatCurrency(totalAssets)}</FinancialGuard></div>
           </CardContent>
         </Card>
 
@@ -189,7 +190,7 @@ export const AccountingDashboard = () => {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{formatCurrency(totalLiabilities)}</div>
+            <div className="text-2xl font-bold text-red-600"><FinancialGuard kind="margin">{formatCurrency(totalLiabilities)}</FinancialGuard></div>
           </CardContent>
         </Card>
 
@@ -200,7 +201,7 @@ export const AccountingDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${netWorth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(netWorth)}
+              <FinancialGuard kind="margin">{formatCurrency(netWorth)}</FinancialGuard>
             </div>
           </CardContent>
         </Card>

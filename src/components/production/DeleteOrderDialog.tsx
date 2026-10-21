@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import {
   AlertDialog,
@@ -442,24 +443,24 @@ export function DeleteOrderDialog({ orderId, open, onOpenChange, onSuccess }: De
                     <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal</span>
-                        <span>{formatCurrency(orderDetails?.total_amount || 0)}</span>
+                        <span><FinancialGuard kind="revenue">{formatCurrency(orderDetails?.total_amount || 0)}</FinancialGuard></span>
                       </div>
                       {taxAmount > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Tax</span>
-                          <span>{formatCurrency(taxAmount)}</span>
+                          <span><FinancialGuard kind="revenue">{formatCurrency(taxAmount)}</FinancialGuard></span>
                         </div>
                       )}
                       {(orderDetails?.shipping_cost || 0) > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Shipping</span>
-                          <span>{formatCurrency(orderDetails?.shipping_cost || 0)}</span>
+                          <span><FinancialGuard kind="revenue">{formatCurrency(orderDetails?.shipping_cost || 0)}</FinancialGuard></span>
                         </div>
                       )}
                       <Separator className="my-2" />
                       <div className="flex justify-between font-medium">
                         <span>Total to Credit/Refund</span>
-                        <span className="text-primary">{formatCurrency(refundAmount)}</span>
+                        <span className="text-primary"><FinancialGuard kind="revenue">{formatCurrency(refundAmount)}</FinancialGuard></span>
                       </div>
                     </div>
 

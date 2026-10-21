@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -202,7 +203,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
           {order.total_amount && !hasLineItems && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <DollarSign className="w-3 h-3" />
-              {formatCurrency(order.total_amount)}
+              <FinancialGuard kind="revenue">{formatCurrency(order.total_amount)}</FinancialGuard>
             </div>
           )}
 
@@ -320,7 +321,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
                                   {item.item_sku || item.item_name} <span className="text-muted-foreground/70">×{item.quantity}</span>
                                 </span>
                                 <span className="text-muted-foreground">
-                                  {formatCurrency(item.total_price)}
+                                  <FinancialGuard kind="revenue">{formatCurrency(item.total_price)}</FinancialGuard>
                                 </span>
                               </div>
                             </TooltipTrigger>
@@ -329,7 +330,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
                                 {item.item_sku && <div><strong>SKU:</strong> {item.item_sku}</div>}
                                 <div><strong>Item:</strong> {item.item_name}</div>
                                 <div><strong>Quantity:</strong> {item.quantity}</div>
-                                <div><strong>Line Total:</strong> {formatCurrency(item.total_price)}</div>
+                                <div><strong>Line Total:</strong> <FinancialGuard kind="revenue">{formatCurrency(item.total_price)}</FinancialGuard></div>
                               </div>
                             </TooltipContent>
                           </Tooltip>
@@ -353,7 +354,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
                                   {item.item_sku || item.item_name} <span className="text-muted-foreground">×{item.quantity}</span>
                                 </span>
                                 <span className="text-muted-foreground">
-                                  {formatCurrency(item.total_price)}
+                                  <FinancialGuard kind="revenue">{formatCurrency(item.total_price)}</FinancialGuard>
                                 </span>
                               </div>
                             </TooltipTrigger>
@@ -362,7 +363,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
                                 {item.item_sku && <div><strong>SKU:</strong> {item.item_sku}</div>}
                                 <div><strong>Item:</strong> {item.item_name}</div>
                                 <div><strong>Quantity:</strong> {item.quantity}</div>
-                                <div><strong>Line Total:</strong> {formatCurrency(item.total_price)}</div>
+                                <div><strong>Line Total:</strong> <FinancialGuard kind="revenue">{formatCurrency(item.total_price)}</FinancialGuard></div>
                               </div>
                             </TooltipContent>
                           </Tooltip>
@@ -373,22 +374,22 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
                     <div className="border-t border-border pt-1.5 mt-1.5 space-y-1">
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Subtotal:</span>
-                        <span className="text-foreground">{formatCurrency(subtotal)}</span>
+                        <span className="text-foreground"><FinancialGuard kind="revenue">{formatCurrency(subtotal)}</FinancialGuard></span>
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Tax:</span>
-                        <span className="text-foreground">{formatCurrency(taxTotal)}</span>
+                        <span className="text-foreground"><FinancialGuard kind="revenue">{formatCurrency(taxTotal)}</FinancialGuard></span>
                       </div>
                       {hasLabel && shippingCost > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Shipping:</span>
-                          <span className="text-foreground">{formatCurrency(shippingCost)}</span>
+                          <span className="text-foreground"><FinancialGuard kind="revenue">{formatCurrency(shippingCost)}</FinancialGuard></span>
                         </div>
                       )}
                       <div className="border-t border-border pt-1 mt-1">
                         <div className="flex justify-end text-xs font-semibold">
                           <span className="text-foreground">
-                            Total: {formatCurrency(grandTotal)}
+                            Total: <FinancialGuard kind="revenue">{formatCurrency(grandTotal)}</FinancialGuard>
                           </span>
                           {!hasLabel && <span className="font-normal text-muted-foreground ml-1">(Plus Shipping)</span>}
                         </div>
@@ -403,7 +404,7 @@ export const KanbanCard = ({ order, type, onAction, onDelete }: KanbanCardProps)
           {/* Show total with plus shipping note when collapsed for fulfillment */}
           {type === 'fulfillment' && hasLineItems && !isExpanded && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              {formatCurrency(grandTotal)}
+              <FinancialGuard kind="revenue">{formatCurrency(grandTotal)}</FinancialGuard>
               {!hasLabel && <span className="text-muted-foreground">(Plus Shipping)</span>}
             </div>
           )}

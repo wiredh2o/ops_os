@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -236,7 +237,7 @@ export function SendToVendorDialog({ purchaseOrder, onClose, onSuccess }: SendTo
             </div>
             <div className="flex justify-between text-sm mt-1 font-medium">
               <span>Total:</span>
-              <span>${purchaseOrder.total.toFixed(2)}</span>
+              <FinancialGuard kind="supplier_price"><span>${purchaseOrder.total.toFixed(2)}</span></FinancialGuard>
             </div>
           </div>
 

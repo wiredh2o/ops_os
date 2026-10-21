@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { MarketingFinancialFlags } from './financial-visibility';
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +11,8 @@ interface AuthContextType {
   roles: string[];
   rolesLoading: boolean;
   rolesError: Error | null;
+  financialFlags: MarketingFinancialFlags | null;
+  financialFlagsLoading: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -31,6 +34,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id);
       if (error) throw error;
       return (data || []).map(({ role }) => role);
+    },
+    staleTime: 0,
+  });
+
+  const financialFlagsQuery = useQuery({
+    queryKey: ['marketing-financial-flags', user?.id],
+    enabled: Boolean(user && rolesQuery.data?.includes('marketing')),
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase.from('profiles')
+        .select('marketing_view_revenue, marketing_view_margin, marketing_view_supplier_price')
+        .eq('id', user.id).single();
+      if (error) throw error;
+      return data;
     },
     staleTime: 0,
   });
@@ -66,6 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     roles: user ? rolesQuery.data || [] : [],
     rolesLoading: loading || Boolean(user && rolesQuery.isPending),
     rolesError: rolesQuery.error,
+    financialFlags: user ? financialFlagsQuery.data || null : null,
+    financialFlagsLoading: Boolean(rolesQuery.data?.includes('marketing') && financialFlagsQuery.isPending),
     signOut,
   };
 

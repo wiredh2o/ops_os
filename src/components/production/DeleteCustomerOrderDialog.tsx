@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
  import React, { useState, useEffect } from 'react';
  import {
    AlertDialog,
@@ -346,24 +347,24 @@ interface OrderDetails {
                      <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-sm">
                        <div className="flex justify-between">
                          <span className="text-muted-foreground">Subtotal</span>
-                         <span>{formatCurrency(subtotal)}</span>
+                         <span><FinancialGuard kind="revenue">{formatCurrency(subtotal)}</FinancialGuard></span>
                        </div>
                        {taxAmount > 0 && (
                          <div className="flex justify-between">
                            <span className="text-muted-foreground">Tax</span>
-                           <span>{formatCurrency(taxAmount)}</span>
+                           <span><FinancialGuard kind="revenue">{formatCurrency(taxAmount)}</FinancialGuard></span>
                          </div>
                        )}
                        {(orderDetails?.estimated_shipping || 0) > 0 && (
                          <div className="flex justify-between">
                            <span className="text-muted-foreground">Shipping</span>
-                           <span>{formatCurrency(orderDetails?.estimated_shipping || 0)}</span>
+                           <span><FinancialGuard kind="revenue">{formatCurrency(orderDetails?.estimated_shipping || 0)}</FinancialGuard></span>
                          </div>
                        )}
                        <Separator className="my-2" />
                        <div className="flex justify-between font-medium">
                          <span>Total to Credit/Refund</span>
-                         <span className="text-primary">{formatCurrency(refundAmount)}</span>
+                         <span className="text-primary"><FinancialGuard kind="revenue">{formatCurrency(refundAmount)}</FinancialGuard></span>
                        </div>
                      </div>
  

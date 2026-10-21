@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -206,13 +207,13 @@ export const RepairOrderForm: React.FC<RepairOrderFormProps> = ({ onClose, onSuc
 
           <div>
             <Label htmlFor="repair_cost">Estimated Repair Cost ($)</Label>
-            <Input
+            <FinancialGuard kind="revenue"><Input
               id="repair_cost"
               type="number"
               step="0.01"
               value={formData.repair_cost}
               onChange={(e) => setFormData({ ...formData, repair_cost: e.target.value })}
-            />
+            /></FinancialGuard>
           </div>
 
           <div>

@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -810,9 +811,9 @@ export const DiagnoseItemModal: React.FC<DiagnoseItemModalProps> = ({
                   
                   return (
                     <div className="text-muted-foreground">
-                      {hasValidSerial && `SN: ${item.serial_number}`}
+                      <FinancialGuard kind="revenue">{hasValidSerial && `SN: ${item.serial_number}`}</FinancialGuard>
                       {hasValidSerial && hasValidMac && " • "}
-                      {hasValidMac && `MAC: ${item.mac_address}`}
+                      <FinancialGuard kind="revenue">{hasValidMac && `MAC: ${item.mac_address}`}</FinancialGuard>
                     </div>
                   );
                 })()}
@@ -919,7 +920,7 @@ export const DiagnoseItemModal: React.FC<DiagnoseItemModalProps> = ({
                   <Label htmlFor="cost" className="text-sm font-medium">
                     Estimated Repair Cost
                   </Label>
-                  <Input
+                  <FinancialGuard kind="revenue"><Input
                     id="cost"
                     type="number"
                     step="0.0001"
@@ -929,7 +930,7 @@ export const DiagnoseItemModal: React.FC<DiagnoseItemModalProps> = ({
                     onBlur={handleEstimatedCostBlur}
                     className="pl-8"
                     disabled={readOnly}
-                  />
+                  /></FinancialGuard>
                   <p className="text-xs text-muted-foreground">
                     Optional - for customer estimates
                   </p>
@@ -998,7 +999,7 @@ export const DiagnoseItemModal: React.FC<DiagnoseItemModalProps> = ({
                               <div className="flex justify-between items-center text-xs text-muted-foreground">
                                 <span>{item.sku}</span>
                                 <span className="font-medium">
-                                  {formatCurrency(calculateItemPrice(item))}
+                                  <FinancialGuard kind="revenue">{formatCurrency(calculateItemPrice(item))}</FinancialGuard>
                                 </span>
                               </div>
                               {item.type === 'labor' && (
@@ -1100,7 +1101,7 @@ export const DiagnoseItemModal: React.FC<DiagnoseItemModalProps> = ({
                                 </Button>
                               )}
                               <span className="text-xs text-muted-foreground ml-auto">
-                                {formatCurrency(item.total)}
+                                <FinancialGuard kind="revenue">{formatCurrency(item.total)}</FinancialGuard>
                               </span>
                             </div>
                           </div>

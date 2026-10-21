@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -210,7 +211,7 @@ export function PendingRefundsManager() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              {formatCurrency(totalPending)}
+              <FinancialGuard kind="revenue">{formatCurrency(totalPending)}</FinancialGuard>
             </div>
             <p className="text-xs text-muted-foreground">
               Awaiting check issuance
@@ -276,7 +277,7 @@ export function PendingRefundsManager() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                        {formatCurrency(refund.amount)}
+                        <FinancialGuard kind="revenue">{formatCurrency(refund.amount)}</FinancialGuard>
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
@@ -322,7 +323,7 @@ export function PendingRefundsManager() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Amount</span>
                   <span className="font-bold text-primary">
-                    {formatCurrency(selectedRefund.amount)}
+                    <FinancialGuard kind="revenue">{formatCurrency(selectedRefund.amount)}</FinancialGuard>
                   </span>
                 </div>
                 {selectedRefund.source_order_number && (

@@ -1,3 +1,4 @@
+import { FinancialGuard } from '@/components/permissions/FinancialGuard';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -686,7 +687,7 @@ export const EnhancedProductionOrderForm: React.FC<EnhancedProductionOrderFormPr
                       <div>
                         <Label className="text-xs">Price</Label>
                         <div className="h-9 flex items-center px-2 bg-muted rounded-md text-sm">
-                          {formatCurrency(item.unit_price)}
+                          <FinancialGuard kind="revenue">{formatCurrency(item.unit_price)}</FinancialGuard>
                         </div>
                       </div>
 
@@ -694,7 +695,7 @@ export const EnhancedProductionOrderForm: React.FC<EnhancedProductionOrderFormPr
                       <div>
                         <Label className="text-xs">Total</Label>
                         <div className="h-9 flex items-center px-2 bg-muted rounded-md text-sm font-medium">
-                          {formatCurrency(item.quantity * item.unit_price)}
+                          <FinancialGuard kind="revenue">{formatCurrency(item.quantity * item.unit_price)}</FinancialGuard>
                         </div>
                       </div>
 
@@ -720,7 +721,7 @@ export const EnhancedProductionOrderForm: React.FC<EnhancedProductionOrderFormPr
                   <div className="flex justify-between items-center text-lg font-semibold">
                     <span>Total Order Amount:</span>
                     <Badge variant="outline" className="text-lg px-3 py-1">
-                      {formatCurrency(totalAmount)}
+                      <FinancialGuard kind="revenue">{formatCurrency(totalAmount)}</FinancialGuard>
                     </Badge>
                   </div>
                 </div>
