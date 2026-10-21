@@ -5480,6 +5480,7 @@ export type Database = {
         | "car_wash_employee"
         | "accounting"
         | "marketing"
+        | "tech_support"
       order_type: "customer" | "assembly_build" | "repair"
       receiving_category:
         | "inventory"
@@ -5641,6 +5642,7 @@ export const Constants = {
         "car_wash_employee",
         "accounting",
         "marketing",
+        "tech_support",
       ],
       order_type: ["customer", "assembly_build", "repair"],
       receiving_category: [
