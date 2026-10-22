@@ -28,7 +28,7 @@ import { PrintInstructionsTooltip } from './PrintInstructionsTooltip';
 import { ThirdPartyBillingFallbackDialog } from './ThirdPartyBillingFallbackDialog';
 import { SerialAssignmentModal } from './SerialAssignmentModal';
 import { carrierAllowedForDropShip, dropShipLabelRecipient, isDropShipSnapshot, type DropShipSnapshot } from '@/lib/drop-ship';
-import { printPackingSlip } from '@/lib/packing-slip';
+import { printPackingSlip, shipmentPackingSlipItems } from '@/lib/packing-slip';
 
 interface ShipOrderModalProps {
   order: {
@@ -656,13 +656,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
         : null,
       shipTo,
       isDropShip: !!dropShip,
-      items: (orderDetails.items || [])
-        .filter((item: any) => item.item_type !== 'labor')
-        .map((item: any) => ({
-          sku: item.item_sku || item.item_name,
-          description: item.item_name,
-          quantity: item.quantity,
-        })),
+      items: shipmentPackingSlipItems(orderDetails.items || []),
       notes: orderDetails.notes,
     });
   };

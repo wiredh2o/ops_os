@@ -1,4 +1,8 @@
 # Tasks
+## Shipment packing slips
+- [x] Remove printing from Customer Orders and add it to active Shipping Queue cards with allocated quantities and ship-to address.
+- [x] Retain printing in the shipping Packing step and test shipment data (43 focused tests pass; browser print document checked).
+- [ ] Verify printing from a real signed-in shipment card — external Supabase has no managed browser session.
 ## External notification preferences
 - [x] Add preferences and company-admin employee locks with server-side enforcement.
 - [x] Add own preference settings and staff failure list with manual retry.

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { buildPackingSlipHtml, type PackingSlipData } from './packing-slip';
+import { buildPackingSlipHtml, packingSlipDestination, shipmentPackingSlipItems, type PackingSlipData } from './packing-slip';
 
 const base: PackingSlipData = {
   orderNumber: 'CO-1001',
@@ -14,6 +14,35 @@ const base: PackingSlipData = {
   ],
   notes: 'Fragile',
 };
+
+test('partial shipment prints allocated quantity, not the requested quantity', () => {
+  const allocatedLines = [
+    { item_name: 'Pump', item_sku: 'PUMP-1', item_type: 'inventory_item', quantity: 2, quantity_ordered: 10 },
+  ];
+  const items = shipmentPackingSlipItems(allocatedLines);
+  assert.deepEqual(items, [{ sku: 'PUMP-1', description: 'Pump', quantity: 2 }]);
+});
+
+test('shipment contents exclude labor and zero-quantity lines', () => {
+  assert.deepEqual(shipmentPackingSlipItems([
+    { item_name: 'Labor', item_type: 'labor', quantity: 3 },
+    { item_name: 'Backorder', item_type: 'assembly', quantity: 0 },
+    { item_name: 'Valve', item_type: 'inventory_item', quantity: 4 },
+  ]), [{ sku: 'Valve', description: 'Valve', quantity: 4 }]);
+});
+
+test('saved drop-ship destination overrides company default and uses car wash recipient', () => {
+  assert.deepEqual(packingSlipDestination(
+    { recipient_name: 'Mountain Wash', address: '1 Pine Rd', city: 'Boulder', state: 'CO', zip: '80301' },
+    [{ id: 'default', address: 'Distributor warehouse' }], 'default', 'Distributor Inc'
+  ), { name: 'Mountain Wash', address: '1 Pine Rd', city: 'Boulder', state: 'CO', zip: '80301' });
+});
+
+test('uses company default and refuses an ambiguous destination', () => {
+  const addresses = [{ id: 'a', address: '12 Main St' }, { id: 'b', address: '90 West St' }];
+  assert.equal(packingSlipDestination(null, JSON.stringify(addresses), 'b', 'Wash')?.address, '90 West St');
+  assert.equal(packingSlipDestination(null, addresses, null, 'Wash'), null);
+});
 
 test('lists SKUs, descriptions and quantities with a packed checkbox column', () => {
   const html = buildPackingSlipHtml(base);

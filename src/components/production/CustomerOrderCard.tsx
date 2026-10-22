@@ -8,11 +8,10 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
-import { Calendar, Package, Truck, AlertCircle, Pencil, Trash2, ChevronDown, ChevronRight, Printer } from "lucide-react";
+import { Calendar, Package, Truck, AlertCircle, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getCustomerOrderRibbon } from "@/lib/repair-item-status-ui";
 import type { DropShipSnapshot } from "@/lib/drop-ship";
-import { printPackingSlip } from "@/lib/packing-slip";
 
 export interface CustomerOrderLineItem {
   id: string;
@@ -93,24 +92,6 @@ interface CustomerOrderCardProps {
     }
   };
 
-  const handlePrintPackingSlip = () => {
-    const dropShip = order.drop_ship_snapshot;
-    printPackingSlip({
-      orderNumber: order.order_number,
-      customerPo: order.customer_po,
-      companyName: order.company_name,
-      orderDate: format(new Date(order.created_at), 'MMM dd, yyyy'),
-      shipTo: dropShip
-        ? { name: dropShip.recipient_name, address: dropShip.address, city: dropShip.city, state: dropShip.state, zip: dropShip.zip }
-        : { name: order.company_name },
-      isDropShip: !!dropShip,
-      items: order.line_items
-        .filter((item) => item.item_type !== 'labor')
-        .map((item) => ({ sku: item.item_name, description: item.item_description, quantity: item.quantity_ordered })),
-      notes: order.notes,
-    });
-  };
-
   return (
      <Card className="mb-3 hover:shadow-md transition-shadow overflow-hidden border-2 border-gray-400 dark:border-gray-500">
        {/* Status Ribbon */}
@@ -147,26 +128,6 @@ interface CustomerOrderCardProps {
             )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-             <TooltipProvider>
-               <Tooltip>
-                 <TooltipTrigger asChild>
-                   <Button
-                     variant="ghost"
-                     size="icon"
-                     className="h-6 w-6"
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       handlePrintPackingSlip();
-                     }}
-                   >
-                     <Printer className="h-3 w-3" />
-                   </Button>
-                 </TooltipTrigger>
-                 <TooltipContent>
-                   <p>Print packing slip</p>
-                 </TooltipContent>
-               </Tooltip>
-             </TooltipProvider>
              <Button
                variant="ghost"
                size="icon"

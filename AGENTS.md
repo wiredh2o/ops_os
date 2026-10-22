@@ -1,5 +1,7 @@
 # Project Notes
 
+- Packing slips share allocated production-order item mapping between active shipping cards and the shipping modal; customer-order requests are never a print source, preventing partial-shipment quantity errors.
+
 - Staff tab selection is driven by explicit `/staff/:tab` routes in App.tsx and the current pathname in Index.tsx, so direct links, refreshes, and browser history preserve the selected screen.
 - Staff tab filtering uses server-loaded user_roles in AuthProvider and the pure staff-tab-access helper; marketing View access uses has_permission so tab visibility never depends on editable profile metadata or browser storage.
 - Staff financial displays use FinancialGuard with independently loaded per-user profile flags; role-level View permissions must never unlock those displays.
