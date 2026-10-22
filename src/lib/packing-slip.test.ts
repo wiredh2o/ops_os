@@ -16,9 +16,10 @@ const base: PackingSlipData = {
 };
 
 test('partial shipment prints allocated quantity, not the requested quantity', () => {
-  const items = shipmentPackingSlipItems([
+  const allocatedLines = [
     { item_name: 'Pump', item_sku: 'PUMP-1', item_type: 'inventory_item', quantity: 2, quantity_ordered: 10 },
-  ] as Parameters<typeof shipmentPackingSlipItems>[0]);
+  ];
+  const items = shipmentPackingSlipItems(allocatedLines);
   assert.deepEqual(items, [{ sku: 'PUMP-1', description: 'Pump', quantity: 2 }]);
 });
 
