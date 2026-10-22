@@ -1,4 +1,7 @@
 # Tasks
+## Shipment packing slips
+- [ ] Remove printing from Customer Orders and add it to active Shipping Queue cards with allocated quantities and ship-to address.
+- [ ] Retain printing in the shipping Packing step and test shipment data.
 ## External notification preferences
 - [x] Add preferences and company-admin employee locks with server-side enforcement.
 - [x] Add own preference settings and staff failure list with manual retry.
