@@ -16,6 +16,7 @@ import { DeleteOrderDialog } from './DeleteOrderDialog';
  import { DeleteCustomerOrderDialog } from './DeleteCustomerOrderDialog';
 import { BackorderAlertWidget } from './BackorderAlertWidget';
 import { isDropShipSnapshot } from '@/lib/drop-ship';
+import { packingSlipDestination, printPackingSlip, shipmentPackingSlipItems, type PackingSlipShipTo } from '@/lib/packing-slip';
 import { CustomerOrderCard, CustomerOrderSummary, CustomerOrderLineItem } from './CustomerOrderCard';
 import { FulfillCustomerOrderModal } from './FulfillCustomerOrderModal';
 import { CustomerOrderForm } from './CustomerOrderForm';
@@ -54,6 +55,8 @@ interface KanbanOrder {
   label_created_at?: string;
   picked_up_at?: string | null;
   customer_company_id?: string | null;
+  packing_slip_ship_to?: PackingSlipShipTo | null;
+  is_drop_ship?: boolean;
 }
 
 
@@ -135,7 +138,7 @@ export const ProductionDashboard = () => {
           const orders = [];
           for (let from = 0; ; from += 1000) {
             const { data, error } = await supabase.from('production_orders')
-              .select('id, order_number, customer_name, created_at, priority, status, total_amount, tax_lines, tax_amount, tax_review_required, notes, customer_email, customer_phone, shipping_preference, store_at_point_of_use, customer_po, picked_up_at, customer_company_id')
+              .select('id, order_number, customer_name, created_at, priority, status, total_amount, tax_lines, tax_amount, tax_review_required, notes, customer_email, customer_phone, shipping_preference, store_at_point_of_use, customer_po, picked_up_at, customer_company_id, drop_ship_snapshot, tax_destination, company:companies(shipping_addresses, default_shipping_address_id, owners_name, name)')
               .in('order_type', ['customer', 'repair'])
               .neq('status', 'cancelled')
               .or(`status.in.(${SHIPPING_QUEUE_STATUSES.join(',')}),picked_up_at.not.is.null`)
@@ -275,7 +278,7 @@ export const ProductionDashboard = () => {
         
         const lineItems = await readQueueRelations(orderIds, (ids, from, to) => supabase
           .from('production_order_items')
-          .select('id, production_order_id, item_name, item_sku, quantity, unit_price, total_price, is_taxable, tax_amount, repair_item_id')
+          .select('id, production_order_id, item_name, item_sku, item_type, quantity, unit_price, total_price, is_taxable, tax_amount, repair_item_id')
           .in('production_order_id', ids).order('id').range(from, to));
         
         // Fetch order details including shipping cost, payment status, and label_created_at
@@ -381,7 +384,7 @@ export const ProductionDashboard = () => {
         }
 
         // Merge line items into orders with repair item data
-        const ordersWithItems = shippingOrders.map((order: KanbanOrder) => {
+        const ordersWithItems = shippingOrders.map((order) => {
           const items = (lineItems?.filter(li => li.production_order_id === order.id) || []).map(li => ({
             ...li,
             repair_item_name: li.repair_item_id ? repairItemsMap[li.repair_item_id]?.item_name : undefined,
@@ -393,6 +396,13 @@ export const ProductionDashboard = () => {
             : 'due_in_advance';
           return {
             ...order,
+            packing_slip_ship_to: packingSlipDestination(
+              order.drop_ship_snapshot || order.tax_destination,
+              order.company?.shipping_addresses,
+              order.company?.default_shipping_address_id || null,
+              order.company?.owners_name || order.company?.name || order.customer_name
+            ),
+            is_drop_ship: isDropShipSnapshot(order.drop_ship_snapshot),
             line_items: items,
             tax_total: order.tax_amount ?? items.reduce((sum, li) => sum + (li.tax_amount || 0), 0),
             shipping_cost: orderDetail?.shipping_cost || 0,
@@ -465,6 +475,25 @@ export const ProductionDashboard = () => {
         setShowShipModal(true);
       }
     }
+  };
+
+  const handlePrintPackingSlip = (orderId: string) => {
+    const order = readyToShipOrders.find(value => value.id === orderId);
+    if (!order) return;
+    if (!order.packing_slip_ship_to) {
+      toast({ title: 'Select a shipping address', description: 'Open Ship Order, choose the destination, then print from Packing.' });
+      return;
+    }
+    printPackingSlip({
+      orderNumber: order.order_number,
+      customerPo: order.customer_po,
+      companyName: order.customer_name,
+      orderDate: new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      shipTo: order.packing_slip_ship_to,
+      isDropShip: order.is_drop_ship,
+      items: shipmentPackingSlipItems((order.line_items || []).map(item => ({ ...item, item_type: item.item_type || '' }))),
+      notes: order.notes,
+    });
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -760,6 +789,7 @@ export const ProductionDashboard = () => {
                   type="fulfillment"
                   onAction={handleFulfillmentAction}
                   archived={shippingView === 'archive'}
+                  onPrintPackingSlip={shippingView === 'active' ? handlePrintPackingSlip : undefined}
                   onDelete={shippingView === 'active' ? handleDeleteOrder : undefined}
                 />
               ))

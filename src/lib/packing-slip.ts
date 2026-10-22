@@ -10,6 +10,39 @@ export interface PackingSlipItem {
   quantity: number;
 }
 
+/** Only allocated invoice quantities belong on a shipment packing slip. */
+export function shipmentPackingSlipItems(items: {
+  item_name: string;
+  item_sku?: string | null;
+  item_type: string;
+  quantity: number;
+}[]): PackingSlipItem[] {
+  return items.filter(item => item.item_type !== 'labor' && item.quantity > 0)
+    .map(item => ({ sku: item.item_sku || item.item_name, description: item.item_name, quantity: item.quantity }));
+}
+
+/** Use a saved destination, otherwise the same default selected by the shipping screen. */
+export function packingSlipDestination(saved: unknown, addresses: unknown, defaultId: string | null, name: string): PackingSlipShipTo | null {
+  let candidates = addresses;
+  if (typeof candidates === 'string') {
+    try { candidates = JSON.parse(candidates); } catch { candidates = []; }
+  }
+  const list: unknown[] = Array.isArray(candidates) ? candidates : [];
+  const selected = saved || (defaultId
+    ? list.find(value => value && typeof value === 'object' && 'id' in value && value.id === defaultId)
+    : list.length === 1 ? list[0] : null);
+  if (!selected || typeof selected !== 'object') return null;
+  const address = selected as Record<string, unknown>;
+  if (typeof address.address !== 'string' || !address.address.trim()) return null;
+  return {
+    name: typeof address.recipient_name === 'string' ? address.recipient_name : name,
+    address: address.address,
+    city: typeof address.city === 'string' ? address.city : undefined,
+    state: typeof address.state === 'string' ? address.state : undefined,
+    zip: typeof address.zip === 'string' ? address.zip : undefined,
+  };
+}
+
 export interface PackingSlipShipTo {
   /** Recipient name — for drop-ship orders this is the car wash name only. */
   name: string;
@@ -46,8 +79,8 @@ export function buildPackingSlipHtml(data: PackingSlipData): string {
     data.shipTo.address,
     [data.shipTo.city, data.shipTo.state, data.shipTo.zip].filter(Boolean).join(', ').replace(', ', data.shipTo.city && data.shipTo.state ? ', ' : ' '),
   ]
-    .filter((line) => line && line.trim())
-    .map((line) => `<p>${escapeHtml(line!)}</p>`)
+    .filter((line): line is string => typeof line === 'string' && !!line.trim())
+    .map((line) => `<p>${escapeHtml(line)}</p>`)
     .join('');
 
   const itemRows = data.items

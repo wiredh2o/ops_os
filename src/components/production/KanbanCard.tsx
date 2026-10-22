@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
-import { Calendar, DollarSign, Phone, Mail, Trash2, ChevronDown, ChevronRight, Stethoscope, Package } from "lucide-react";
+import { Calendar, DollarSign, Phone, Mail, Trash2, ChevronDown, ChevronRight, Stethoscope, Package, Printer } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getShippingOrderRibbon, getPaymentRibbon } from "@/lib/repair-item-status-ui";
 import { DiagnoseItemModal } from "@/components/receiving/DiagnoseItemModal";
@@ -33,6 +33,7 @@ export interface OrderLineItem {
   id: string;
   item_name: string;
   item_sku?: string | null;
+  item_type?: string;
   quantity: number;
   unit_price: number;
   total_price: number;
@@ -80,9 +81,10 @@ interface KanbanCardProps {
   archived?: boolean;
   onAction: (orderId: string, action: string) => void;
   onDelete?: (orderId: string) => void;
+  onPrintPackingSlip?: (orderId: string) => void;
 }
 
-export const KanbanCard = ({ order, type, onAction, onDelete, archived = false }: KanbanCardProps) => {
+export const KanbanCard = ({ order, type, onAction, onDelete, onPrintPackingSlip, archived = false }: KanbanCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedRepairItem, setSelectedRepairItem] = useState<RepairItemData | null>(null);
   const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
@@ -169,6 +171,19 @@ export const KanbanCard = ({ order, type, onAction, onDelete, archived = false }
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {type === 'fulfillment' && !archived && onPrintPackingSlip && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Print packing slip"
+                      onClick={(event) => { event.stopPropagation(); onPrintPackingSlip(order.id); }}>
+                      <Printer className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Print packing slip</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {/* Only show status badge for production type */}
             {type === 'production' && (
               <Badge variant={getStatusColor(order.status)} className="text-xs">
