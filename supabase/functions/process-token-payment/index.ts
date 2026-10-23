@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { queueContactNotification } from "../_shared/notification-outbox.ts";
@@ -228,7 +229,8 @@ serve(async (req) => {
     }
 
     // Verify payment with Stripe
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const TENANT_KEYS = await loadTenantKeys(req, ['stripe']);
+    const stripeSecretKey = TENANT_KEYS['STRIPE_SECRET_KEY'];
     if (!stripeSecretKey) {
       return new Response(
         JSON.stringify({ error: "Stripe not configured" }),

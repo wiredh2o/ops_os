@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
 
 const corsHeaders = {
@@ -14,7 +15,8 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const clientId = Deno.env.get("DIGIKEY_CLIENT_ID");
+    const TENANT_KEYS = await loadTenantKeys(req, ['digikey']);
+    const clientId = TENANT_KEYS['DIGIKEY_CLIENT_ID'];
     if (!clientId) {
       throw new Error("DigiKey API credentials are not configured");
     }

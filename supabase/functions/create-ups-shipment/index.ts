@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -61,9 +62,10 @@ serve(async (req) => {
   }
 
   try {
-    const UPS_CLIENT_ID = Deno.env.get('UPS_CLIENT_ID');
-    const UPS_CLIENT_SECRET = Deno.env.get('UPS_CLIENT_SECRET');
-    const UPS_ACCOUNT_NUMBER = Deno.env.get('UPS_ACCOUNT_NUMBER');
+    const TENANT_KEYS = await loadTenantKeys(req, ['ups']);
+    const UPS_CLIENT_ID = TENANT_KEYS['UPS_CLIENT_ID'];
+    const UPS_CLIENT_SECRET = TENANT_KEYS['UPS_CLIENT_SECRET'];
+    const UPS_ACCOUNT_NUMBER = TENANT_KEYS['UPS_ACCOUNT_NUMBER'];
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 

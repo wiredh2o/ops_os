@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -204,8 +205,9 @@ serve(async (req) => {
   let isMock = false;
 
   try {
-    const USPS_CLIENT_ID = Deno.env.get('USPS_CLIENT_ID');
-    const USPS_CLIENT_SECRET = Deno.env.get('USPS_CLIENT_SECRET');
+    const TENANT_KEYS = await loadTenantKeys(req, ['usps']);
+    const USPS_CLIENT_ID = TENANT_KEYS['USPS_CLIENT_ID'];
+    const USPS_CLIENT_SECRET = TENANT_KEYS['USPS_CLIENT_SECRET'];
 
     const { ship_from, ship_to, packages, ship_date } = await req.json();
 

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
 
 const corsHeaders = {
@@ -14,7 +15,8 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const mouserApiKey = Deno.env.get("MOUSER_ALLBUT_SEARCH_KEY");
+    const TENANT_KEYS = await loadTenantKeys(req, ['mouser']);
+    const mouserApiKey = TENANT_KEYS['MOUSER_ALLBUT_SEARCH_KEY'];
     if (!mouserApiKey) {
       throw new Error("MOUSER_ALLBUT_SEARCH_KEY is not configured");
     }
