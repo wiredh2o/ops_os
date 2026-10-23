@@ -17,6 +17,7 @@
 - All 323 migrations in `supabase/migrations/` define the full schema and must be applied to Ops_OS on connect.
 
 ## Secrets
+- Tenant integration keys (Stripe, FedEx, UPS, USPS, Mouser, DigiKey) live AES-GCM encrypted per company in service-only company_integrations, saved via the admin-only manage-integrations function; edge functions read them through _shared/tenant-integrations.ts with no environment fallback, so no request can use another company's account. Sandbox/live is detected from the keys themselves, never a toggle.
 - Remixes do not copy secrets. All third-party keys (Stripe, FedEx, UPS, USPS, Mouser, DigiKey, Twilio, Resend) must be re-entered by the user via secure secret forms after the backend is connected.
-- Edge functions expect: STRIPE_SECRET_KEY, CHECKOUT_COMPLETED_SANDBOX_WEBHOOK_SECRET, FEDEX_API_KEY, FEDEX_SECRET_KEY, FEDEX_ACCOUNT, FEDEX_SANDBOX_* variants, UPS_CLIENT_ID, UPS_CLIENT_SECRET, UPS_ACCOUNT_NUMBER, USPS_CLIENT_ID, USPS_CLIENT_SECRET, USPS_ACCOUNT_ID, MOUSER_ALLBUT_SEARCH_KEY, DIGIKEY_CLIENT_ID, DIGIKEY_CLIENT_SECRET, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, RESEND_API_KEY, PUBLIC_SITE_URL.
+- Platform env secrets: INTEGRATIONS_ENCRYPTION_KEY, CHECKOUT_COMPLETED_SANDBOX_WEBHOOK_SECRET, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, RESEND_API_KEY, PUBLIC_SITE_URL.
 - Distributor drop-ship addresses live in their own owner-scoped table, never in car-wash company addresses; orders and invoices keep a server-built snapshot, and database triggers enforce ownership, USPS eligibility and direct-contact shipment notices so client screens cannot bypass them.

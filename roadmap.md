@@ -48,3 +48,8 @@
 - [ ] Phase 3: wire 24 Stripe/carrier/supplier edge functions to resolve keys per company.
 - [ ] Phase 4: Integrations & API Keys section in SystemSettings (admin-only, masked status, pk/sk mode validation).
 - [ ] Phase 5: unit tests for masking/validation/fallback; verify save + Stripe call end-to-end.
+
+## Tenant integration keys
+- [x] Encrypted per-company storage for Stripe, FedEx, UPS, USPS, Mouser, DigiKey; admin-only saving; provider checks; no toggle; no shared fallback.
+- [x] All payment, carrier and supplier actions use the owning company's keys.
+- [ ] Verify signed-in saving and a sandbox payment end-to-end — external Supabase has no managed test session.
