@@ -104,15 +104,10 @@ export async function getDefaultPrinter(baseUrl: string): Promise<ZebraPrinter> 
 
 /** Builds the JSON payload Zebra Browser Print expects on POST /write. */
 export function buildWritePayload(printer: ZebraPrinter, zpl: string): string {
-  return JSON.stringify({
-    device: {
-      name: printer.name,
-      uid: printer.uid,
-      connection: printer.connection,
-      deviceType: printer.deviceType,
-    },
-    data: zpl,
-  });
+  // The device object must be passed through exactly as Zebra reported it —
+  // the service validates fields beyond name/uid (e.g. version) and rejects
+  // a trimmed copy with "Failed to write to device: No value for version".
+  return JSON.stringify({ device: printer, data: zpl });
 }
 
 /** Sends raw ZPL to the default printer. Throws with a readable reason on failure. */
