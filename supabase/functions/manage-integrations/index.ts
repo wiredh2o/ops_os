@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { isProvider, maskValue, PROVIDERS, type KeyMode, type Provider, stripeKeyMode, validateIntegration } from '../_shared/integration-rules.ts';
+import { chooseCompany, isProvider, maskValue, PROVIDERS, type KeyMode, type Provider, stripeKeyMode, validateIntegration } from '../_shared/integration-rules.ts';
 import { adminClient, encryptSecrets, getCaller, getCompanyIntegration } from '../_shared/tenant-integrations.ts';
 
 const corsHeaders = {
@@ -29,19 +29,21 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const caller = await getCaller(req);
-    if (!caller) return json({ error: 'Please sign in.' }, 401);
     const body = await req.json().catch(() => ({}));
     const action = body?.action;
     const admin = adminClient();
 
-    // Publishable Stripe key for the caller's own company (safe to show in the browser).
+    // Stripe publishable key (public by design). Same company rule as payments:
+    // staff use their own company; customers/payment links only when exactly one company is configured.
     if (action === 'publishable') {
-      if (!caller.companyId) return json({ publishable_key: null });
-      const { data } = await admin.from('company_integrations').select('public_config')
-        .eq('company_id', caller.companyId).eq('provider', 'stripe').maybeSingle();
-      return json({ publishable_key: (data?.public_config as any)?.publishable_key ?? null });
+      const { data } = await admin.from('company_integrations').select('company_id, public_config').eq('provider', 'stripe');
+      const rows = data ?? [];
+      const companyId = chooseCompany(caller?.isStaff ? caller.companyId : null, rows.map((r: any) => r.company_id));
+      const row = rows.find((r: any) => r.company_id === companyId);
+      return json({ publishable_key: (row?.public_config as any)?.publishable_key ?? null });
     }
 
+    if (!caller) return json({ error: 'Please sign in.' }, 401);
     // Everything else: only an admin, only for their own company.
     if (!caller.roles.includes('admin')) return json({ error: 'Only company admins can manage integration keys.' }, 403);
     if (!caller.companyId) return json({ error: 'Your account is not linked to a company.' }, 400);
