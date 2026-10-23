@@ -1,49 +1,33 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Settings, ChevronDown, ChevronUp, DollarSign, CreditCard, Truck, Mail } from "lucide-react";
+import { Settings, ChevronDown, ChevronUp, DollarSign, Truck, Mail } from "lucide-react";
 import { useSystemSetting, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
 import { CompanyProfileSettings } from "./CompanyProfileSettings";
 import { EmailTemplateManager } from "./EmailTemplateManager";
 import { TaxSettings } from "./TaxSettings";
+import { IntegrationKeysSettings } from "./IntegrationKeysSettings";
 import { NotificationFailureList } from './NotificationFailureList';
 
 
 export function SystemSettings() {
-  const { data: stripeSetting, isLoading: stripeLoading } = useSystemSetting("stripe_publishable_key");
   const { data: fedexSetting, isLoading: fedexLoading } = useSystemSetting("carrier_fedex_enabled");
   const { data: upsSetting, isLoading: upsLoading } = useSystemSetting("carrier_ups_enabled");
   const { data: uspsSetting, isLoading: uspsLoading } = useSystemSetting("carrier_usps_enabled");
   const updateSystemSetting = useUpdateSystemSetting();
   
   const [companyOpen, setCompanyOpen] = useState(false);
-  const [stripeOpen, setStripeOpen] = useState(false);
   const [carriersOpen, setCarriersOpen] = useState(false);
   const [emailTemplatesOpen, setEmailTemplatesOpen] = useState(false);
   
-  const [formData, setFormData] = useState({
-    stripePublishableKey: stripeSetting?.setting_value || ""
-  });
-
   const [carrierSettings, setCarrierSettings] = useState({
     fedex: fedexSetting?.setting_value !== "false",
     ups: upsSetting?.setting_value !== "false", 
     usps: uspsSetting?.setting_value !== "false",
   });
-
-  useEffect(() => {
-    if (stripeSetting) {
-      setFormData(prev => ({
-        ...prev,
-        stripePublishableKey: stripeSetting.setting_value
-      }));
-    }
-  }, [stripeSetting]);
 
   useEffect(() => {
     setCarrierSettings({
@@ -52,16 +36,6 @@ export function SystemSettings() {
       usps: uspsSetting?.setting_value !== "false",
     });
   }, [fedexSetting, upsSetting, uspsSetting]);
-
-  const handleStripeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    await updateSystemSetting.mutateAsync({
-      settingKey: "stripe_publishable_key",
-      settingValue: formData.stripePublishableKey,
-      description: "Stripe publishable key for payment processing"
-    });
-  };
 
   const handleCarrierToggle = async (carrier: 'fedex' | 'ups' | 'usps', enabled: boolean) => {
     setCarrierSettings(prev => ({ ...prev, [carrier]: enabled }));
@@ -73,19 +47,7 @@ export function SystemSettings() {
     });
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const getMaskedKey = (key: string) => {
-    if (!key || key.length < 12) return key;
-    return key.substring(0, 7) + '•'.repeat(key.length - 11) + key.substring(key.length - 4);
-  };
-
-  const isLoading = stripeLoading || fedexLoading || upsLoading || uspsLoading;
+  const isLoading = fedexLoading || upsLoading || uspsLoading;
 
   if (isLoading) {
     return <div>Loading system settings...</div>;
@@ -243,64 +205,7 @@ export function SystemSettings() {
       </Collapsible>
 
 
-      {/* Stripe Configuration Section */}
-      <Collapsible open={stripeOpen} onOpenChange={setStripeOpen}>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-primary" />
-                  <div>
-                    <CardTitle className="text-lg">Stripe Configuration</CardTitle>
-                    <CardDescription>
-                      Configure Stripe for payment processing.
-                    </CardDescription>
-                  </div>
-                </div>
-                {stripeOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent>
-              <form onSubmit={handleStripeSubmit} className="space-y-4">
-                <div className="grid w-full max-w-md items-center gap-1.5">
-                  <Label htmlFor="stripePublishableKey">Stripe Publishable Key</Label>
-                  <Input
-                    id="stripePublishableKey"
-                    type="text"
-                    value={formData.stripePublishableKey}
-                    onChange={(e) => handleChange("stripePublishableKey", e.target.value)}
-                    placeholder="pk_test_..."
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {stripeSetting?.setting_value 
-                      ? `Current: ${getMaskedKey(stripeSetting.setting_value)}`
-                      : "Not configured. Starts with pk_test_ or pk_live_"
-                    }
-                  </p>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    disabled={updateSystemSetting.isPending}
-                  >
-                    {updateSystemSetting.isPending ? "Updating..." : "Update Stripe Settings"}
-                  </Button>
-                </div>
-              </form>
-
-              <div className="mt-4 p-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20 rounded-lg">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  <strong>Note:</strong> This is your publishable key (starts with pk_). It's safe to use in the frontend. Your secret key should be configured separately as an environment secret.
-                </p>
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+      <IntegrationKeysSettings />
 
       <TaxSettings />
 
