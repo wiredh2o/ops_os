@@ -7,6 +7,9 @@ export interface ZebraServiceInfo {
   available: boolean;
   baseUrl?: string;
   error?: string;
+  /** True when the service is likely running but the browser has not yet
+   *  trusted its self-signed localhost certificate (one-time approval). */
+  needsCertApproval?: boolean;
 }
 
 export interface ZebraPrinter {
@@ -31,7 +34,14 @@ async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Respon
 
 /** Detects whether the Zebra Browser Print service is running on this machine. */
 export async function checkZebraService(): Promise<ZebraServiceInfo> {
-  for (const baseUrl of CANDIDATE_URLS) {
+  // The app is served over HTTPS, so the browser blocks the plain-HTTP port
+  // (9100) as mixed content and refuses the HTTPS port (9101) until the user
+  // has trusted Zebra's self-signed localhost certificate once.
+  const pageIsSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+  const urls = pageIsSecure ? ["https://localhost:9101"] : CANDIDATE_URLS;
+
+  let sawNetworkFailure = false;
+  for (const baseUrl of urls) {
     try {
       const res = await fetchWithTimeout(`${baseUrl}/available`);
       if (res.ok) {
@@ -41,8 +51,17 @@ export async function checkZebraService(): Promise<ZebraServiceInfo> {
         }
       }
     } catch {
-      // try next candidate port
+      sawNetworkFailure = true;
     }
+  }
+
+  if (pageIsSecure && sawNetworkFailure) {
+    return {
+      available: false,
+      needsCertApproval: true,
+      error:
+        "The browser has not trusted Zebra Browser Print's local security certificate yet. This is a one-time step per computer.",
+    };
   }
   return {
     available: false,
