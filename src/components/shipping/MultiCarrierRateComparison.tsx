@@ -1003,7 +1003,7 @@ export function MultiCarrierRateComparison({
               <AlertCircle className="h-5 w-5 text-destructive" />
               Error Fetching Rates
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="whitespace-pre-line">
               {errorMessage}
             </AlertDialogDescription>
           </AlertDialogHeader>

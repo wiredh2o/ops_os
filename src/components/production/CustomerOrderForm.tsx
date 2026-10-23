@@ -3168,6 +3168,8 @@ function formatDeliveryDate(isoString: string): string {
             </ToggleGroup>
           </div>
 
+          <CarrierRateErrors statuses={carrierStatuses} />
+
           {/* Carrier filter badges */}
           {(() => {
             const carriers = ["fedex", "ups", "usps"] as const;
