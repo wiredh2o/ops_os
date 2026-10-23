@@ -343,7 +343,9 @@ serve(async (req) => {
         });
 
         if (!response.ok) {
-          throw new Error(`${fnName} returned ${response.status}`);
+          let msg = `${fnName} returned ${response.status}`;
+          try { const j = await response.json(); if (j?.error) msg = j.error; } catch { /* keep default */ }
+          throw new Error(msg);
         }
 
         return {

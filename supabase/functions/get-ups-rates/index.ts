@@ -163,22 +163,8 @@ serve(async (req) => {
       throw new Error('Missing required shipping details');
     }
 
-    // If no UPS credentials, return mock rates
     if (!UPS_CLIENT_ID || !UPS_CLIENT_SECRET || !UPS_ACCOUNT_NUMBER) {
-      console.log('UPS credentials not configured - returning mock rates');
-      isMock = true;
-      
-      const mockRates = generateMockRates(packages);
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          rates: mockRates,
-          isMock: true,
-          environment: 'sandbox',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error('UPS credentials are not set up. Add them in Settings → System → Integrations & API Keys.');
     }
 
     // Real UPS API call - wrap in try/catch to fall back to mock on failure
@@ -298,20 +284,8 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } catch (apiError: any) {
-      // API call failed (invalid credentials, network error, etc.) - fall back to mock rates
-      console.warn('UPS API failed, falling back to mock rates:', apiError.message);
-      
-      const mockRates = generateMockRates(packages);
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          rates: mockRates,
-          isMock: true,
-          environment: 'sandbox',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('UPS API failed:', apiError.message);
+      throw apiError;
     }
   } catch (error: any) {
     console.error('Error getting UPS rates:', error);

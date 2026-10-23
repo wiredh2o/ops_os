@@ -52,8 +52,8 @@ serve(async (req) => {
     carriers.push({
       id: 'ups',
       name: 'UPS',
-      available: true, // Always available (with mock fallback)
-      isMock: !hasUPS,
+      available: hasUPS,
+      isMock: false,
     });
 
     // Check USPS credentials
@@ -65,8 +65,8 @@ serve(async (req) => {
     carriers.push({
       id: 'usps',
       name: 'USPS',
-      available: true, // Always available (with mock fallback)
-      isMock: !hasUSPS,
+      available: hasUSPS,
+      isMock: false,
     });
 
     console.log('Available carriers:', carriers.map(c => `${c.id}:${c.isMock ? 'mock' : 'live'}`).join(', '));
