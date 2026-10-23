@@ -98,6 +98,14 @@ export function ZebraPrinterSettings() {
               )}
             </div>
 
+            <p className="text-sm">
+              Working on FedEx label certification?{" "}
+              <a href="/fedex-cert-labels" className="text-primary underline">
+                Generate the test label set
+              </a>
+              .
+            </p>
+
             {service && (
               <div className="flex items-start gap-2 text-sm border rounded-lg p-3">
                 {service.available && printer ? (
