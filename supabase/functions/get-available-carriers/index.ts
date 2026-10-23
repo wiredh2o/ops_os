@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,14 +24,15 @@ serve(async (req) => {
 
     // Check FedEx credentials
     const hasFedExProd = !!(
-      Deno.env.get('FEDEX_API_KEY') && 
-      Deno.env.get('FEDEX_SECRET_KEY') && 
-      Deno.env.get('FEDEX_ACCOUNT')
+      const TENANT_KEYS = await loadTenantKeys(req, ['fedex', 'ups', 'usps']);
+      TENANT_KEYS['FEDEX_API_KEY'] && 
+      TENANT_KEYS['FEDEX_SECRET_KEY'] && 
+      TENANT_KEYS['FEDEX_ACCOUNT']
     );
     const hasFedExSandbox = !!(
-      Deno.env.get('FEDEX_SANDBOX_API_KEY') && 
-      Deno.env.get('FEDEX_SANDBOX_SECRET_KEY') && 
-      Deno.env.get('FEDEX_SANDBOX_ACCOUNT')
+      TENANT_KEYS['FEDEX_SANDBOX_API_KEY'] && 
+      TENANT_KEYS['FEDEX_SANDBOX_SECRET_KEY'] && 
+      TENANT_KEYS['FEDEX_SANDBOX_ACCOUNT']
     );
     
     carriers.push({
@@ -42,9 +44,9 @@ serve(async (req) => {
 
     // Check UPS credentials
     const hasUPS = !!(
-      Deno.env.get('UPS_CLIENT_ID') && 
-      Deno.env.get('UPS_CLIENT_SECRET') && 
-      Deno.env.get('UPS_ACCOUNT_NUMBER')
+      TENANT_KEYS['UPS_CLIENT_ID'] && 
+      TENANT_KEYS['UPS_CLIENT_SECRET'] && 
+      TENANT_KEYS['UPS_ACCOUNT_NUMBER']
     );
     
     carriers.push({
@@ -56,8 +58,8 @@ serve(async (req) => {
 
     // Check USPS credentials
     const hasUSPS = !!(
-      Deno.env.get('USPS_CLIENT_ID') && 
-      Deno.env.get('USPS_CLIENT_SECRET')
+      TENANT_KEYS['USPS_CLIENT_ID'] && 
+      TENANT_KEYS['USPS_CLIENT_SECRET']
     );
     
     carriers.push({

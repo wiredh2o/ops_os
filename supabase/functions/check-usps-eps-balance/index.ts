@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,9 +35,10 @@ serve(async (req) => {
   }
 
   try {
-    const USPS_CLIENT_ID = Deno.env.get('USPS_CLIENT_ID');
-    const USPS_CLIENT_SECRET = Deno.env.get('USPS_CLIENT_SECRET');
-    const USPS_ACCOUNT_ID = Deno.env.get('USPS_ACCOUNT_ID');
+    const TENANT_KEYS = await loadTenantKeys(req, ['usps']);
+    const USPS_CLIENT_ID = TENANT_KEYS['USPS_CLIENT_ID'];
+    const USPS_CLIENT_SECRET = TENANT_KEYS['USPS_CLIENT_SECRET'];
+    const USPS_ACCOUNT_ID = TENANT_KEYS['USPS_ACCOUNT_ID'];
 
     // Parse URL for mock balance parameter
     const url = new URL(req.url);

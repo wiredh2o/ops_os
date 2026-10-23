@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,11 +44,11 @@ function normalizeCountryCode(country: string | undefined): string {
 }
 
 // Determine FedEx environment and credentials
-function getFedExConfig(): { apiKey: string; secretKey: string; account: string; baseUrl: string; environment: 'production' | 'sandbox' } {
+function getFedExConfig(TENANT_KEYS: Record<string, string | undefined>): { apiKey: string; secretKey: string; account: string; baseUrl: string; environment: 'production' | 'sandbox' } {
   // Try production credentials first
-  const prodApiKey = Deno.env.get('FEDEX_API_KEY');
-  const prodSecretKey = Deno.env.get('FEDEX_SECRET_KEY');
-  const prodAccount = Deno.env.get('FEDEX_ACCOUNT');
+  const prodApiKey = TENANT_KEYS['FEDEX_API_KEY'];
+  const prodSecretKey = TENANT_KEYS['FEDEX_SECRET_KEY'];
+  const prodAccount = TENANT_KEYS['FEDEX_ACCOUNT'];
   
   if (prodApiKey && prodSecretKey && prodAccount) {
     console.log('Using FedEx PRODUCTION credentials');
@@ -61,9 +62,9 @@ function getFedExConfig(): { apiKey: string; secretKey: string; account: string;
   }
   
   // Fall back to sandbox credentials
-  const sandboxApiKey = Deno.env.get('FEDEX_SANDBOX_API_KEY');
-  const sandboxSecretKey = Deno.env.get('FEDEX_SANDBOX_SECRET_KEY');
-  const sandboxAccount = Deno.env.get('FEDEX_SANDBOX_ACCOUNT');
+  const sandboxApiKey = TENANT_KEYS['FEDEX_SANDBOX_API_KEY'];
+  const sandboxSecretKey = TENANT_KEYS['FEDEX_SANDBOX_SECRET_KEY'];
+  const sandboxAccount = TENANT_KEYS['FEDEX_SANDBOX_ACCOUNT'];
   
   if (sandboxApiKey && sandboxSecretKey && sandboxAccount) {
     console.log('Using FedEx SANDBOX credentials');
@@ -171,13 +172,14 @@ async function fetchWithRetry(
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders }
+  const TENANT_KEYS = await loadTenantKeys(req, ['fedex']););
   }
 
   let environment: 'production' | 'sandbox' = 'sandbox';
   
   try {
-    const config = getFedExConfig();
+    const config = getFedExConfig(TENANT_KEYS);
     environment = config.environment;
 
     const { 

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 
@@ -155,7 +156,8 @@ serve(async (req) => {
     const total = subtotal + taxAmount + shippingCost;
 
     // Create PaymentIntent if not already paid
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const TENANT_KEYS = await loadTenantKeys(req, ['stripe']);
+    const stripeSecretKey = TENANT_KEYS['STRIPE_SECRET_KEY'];
     let clientSecret: string | null = null;
 
     if (stripeSecretKey && total > 0) {
