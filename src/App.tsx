@@ -18,6 +18,7 @@ import VendorShipment from "./pages/VendorShipment";
 import PendingSerials from "./pages/PendingSerials";
 import RmaRequests from "./pages/RmaRequests";
 import OrderTaxes from "./pages/OrderTaxes";
+import FedExCertLabels from "./pages/FedExCertLabels";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
@@ -174,6 +175,7 @@ function AppRoutes() {
         <Route path="/pending-serials" element={<ProtectedRoute><PendingSerials /></ProtectedRoute>} />
         <Route path="/rma" element={<ProtectedRoute><RmaRequests /></ProtectedRoute>} />
         <Route path="/order-taxes" element={<ProtectedRoute><OrderTaxes /></ProtectedRoute>} />
+        <Route path="/fedex-cert-labels" element={<ProtectedRoute><FedExCertLabels /></ProtectedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
