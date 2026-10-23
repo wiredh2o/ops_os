@@ -21,7 +21,7 @@ Let each company (tenant) admin enter their own Stripe, FedEx, UPS, USPS, Mouser
 
 - New `supabase/functions/_shared/tenant-integrations.ts`:
   - `resolveIntegrationKeys(adminClient, companyId)` → decrypted tenant keys, or `null`.
-  - Fallback: when a tenant has no key for a provider, use the platform `Deno.env` key (current behavior preserved).
+  - Platform env keys (`Deno.env`) are used ONLY when `companyId` is the platform owner's company (identified by a `system_settings` flag / env `PLATFORM_COMPANY_ID`). For any other company with no key saved, the resolver returns "not configured" and the function responds with a clear setup error — never a cross-account call.
 
 ## Phase 3 — Wire Edge Functions (24 functions)
 
