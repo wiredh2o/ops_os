@@ -1,4 +1,5 @@
 import { FinancialGuard } from '@/components/permissions/FinancialGuard';
+import { CarrierRateErrors, carrierFailures } from "@/components/shipping/CarrierRateErrors";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -431,13 +432,14 @@ export function MultiCarrierRateComparison({
         throw new Error(data.error || 'Unknown error');
       }
 
+      setCarrierStatuses(data?.carriers || {});
       if (data?.rates && data.rates.length > 0) {
         setRates(data.rates);
-        setCarrierStatuses(data.carriers || {});
         setPastCutoff(data.past_cutoff || false);
         setEffectivePickupDate(data.effective_pickup || null);
       } else {
-        throw new Error('No shipping rates available from any carrier');
+        const reasons = carrierFailures(data?.carriers || {}).map(f => `${f.name}: ${f.error}`).join('\n');
+        throw new Error(reasons ? `No carrier returned rates.\n${reasons}` : 'No shipping rates available from any carrier');
       }
     } catch (err: any) {
       console.error('Error fetching rates:', err);
@@ -809,9 +811,6 @@ export function MultiCarrierRateComparison({
                           alt={carrier.toUpperCase()}
                           className="h-6 w-auto object-contain"
                         />
-                        {status?.isMock && isActive && (
-                          <FlaskConical className="absolute -top-1 -right-1 h-3 w-3 text-amber-500" />
-                        )}
                       </button>
                     );
                   })}
@@ -819,6 +818,8 @@ export function MultiCarrierRateComparison({
               </div>
             );
           })()}
+
+          <CarrierRateErrors statuses={carrierStatuses} />
 
           {/* Rates list */}
           <div className="grid gap-2 max-h-[400px] overflow-y-auto">
@@ -890,9 +891,6 @@ export function MultiCarrierRateComparison({
                             <DollarSign className="h-3 w-3" />
                             Cheapest
                           </Badge>
-                        )}
-                        {rate.isMock && (
-                          <FlaskConical className="h-4 w-4 text-amber-500" />
                         )}
                       </div>
 
