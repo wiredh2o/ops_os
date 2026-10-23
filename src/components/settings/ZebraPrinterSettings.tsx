@@ -127,6 +127,22 @@ export function ZebraPrinterSettings() {
                       </p>
                     </div>
                   </>
+                ) : service.needsCertApproval ? (
+                  <>
+                    <ShieldCheck className="h-4 w-4 mt-0.5 text-amber-600 shrink-0" />
+                    <div className="space-y-2">
+                      <p>{service.error}</p>
+                      <ol className="list-decimal list-inside text-muted-foreground space-y-1">
+                        <li>Click <strong>Authorize this computer</strong> — a new tab opens to the Zebra service on your own machine.</li>
+                        <li>Your browser shows a certificate warning (the certificate is Zebra's, issued to localhost). Choose <strong>Advanced → Proceed</strong>.</li>
+                        <li>You should see a small response like <code>{"{\"available\":true}"}</code>. Close that tab.</li>
+                        <li>Come back here and click <strong>Check connection</strong> again.</li>
+                      </ol>
+                      <Button onClick={authorize} size="sm" variant="outline">
+                        Authorize this computer
+                      </Button>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <XCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
