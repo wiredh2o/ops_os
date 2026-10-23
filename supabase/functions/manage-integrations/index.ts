@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { isProvider, maskValue, PROVIDERS, type KeyMode, stripeKeyMode, validateIntegration } from '../_shared/integration-rules.ts';
+import { isProvider, maskValue, PROVIDERS, type KeyMode, type Provider, stripeKeyMode, validateIntegration } from '../_shared/integration-rules.ts';
 import { adminClient, encryptSecrets, getCaller, getCompanyIntegration } from '../_shared/tenant-integrations.ts';
 
 const corsHeaders = {
@@ -60,7 +60,7 @@ serve(async (req) => {
     }
 
     if (!isProvider(body?.provider)) return json({ error: 'Unknown provider.' }, 400);
-    const provider = body.provider;
+    const provider: Provider = body.provider;
 
     if (action === 'remove') {
       await admin.from('company_integrations').delete().eq('company_id', companyId).eq('provider', provider);
