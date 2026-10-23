@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Printer, ChevronDown, ChevronUp, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Printer, ChevronDown, ChevronUp, CheckCircle2, XCircle, Loader2, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,12 @@ export function ZebraPrinterSettings() {
     } finally {
       setChecking(false);
     }
+  };
+
+  const authorize = () => {
+    // Opens Zebra's local service directly so the browser shows its
+    // certificate warning; accepting it trusts the service for this browser.
+    window.open("https://localhost:9101/available", "_blank", "noopener");
   };
 
   const printTest = async () => {
