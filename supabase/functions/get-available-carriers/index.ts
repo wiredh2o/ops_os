@@ -23,8 +23,8 @@ serve(async (req) => {
     const carriers: CarrierInfo[] = [];
 
     // Check FedEx credentials
+    const TENANT_KEYS = await loadTenantKeys(req, ['fedex', 'ups', 'usps']);
     const hasFedExProd = !!(
-      const TENANT_KEYS = await loadTenantKeys(req, ['fedex', 'ups', 'usps']);
       TENANT_KEYS['FEDEX_API_KEY'] && 
       TENANT_KEYS['FEDEX_SECRET_KEY'] && 
       TENANT_KEYS['FEDEX_ACCOUNT']

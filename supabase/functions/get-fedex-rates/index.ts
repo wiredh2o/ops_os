@@ -172,9 +172,9 @@ async function fetchWithRetry(
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders }
-  const TENANT_KEYS = await loadTenantKeys(req, ['fedex']););
+    return new Response(null, { headers: corsHeaders });
   }
+  const TENANT_KEYS = await loadTenantKeys(req, ['fedex']);
 
   let environment: 'production' | 'sandbox' = 'sandbox';
   
