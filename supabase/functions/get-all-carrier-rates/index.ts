@@ -246,7 +246,7 @@ async function fetchWithRetry(url: string, options: RequestInit, label: string, 
       return response; // 4xx or last attempt — return as-is
     } catch (err) {
       if (attempt === maxRetries) throw err;
-      console.warn(`[${label}] Attempt ${attempt}/${maxRetries} failed: ${err.message}, retrying in ${attempt * 500}ms...`);
+      console.warn(`[${label}] Attempt ${attempt}/${maxRetries} failed: ${(err as Error).message}, retrying in ${attempt * 500}ms...`);
       await new Promise(r => setTimeout(r, attempt * 500));
     }
   }
@@ -340,7 +340,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           },
           body: rateRequestBody,
-        });
+        }, fnName);
 
         if (!response.ok) {
           let msg = `${fnName} returned ${response.status}`;
