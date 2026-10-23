@@ -1,4 +1,5 @@
 import { FinancialGuard } from '@/components/permissions/FinancialGuard';
+import { CarrierRateErrors } from "@/components/shipping/CarrierRateErrors";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -537,7 +538,7 @@ function formatDeliveryDate(isoString: string): string {
   const [shippingOptionsLoaded, setShippingOptionsLoaded] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("value");
   const [carrierFilters, setCarrierFilters] = useState<Set<string>>(new Set(["fedex", "ups", "usps"]));
-  const [carrierStatuses, setCarrierStatuses] = useState<Record<string, { available: boolean; isMock: boolean }>>({});
+  const [carrierStatuses, setCarrierStatuses] = useState<Record<string, { available: boolean; isMock: boolean; error?: string }>>({});
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -1142,6 +1143,7 @@ function formatDeliveryDate(isoString: string): string {
       });
 
       if (error) throw error;
+      setCarrierStatuses(data?.carriers || {});
 
       if (data?.rates && data.rates.length > 0) {
         // Map full rate data including delivery times
@@ -1222,7 +1224,7 @@ function formatDeliveryDate(isoString: string): string {
       } else {
         toast({
           title: "No shipping options available",
-          description: "No carriers returned rates for this address",
+          description: Object.entries(data?.carriers || {}).filter(([, st]: any) => st?.available === false).map(([c, st]: any) => `${c.toUpperCase()}: ${st.error || "Unknown error"}`).join(" • ") || "No carriers returned rates for this address",
           variant: "destructive",
         });
       }
@@ -3166,6 +3168,8 @@ function formatDeliveryDate(isoString: string): string {
             </ToggleGroup>
           </div>
 
+          <CarrierRateErrors statuses={carrierStatuses} />
+
           {/* Carrier filter badges */}
           {(() => {
             const carriers = ["fedex", "ups", "usps"] as const;
@@ -3195,7 +3199,6 @@ function formatDeliveryDate(isoString: string): string {
                           alt={carrier.toUpperCase()}
                           className="h-6 w-auto object-contain"
                         />
-                        {status?.isMock && <FlaskConical className="absolute -top-1 -right-1 h-3 w-3 text-amber-500" />}
                       </button>
                     );
                   })}
@@ -3265,7 +3268,6 @@ function formatDeliveryDate(isoString: string): string {
                           )}
                         </div>
                         {isSelected && <Check className="h-5 w-5 text-primary" />}
-                        {option.isMock && <FlaskConical className="h-4 w-4 text-amber-500" />}
                       </div>
                     </div>
                   </CardContent>

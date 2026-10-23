@@ -131,71 +131,6 @@ async function getUSPSToken(clientId: string, clientSecret: string): Promise<str
   return data.access_token;
 }
 
-function generateMockRates(packages: any[]): USPSRate[] {
-  const pkg = packages[0] || {};
-  const totalWeight = packages.reduce((sum, p) => sum + (p.weight_lbs || 1), 0);
-  const baseMultiplier = Math.max(1, totalWeight / 5);
-  
-  const rates: USPSRate[] = [];
-  
-  // Weight-based rates - retail with commercial discount
-  const groundRetail = Math.round((5.99 + (baseMultiplier * 1.5)) * 100) / 100;
-  const priorityRetail = Math.round((9.99 + (baseMultiplier * 2.5)) * 100) / 100;
-  const expressRetail = Math.round((28.99 + (baseMultiplier * 4)) * 100) / 100;
-  
-  rates.push({
-    service_type: 'USPS_GROUND_ADVANTAGE',
-    service_name: 'USPS Ground Advantage',
-    total_charge: groundRetail,
-    account_charge: Math.round(groundRetail * 0.85 * 100) / 100,
-    currency: 'USD',
-    transit_days: 5,
-    transit_hours: 120,
-    pricing_type: 'weight_based',
-  });
-  
-  rates.push({
-    service_type: 'PRIORITY_MAIL',
-    service_name: 'Priority Mail',
-    total_charge: priorityRetail,
-    account_charge: Math.round(priorityRetail * 0.88 * 100) / 100,
-    currency: 'USD',
-    transit_days: 3,
-    transit_hours: 72,
-    pricing_type: 'weight_based',
-  });
-  
-  rates.push({
-    service_type: 'PRIORITY_MAIL_EXPRESS',
-    service_name: 'Priority Mail Express',
-    total_charge: expressRetail,
-    account_charge: Math.round(expressRetail * 0.82 * 100) / 100,
-    currency: 'USD',
-    transit_days: 2,
-    transit_hours: 42,
-    pricing_type: 'weight_based',
-  });
-  
-  // Check for eligible flat rate boxes - use retail price as primary, commercial as account
-  const pkgDims = pkg.dimensions || { length: 6, width: 6, height: 6 };
-  const eligibleBoxes = getEligibleFlatRateBoxes(pkgDims, totalWeight);
-  
-  for (const box of eligibleBoxes) {
-    rates.push({
-      service_type: `FLAT_RATE_${box.id}`,
-      service_name: `Priority Mail ${box.name}`,
-      total_charge: box.retailPrice,
-      account_charge: box.commercialPrice,
-      currency: 'USD',
-      transit_days: 3,
-      transit_hours: 72,  // Priority Mail flat rate = same as Priority Mail
-      pricing_type: 'flat_rate',
-      container_type: box.id,
-    });
-  }
-  
-  return rates;
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -215,22 +150,8 @@ serve(async (req) => {
       throw new Error('Missing required shipping details');
     }
 
-    // If no USPS credentials, return mock rates
     if (!USPS_CLIENT_ID || !USPS_CLIENT_SECRET) {
-      console.log('USPS credentials not configured - returning mock rates');
-      isMock = true;
-
-      const mockRates = generateMockRates(packages);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          rates: mockRates,
-          isMock: true,
-          environment: 'sandbox',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error('USPS credentials are not set up. Add them in Settings → System → Integrations & API Keys.');
     }
 
     // Real USPS API call - wrap in try/catch to fall back to mock on failure
@@ -240,37 +161,44 @@ serve(async (req) => {
       const token = await getUSPSToken(USPS_CLIENT_ID, USPS_CLIENT_SECRET);
 
       const pkg = packages[0]; // USPS API handles one package at a time
-      const priceRequest = {
-        originZIPCode: ship_from.postal_code,
-        destinationZIPCode: ship_to.postal_code,
-        weight: pkg.weight_lbs || 1,
-        length: pkg.dimensions?.length || 6,
-        width: pkg.dimensions?.width || 6,
-        height: pkg.dimensions?.height || 6,
-        mailClass: 'ALL',
-        processingCategory: 'MACHINABLE',
-        rateIndicator: 'SP', // Single Piece
-        destinationEntryFacilityType: 'NONE',
-        priceType: 'COMMERCIAL',
-      };
+      const MAIL_CLASSES = ['USPS_GROUND_ADVANTAGE', 'PRIORITY_MAIL', 'PRIORITY_MAIL_EXPRESS'];
+      const errors: string[] = [];
+      const rateOptions: any[] = [];
+      await Promise.all(MAIL_CLASSES.map(async (mailClass) => {
+        const priceRequest = {
+          originZIPCode: ship_from.postal_code,
+          destinationZIPCode: ship_to.postal_code,
+          weight: pkg.weight_lbs || 1,
+          length: pkg.dimensions?.length || 6,
+          width: pkg.dimensions?.width || 6,
+          height: pkg.dimensions?.height || 6,
+          mailClass,
+          processingCategory: 'MACHINABLE',
+          rateIndicator: 'SP',
+          destinationEntryFacilityType: 'NONE',
+          priceType: 'COMMERCIAL',
+        };
+        const priceResponse = await fetch('https://api.usps.com/prices/v3/base-rates/search', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(priceRequest),
+        });
+        if (!priceResponse.ok) {
+          const text = await priceResponse.text();
+          console.error(`USPS price error (${mailClass}):`, text);
+          let msg = text;
+          try { msg = JSON.parse(text)?.error?.message || text; } catch { /* keep text */ }
+          errors.push(`${mailClass}: ${String(msg).slice(0, 200)}`);
+          return;
+        }
+        const data = await priceResponse.json();
+        for (const r of (data.rates || [])) rateOptions.push({ ...r, mailClass: r.mailClass || mailClass });
+        if (!data.rates && data.totalBasePrice != null) rateOptions.push({ ...data, mailClass });
+      }));
 
-      const priceResponse = await fetch('https://api.usps.com/prices/v3/base-rates/search', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(priceRequest),
-      });
-
-      if (!priceResponse.ok) {
-        const error = await priceResponse.text();
-        console.error('USPS price error:', error);
-        throw new Error('Failed to get USPS rates');
+      if (rateOptions.length === 0) {
+        throw new Error(`USPS did not return any prices. ${errors.join(' | ')}`);
       }
-
-      const priceData = await priceResponse.json();
-      const rateOptions = priceData.rates || [];
 
       const rates: USPSRate[] = rateOptions.map((rate: any) => {
         const serviceType = rate.mailClass;
@@ -300,20 +228,8 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } catch (apiError: any) {
-      // API call failed (invalid credentials, network error, etc.) - fall back to mock rates
-      console.warn('USPS API failed, falling back to mock rates:', apiError.message);
-      
-      const mockRates = generateMockRates(packages);
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          rates: mockRates,
-          isMock: true,
-          environment: 'sandbox',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('USPS API failed:', apiError.message);
+      throw apiError;
     }
   } catch (error: any) {
     console.error('Error getting USPS rates:', error);

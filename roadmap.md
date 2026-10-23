@@ -53,3 +53,8 @@
 - [x] Encrypted per-company storage for Stripe, FedEx, UPS, USPS, Mouser, DigiKey; admin-only saving; provider checks; no toggle; no shared fallback.
 - [x] All payment, carrier and supplier actions use the owning company's keys.
 - [ ] Verify signed-in saving and a sandbox payment end-to-end — external Supabase has no managed test session.
+
+## No simulated carrier rates
+- [x] Remove UPS/USPS simulated rate fallbacks; carriers without keys or with API errors show the reason and no rates.
+- [x] Fix USPS price request (per mail class instead of invalid "ALL").
+- [ ] Confirm live UPS/USPS results once the updated functions are deployed to Ops_OS.
