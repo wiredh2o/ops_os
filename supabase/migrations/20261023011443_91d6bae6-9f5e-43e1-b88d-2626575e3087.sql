@@ -1,0 +1,1 @@
+UPDATE public.profiles SET company_id = 'dcc688a0-bbee-4c58-a653-a18f5d9ed0c5' WHERE id IN ('13a16401-8308-4499-b849-4ce57ee09c1c','0bfeef09-42c3-4f5a-9e04-e8219513cb9a','a297ef39-076c-4d3e-ad8d-b2b888083d62') AND company_id IS NULL;
