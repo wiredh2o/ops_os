@@ -7,6 +7,8 @@ export interface ZebraServiceInfo {
   available: boolean;
   baseUrl?: string;
   error?: string;
+  /** Printer reported directly by /available, when present. */
+  printer?: ZebraPrinter;
   /** True when the service is likely running but the browser has not yet
    *  trusted its self-signed localhost certificate (one-time approval). */
   needsCertApproval?: boolean;
@@ -20,11 +22,14 @@ export interface ZebraPrinter {
 }
 
 const CANDIDATE_URLS = ["https://localhost:9101", "http://localhost:9100"];
-const TIMEOUT_MS = 3000;
+// Long enough for the user to click "Allow" on Zebra's desktop prompt the
+// first time this website asks for printer access.
+const DETECT_TIMEOUT_MS = 30000;
+const TIMEOUT_MS = 15000;
 
-async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+async function fetchWithTimeout(url: string, init?: RequestInit, timeoutMs = TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } finally {
@@ -32,26 +37,35 @@ async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Respon
   }
 }
 
+/** Extracts the first printer from an /available response, if any. */
+export function pickPrinterFromAvailable(data: unknown): ZebraPrinter | undefined {
+  const list = (data as { printer?: unknown })?.printer;
+  const arr = Array.isArray(list) ? list : list ? [list] : [];
+  const p = arr.find((x: any) => x && typeof x.name === "string");
+  return p as ZebraPrinter | undefined;
+}
+
 /** Detects whether the Zebra Browser Print service is running on this machine. */
 export async function checkZebraService(): Promise<ZebraServiceInfo> {
-  // The app is served over HTTPS, so the browser blocks the plain-HTTP port
-  // (9100) as mixed content and refuses the HTTPS port (9101) until the user
-  // has trusted Zebra's self-signed localhost certificate once.
   const pageIsSecure = typeof window !== "undefined" && window.location.protocol === "https:";
   const urls = pageIsSecure ? ["https://localhost:9101"] : CANDIDATE_URLS;
 
+  let lastError = "";
   let sawNetworkFailure = false;
   for (const baseUrl of urls) {
     try {
-      const res = await fetchWithTimeout(`${baseUrl}/available`);
+      const res = await fetchWithTimeout(`${baseUrl}/available`, undefined, DETECT_TIMEOUT_MS);
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (data?.available === true || res.status === 200) {
-          return { available: true, baseUrl };
-        }
+        return { available: true, baseUrl, printer: pickPrinterFromAvailable(data) };
       }
-    } catch {
+      lastError = `Zebra Browser Print answered with status ${res.status}.`;
+    } catch (err) {
       sawNetworkFailure = true;
+      lastError =
+        (err as Error).name === "AbortError"
+          ? "Timed out waiting for Zebra Browser Print. No one clicked Allow on its prompt."
+          : (err as Error).message;
     }
   }
 
@@ -59,14 +73,12 @@ export async function checkZebraService(): Promise<ZebraServiceInfo> {
     return {
       available: false,
       needsCertApproval: true,
-      error:
-        "The browser has not trusted Zebra Browser Print's local security certificate yet. This is a one-time step per computer.",
+      error: `Could not reach Zebra Browser Print (${lastError}). Either the certificate isn't trusted yet or the Allow prompt was missed.`,
     };
   }
   return {
     available: false,
-    error:
-      "Zebra Browser Print was not detected on this computer. Install it from zebra.com/browserprint, start it, and set your ZP 500 as the default printer.",
+    error: lastError || "Zebra Browser Print was not detected on this computer.",
   };
 }
 
@@ -98,7 +110,7 @@ export function buildWritePayload(printer: ZebraPrinter, zpl: string): string {
 export async function sendZplToPrinter(baseUrl: string, printer: ZebraPrinter, zpl: string): Promise<void> {
   const res = await fetchWithTimeout(`${baseUrl}/write`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "text/plain;charset=UTF-8" },
     body: buildWritePayload(printer, zpl),
   });
   if (!res.ok) {
