@@ -1096,6 +1096,50 @@ export type Database = {
           },
         ]
       }
+      company_integrations: {
+        Row: {
+          company_id: string
+          created_at: string
+          encrypted_secrets: string
+          encryption_iv: string
+          id: string
+          provider: string
+          public_config: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          encrypted_secrets: string
+          encryption_iv: string
+          id?: string
+          provider: string
+          public_config?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          encrypted_secrets?: string
+          encryption_iv?: string
+          id?: string
+          provider?: string
+          public_config?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_integrations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       component_price_history: {
         Row: {
           created_at: string
