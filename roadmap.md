@@ -41,3 +41,10 @@
 - [x] Shipment notice to drop-ship email/phone when a label is created (delivery awaits Resend/Twilio keys).
 - [ ] Verify signed-in order → label flow — external Supabase has no managed test session.
 - [ ] Distributor self-service web ordering screen does not exist yet; database access is ready for it.
+
+## Tenant integrations manager (per-company API keys)
+- [ ] Phase 1: encrypted company_integrations table + admin set/status RPCs + service-role decrypt RPC (migration).
+- [ ] Phase 2: shared tenant-integrations resolver with platform env-key fallback.
+- [ ] Phase 3: wire 24 Stripe/carrier/supplier edge functions to resolve keys per company.
+- [ ] Phase 4: Integrations & API Keys section in SystemSettings (admin-only, masked status, pk/sk mode validation).
+- [ ] Phase 5: unit tests for masking/validation/fallback; verify save + Stripe call end-to-end.
