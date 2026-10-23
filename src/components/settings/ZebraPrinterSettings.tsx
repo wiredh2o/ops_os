@@ -28,7 +28,7 @@ export function ZebraPrinterSettings() {
       const info = await checkZebraService();
       setService(info);
       if (info.available && info.baseUrl) {
-        const p = await getDefaultPrinter(info.baseUrl);
+        const p = info.printer ?? (await getDefaultPrinter(info.baseUrl));
         setPrinter(p);
       }
     } catch (err) {
@@ -103,6 +103,13 @@ export function ZebraPrinterSettings() {
                 </Button>
               )}
             </div>
+
+            {checking && (
+              <p className="text-sm text-muted-foreground">
+                Waiting for Zebra Browser Print (up to 30 seconds)… If a Zebra pop-up asks whether this website may
+                use your printer, check your taskbar and click <strong>Allow</strong>.
+              </p>
+            )}
 
             <p className="text-sm">
               Working on FedEx label certification?{" "}
