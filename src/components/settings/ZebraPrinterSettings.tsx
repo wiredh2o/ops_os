@@ -134,8 +134,8 @@ export function ZebraPrinterSettings() {
                       <p>{service.error}</p>
                       <ol className="list-decimal list-inside text-muted-foreground space-y-1">
                         <li>Click <strong>Authorize this computer</strong> — a new tab opens to the Zebra service on your own machine.</li>
-                        <li>Your browser shows a certificate warning (the certificate is Zebra's, issued to localhost). Choose <strong>Advanced → Proceed</strong>.</li>
-                        <li>You should see a small response like <code>{"{\"available\":true}"}</code>. Close that tab.</li>
+                        <li>Your browser shows a certificate warning (the certificate is Zebra's, issued to localhost). Choose <strong>Advanced → Proceed to localhost (unsafe)</strong>.</li>
+                        <li>You should see a small JSON response listing your ZP 500. Close that tab.</li>
                         <li>Come back here and click <strong>Check connection</strong> again.</li>
                       </ol>
                       <Button onClick={authorize} size="sm" variant="outline">
