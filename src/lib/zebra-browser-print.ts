@@ -84,13 +84,22 @@ export async function checkZebraService(): Promise<ZebraServiceInfo> {
 
 /** Returns the printer the user set as default inside Zebra Browser Print. */
 export async function getDefaultPrinter(baseUrl: string): Promise<ZebraPrinter> {
-  const res = await fetchWithTimeout(`${baseUrl}/default`);
+  // ?type=printer is required — without it the service answers with plain
+  // text ("Device: ...") instead of a JSON device object.
+  const res = await fetchWithTimeout(`${baseUrl}/default?type=printer`);
   if (!res.ok) throw new Error("Could not read the default printer from Zebra Browser Print.");
-  const data = await res.json();
-  if (!data?.name) {
+  const text = await res.text();
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Zebra Browser Print returned an unexpected response: ${text.slice(0, 120)}`);
+  }
+  const printer = (Array.isArray(data) ? data[0] : data) as ZebraPrinter | undefined;
+  if (!printer?.name) {
     throw new Error("No default printer is selected. Open Zebra Browser Print and choose your ZP 500 as the default device.");
   }
-  return data as ZebraPrinter;
+  return printer;
 }
 
 /** Builds the JSON payload Zebra Browser Print expects on POST /write. */

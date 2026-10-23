@@ -165,7 +165,7 @@ export default function FedExCertLabels() {
       const info = zebra?.available ? zebra : await checkZebraService();
       setZebra(info);
       if (!info.available || !info.baseUrl) throw new Error(info.error ?? "Zebra Browser Print not detected.");
-      const printer = await getDefaultPrinter(info.baseUrl);
+      const printer = info.printer ?? (await getDefaultPrinter(info.baseUrl));
       await sendZplToPrinter(info.baseUrl, printer, atob(label.zplBase64));
       toast({ title: "Label sent", description: `Piece ${label.sequence} of ${label.totalPieces} printed to ${printer.name}.` });
     } catch (err) {
