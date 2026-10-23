@@ -1224,7 +1224,7 @@ function formatDeliveryDate(isoString: string): string {
       } else {
         toast({
           title: "No shipping options available",
-          description: "No carriers returned rates for this address",
+          description: Object.entries(data?.carriers || {}).filter(([, st]: any) => st?.available === false).map(([c, st]: any) => `${c.toUpperCase()}: ${st.error || "Unknown error"}`).join(" • ") || "No carriers returned rates for this address",
           variant: "destructive",
         });
       }
