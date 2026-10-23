@@ -10,6 +10,7 @@ import { CompanyProfileSettings } from "./CompanyProfileSettings";
 import { EmailTemplateManager } from "./EmailTemplateManager";
 import { TaxSettings } from "./TaxSettings";
 import { IntegrationKeysSettings } from "./IntegrationKeysSettings";
+import { ZebraPrinterSettings } from "./ZebraPrinterSettings";
 import { NotificationFailureList } from './NotificationFailureList';
 
 
@@ -206,6 +207,8 @@ export function SystemSettings() {
 
 
       <IntegrationKeysSettings />
+
+      <ZebraPrinterSettings />
 
       <TaxSettings />
 
