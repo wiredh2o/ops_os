@@ -1,6 +1,8 @@
 # Tenant Integrations Manager (per-company API keys)
 
-Let each company (tenant) admin enter their own Stripe, FedEx, UPS, USPS, Mouser, and DigiKey keys in Settings. Keys are encrypted at rest, decrypted only inside Edge Functions at call time. Tenants never touch Supabase. Sandbox vs live is just whichever keys they paste. Platform-level env keys remain as fallback so nothing breaks before a tenant enters their own.
+Let each company (tenant) admin enter their own Stripe, FedEx, UPS, USPS, Mouser, and DigiKey keys in Settings. Keys are encrypted at rest, decrypted only inside Edge Functions at call time. Tenants never touch Supabase. Sandbox vs live is just whichever keys they paste.
+
+**Fallback rule (important):** the platform-level env keys belong to the platform owner's company only. Edge Functions resolve the owning company first and use ONLY that company's keys. If a tenant has no key for a provider, that provider is "not configured" for them — the UI shows a setup prompt and no API call is made. A tenant's payment or shipment can never silently bill the platform owner's (or another tenant's) account. The env fallback applies only when the owning company IS the platform company, preserving current behavior for your own operations.
 
 ## Phase 1 — Encrypted storage (one migration)
 
