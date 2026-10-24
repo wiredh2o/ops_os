@@ -145,7 +145,7 @@ serve(async (req) => {
           return {
             imageType,
             labelStockType,
-            labelPrintingOrientation: 'TOP_EDGE_OF_TEXT_FIRST',
+            labelPrintingOrientation: 'BOTTOM_EDGE_OF_TEXT_FIRST',
           };
         })(),
         requestedPackageLineItems: packages.map((pkg: any) => ({
