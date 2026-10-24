@@ -92,7 +92,7 @@ async function createShipment(
       labelSpecification: {
         imageType: 'ZPLII',
         labelStockType: 'STOCK_4X675',
-        labelPrintingOrientation: 'TOP_EDGE_OF_TEXT_FIRST',
+        labelPrintingOrientation: 'BOTTOM_EDGE_OF_TEXT_FIRST',
       },
       requestedPackageLineItems: pieces.map((p, i) => ({
         sequenceNumber: i + 1,
