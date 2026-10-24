@@ -11,6 +11,12 @@ test('test label is a complete ZPL document sized for 4x6.75 stock', () => {
   assert.match(zpl, /\^BCN/, 'includes a scannable Code-128 barcode');
 });
 
+test('test label prints right-side up, matching the FedEx labels', () => {
+  const zpl = buildTestLabelZpl();
+  assert.match(zpl, /\^PON/, 'explicitly resets to normal 0 degree orientation');
+  assert.ok(!zpl.includes('^POI'), 'must not invert orientation — that flips the test label upside down');
+});
+
 test('write payload targets the chosen printer with the raw label data', () => {
   const payload = JSON.parse(buildWritePayload({ name: 'ZP 500', uid: 'u1' }, '^XA^XZ'));
   assert.equal(payload.device.name, 'ZP 500');

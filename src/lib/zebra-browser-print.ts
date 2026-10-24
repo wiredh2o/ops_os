@@ -148,9 +148,10 @@ export function buildTestLabelZpl(): string {
     "^CI28",
     "^PW812",
     "^LL1350",
-    // Labels feed bottom-first toward the tear bar, so invert the print
-    // orientation or the label comes out upside down.
-    "^POI",
+    // This label's content is authored for normal 0° orientation. State ^PON
+    // explicitly so a printer left flipped by an earlier label still prints
+    // this one right-side up.
+    "^PON",
     "^FO50,50^A0N,48,48^FDZebra Browser Print^FS",
     "^FO50,110^A0N,36,36^FDConnection test — Ops OS^FS",
     "^FO50,170^BY2,3,120^BCN,120,Y,N,N^FDZEBRA-TEST-OK^FS",
