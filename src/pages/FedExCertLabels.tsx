@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Loader2, Printer, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,16 +102,37 @@ function AddressFields({
   );
 }
 
+const FORM_STORAGE_KEY = "fedex-cert-labels-form";
+
+function loadSavedForm(): {
+  shipFrom?: AddressForm;
+  shipTo?: AddressForm;
+  weight?: string;
+  dims?: { length: string; width: string; height: string };
+} {
+  try {
+    return JSON.parse(localStorage.getItem(FORM_STORAGE_KEY) ?? "{}") ?? {};
+  } catch {
+    return {};
+  }
+}
+
 export default function FedExCertLabels() {
   const navigate = useNavigate();
-  const [shipFrom, setShipFrom] = useState<AddressForm>(emptyAddress);
-  const [shipTo, setShipTo] = useState<AddressForm>(emptyAddress);
-  const [weight, setWeight] = useState("5");
-  const [dims, setDims] = useState({ length: "12", width: "9", height: "6" });
+  const saved = useMemo(loadSavedForm, []);
+  const [shipFrom, setShipFrom] = useState<AddressForm>({ ...emptyAddress, ...saved.shipFrom });
+  const [shipTo, setShipTo] = useState<AddressForm>({ ...emptyAddress, ...saved.shipTo });
+  const [weight, setWeight] = useState(saved.weight ?? "5");
+  const [dims, setDims] = useState(saved.dims ?? { length: "12", width: "9", height: "6" });
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<ScenarioResult[] | null>(null);
   const [zebra, setZebra] = useState<ZebraServiceInfo | null>(null);
   const [printingKey, setPrintingKey] = useState<string | null>(null);
+
+  // Remember everything typed so each new attempt starts pre-filled.
+  useEffect(() => {
+    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({ shipFrom, shipTo, weight, dims }));
+  }, [shipFrom, shipTo, weight, dims]);
 
   const generate = async () => {
     setBusy(true);

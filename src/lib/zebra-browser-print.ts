@@ -102,12 +102,27 @@ export async function getDefaultPrinter(baseUrl: string): Promise<ZebraPrinter> 
   return printer;
 }
 
+/** Zebra's own SDK always stamps devices with its client API level (2). */
+const BROWSER_PRINT_API_VERSION = 2;
+
 /** Builds the JSON payload Zebra Browser Print expects on POST /write. */
 export function buildWritePayload(printer: ZebraPrinter, zpl: string): string {
-  // The device object must be passed through exactly as Zebra reported it —
-  // the service validates fields beyond name/uid (e.g. version) and rejects
-  // a trimmed copy with "Failed to write to device: No value for version".
-  return JSON.stringify({ device: printer, data: zpl });
+  // Mirrors Zebra's official BrowserPrint.js Device.send(): the service
+  // rejects writes without "version" ("No value for version"), and the
+  // device records it reports do not include that field themselves.
+  const p = printer as ZebraPrinter & { provider?: string; manufacturer?: string };
+  return JSON.stringify({
+    device: {
+      name: p.name,
+      uid: p.uid,
+      connection: p.connection,
+      deviceType: p.deviceType,
+      version: BROWSER_PRINT_API_VERSION,
+      provider: p.provider,
+      manufacturer: p.manufacturer,
+    },
+    data: zpl,
+  });
 }
 
 /** Sends raw ZPL to the default printer. Throws with a readable reason on failure. */

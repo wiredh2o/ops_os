@@ -17,3 +17,8 @@ test('write payload targets the chosen printer with the raw label data', () => {
   assert.equal(payload.device.uid, 'u1');
   assert.equal(payload.data, '^XA^XZ');
 });
+
+test('write payload always includes the version Zebra requires', () => {
+  const payload = JSON.parse(buildWritePayload({ name: 'ZP 500' }, '^XA^XZ'));
+  assert.equal(payload.device.version, 2);
+});
