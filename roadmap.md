@@ -58,3 +58,9 @@
 - [x] Remove UPS/USPS simulated rate fallbacks; carriers without keys or with API errors show the reason and no rates.
 - [x] Fix USPS price request (per mail class instead of invalid "ALL").
 - [ ] Confirm live UPS/USPS results once the updated functions are deployed to Ops_OS.
+## Credit limits and payment terms
+- [x] Admin-only terms list and accounting basis in Settings; admin/accounting set limits ($0.00 default) and terms.
+- [x] Sales/marketing/admin/accounting see limit and available credit on customers, orders and shipping.
+- [x] Over-limit orders on credit terms are accepted on Credit Hold; label purchase and "shipped" blocked server-side (12 rule tests pass).
+- [ ] Verify signed-in credit flow end-to-end — external Supabase has no managed browser session.
+- [ ] Platform-level SaaS admin roles — waiting on the user's decision.
