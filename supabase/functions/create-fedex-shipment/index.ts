@@ -58,6 +58,8 @@ serve(async (req) => {
       packages,
       signature_required,
       label_format,
+      // Doc-tab summary values not known to FedEx (invoice, customer, dept, handling)
+      doc_tab,
       // Third-party billing parameters
       third_party_billing,
       third_party_fedex_account,
@@ -137,15 +139,36 @@ serve(async (req) => {
         labelSpecification: (() => {
           // Default to PDF for sharp vector-based text and barcodes
           const imageType = (label_format || 'PDF').toUpperCase();
-          // FedEx expects PAPER_* stock types for bitmap/PDF labels, and STOCK_* for thermal command streams.
-          const labelStockType = (imageType === 'ZPLII' || imageType === 'EPL2')
-            ? 'STOCK_4X675'
-            : 'PAPER_4X675';
-
+          const isThermal = imageType === 'ZPLII' || imageType === 'EPL2';
+          // FedEx only offers doc tabs on thermal stock: 4" x 6.75" with the
+          // last 3/4" as a trailing peel-off summary tab.
+          if (!isThermal) {
+            return { imageType, labelStockType: 'PAPER_4X675', labelPrintingOrientation: 'BOTTOM_EDGE_OF_TEXT_FIRST' };
+          }
+          const lit = (v: unknown) => (v == null ? '' : String(v)).slice(0, 30);
+          const zones = [
+            { zoneNumber: 1, header: 'Invoice', literalValue: lit(doc_tab?.invoice) },
+            { zoneNumber: 2, header: 'Custo', literalValue: lit(doc_tab?.customer) },
+            { zoneNumber: 3, header: 'Dept', literalValue: lit(doc_tab?.dept) },
+            { zoneNumber: 4, header: 'Date', dataField: 'REQUEST/SHIPMENT/ShipTimestamp' },
+            { zoneNumber: 5, header: 'Weight', dataField: 'REQUEST/PACKAGE/Weight/Value' },
+            { zoneNumber: 6, header: 'COD', dataField: 'REQUEST/SHIPMENT/SpecialServicesRequested/CodDetail/CodCollectionAmount/Amount' },
+            { zoneNumber: 7, header: 'DV', dataField: 'REQUEST/PACKAGE/InsuredValue/Amount' },
+            { zoneNumber: 8, header: 'Shipping', dataField: 'REPLY/SHIPMENT/RATES/ACTUAL/TotalBaseCharge/Amount' },
+            { zoneNumber: 9, header: 'Special', dataField: 'REPLY/SHIPMENT/RATES/ACTUAL/TotalSurcharges/Amount' },
+            { zoneNumber: 10, header: 'Handling', literalValue: lit(doc_tab?.handling ?? '0.00') },
+            { zoneNumber: 11, header: 'Total', dataField: 'REPLY/SHIPMENT/RATES/ACTUAL/TotalNetCharge/Amount' },
+          ];
           return {
             imageType,
-            labelStockType,
+            labelStockType: 'STOCK_4X675_TRAILING_DOC_TAB',
             labelPrintingOrientation: 'BOTTOM_EDGE_OF_TEXT_FIRST',
+            customerSpecifiedDetail: {
+              docTabContent: {
+                docTabContentType: 'ZONE001',
+                zone001: { docTabZoneSpecifications: zones },
+              },
+            },
           };
         })(),
         requestedPackageLineItems: packages.map((pkg: any) => ({
