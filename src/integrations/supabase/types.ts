@@ -984,7 +984,6 @@ export type Database = {
         Row: {
           billing_address: string | null
           created_at: string
-          credit_limit: number | null
           customer_number: number
           default_shipping_address_id: string | null
           email: string | null
@@ -1019,7 +1018,6 @@ export type Database = {
         Insert: {
           billing_address?: string | null
           created_at?: string
-          credit_limit?: number | null
           customer_number: number
           default_shipping_address_id?: string | null
           email?: string | null
@@ -1054,7 +1052,6 @@ export type Database = {
         Update: {
           billing_address?: string | null
           created_at?: string
-          credit_limit?: number | null
           customer_number?: number
           default_shipping_address_id?: string | null
           email?: string | null
@@ -1166,6 +1163,38 @@ export type Database = {
           purchase_order_reference?: string | null
         }
         Relationships: []
+      }
+      customer_credit_limits: {
+        Row: {
+          company_id: string
+          created_at: string
+          credit_limit: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          credit_limit?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          credit_limit?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_credit_limits_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_order_items: {
         Row: {
@@ -2833,6 +2862,42 @@ export type Database = {
           supplier?: string | null
           updated_at?: string
           width_inches?: number
+        }
+        Relationships: []
+      }
+      payment_terms: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          deposit_percent: number
+          label: string
+          net_days: number
+          sort_order: number
+          updated_at: string
+          uses_credit: boolean
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          deposit_percent?: number
+          label: string
+          net_days?: number
+          sort_order?: number
+          updated_at?: string
+          uses_credit?: boolean
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          deposit_percent?: number
+          label?: string
+          net_days?: number
+          sort_order?: number
+          updated_at?: string
+          uses_credit?: boolean
         }
         Relationships: []
       }
@@ -5866,6 +5931,7 @@ export type Database = {
         Args: { p_target: string }
         Returns: boolean
       }
+      can_manage_credit: { Args: never; Returns: boolean }
       can_manage_drop_ship: { Args: { _owner: string }; Returns: boolean }
       can_manage_tax: { Args: never; Returns: boolean }
       can_manage_user: {
@@ -5886,6 +5952,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_view_credit: { Args: never; Returns: boolean }
       check_waste_threshold_alerts: {
         Args: { threshold_pct?: number }
         Returns: string
@@ -5899,6 +5966,11 @@ export type Database = {
           p_shipping?: number
         }
         Returns: Json
+      }
+      customer_credit_used: { Args: { _company_id: string }; Returns: number }
+      customer_on_credit_hold: {
+        Args: { _company_id: string }
+        Returns: boolean
       }
       enqueue_notification: {
         Args: {
@@ -5931,6 +6003,18 @@ export type Database = {
         }[]
       }
       get_current_user_company_id: { Args: never; Returns: string }
+      get_customer_credit: {
+        Args: { _company_ids: string[] }
+        Returns: {
+          available_credit: number
+          company_id: string
+          credit_limit: number
+          credit_used: number
+          on_hold: boolean
+          payment_terms: string
+          uses_credit: boolean
+        }[]
+      }
       get_my_rma_repairs: { Args: { p_id: string }; Returns: Json }
       get_next_repair_order_number: { Args: never; Returns: string }
       get_next_serial_sequence: {
@@ -6081,6 +6165,10 @@ export type Database = {
       notification_schedule_next: { Args: never; Returns: undefined }
       notification_wake: { Args: never; Returns: undefined }
       populate_weekly_component_prices: { Args: never; Returns: string }
+      production_order_credit_hold: {
+        Args: { _order_id: string }
+        Returns: boolean
+      }
       quote_order_tax: {
         Args: {
           p_company_id: string
@@ -6177,6 +6265,14 @@ export type Database = {
           tracking_number: string
           updated_at: string
         }[]
+      }
+      set_customer_credit_terms: {
+        Args: {
+          _company_id: string
+          _credit_limit: number
+          _payment_terms: string
+        }
+        Returns: undefined
       }
       set_rma_tracking: {
         Args: { p_carrier: string; p_id: string; p_tracking: string }
