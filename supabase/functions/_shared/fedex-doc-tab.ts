@@ -21,7 +21,7 @@ export function fedexDocTabLabelSpec(doc: DocTabInput | undefined) {
   ];
   return {
     imageType: 'ZPLII',
-    labelStockType: 'STOCK_4X675_TRAILING_DOC_TAB',
+    labelStockType: 'STOCK_4X675_LEADING_DOC_TAB',
     labelPrintingOrientation: 'BOTTOM_EDGE_OF_TEXT_FIRST',
     customerSpecifiedDetail: {
       docTabContent: { docTabContentType: 'ZONE001', zone001: { docTabZoneSpecifications: zones } },
