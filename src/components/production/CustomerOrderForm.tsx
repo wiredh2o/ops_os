@@ -54,6 +54,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useCustomerCredit } from "@/hooks/useCustomerCredit";
+import { CreditStatus } from "@/components/customers/CreditStatus";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { AddAddressForm } from "@/components/shipping/AddAddressForm";
@@ -2090,6 +2092,13 @@ function formatDeliveryDate(isoString: string): string {
       const { error: itemsError } = await supabase.from("customer_order_items").insert(orderItemsToInsert);
       if (itemsError) throw itemsError;
 
+      // Orders on credit terms are always accepted; over-limit ones go on Credit Hold (can't ship).
+      const { data: holdData } = await (supabase as any).rpc("get_customer_credit", { _company_ids: [formData.customer_company_id] });
+      refetchCredit();
+      if (holdData?.[0]?.on_hold) {
+        toast({ title: "Order accepted on Credit Hold", description: "This customer is over their credit limit. The order can be worked but won't ship until enough credit is available.", variant: "destructive" });
+      }
+
       // Payment link flow: suppress order toast, send link, block on failure
       if (selectedPaymentType === 'link') {
         let linkSuccess = false;
@@ -2195,6 +2204,8 @@ function formatDeliveryDate(isoString: string): string {
   };
 
   const selectedCompany = companies.find((c) => c.id === formData.customer_company_id);
+  const { data: creditMap = {}, refetch: refetchCredit } = useCustomerCredit([formData.customer_company_id]);
+  const selectedCredit = formData.customer_company_id ? creditMap[formData.customer_company_id] : undefined;
   const canProceedToShipping = !!selectedAddress && orderItems.length > 0;
   const canSubmit = shippingOptionsLoaded && !!formData.shipping_method_preference;
 
@@ -2957,6 +2968,7 @@ function formatDeliveryDate(isoString: string): string {
                       <p className="font-medium">{selectedCompany.name}</p>
                       {selectedCompany.email && <p className="text-muted-foreground">{selectedCompany.email}</p>}
                       {selectedCompany.phone && <p className="text-muted-foreground">{formatPhone(selectedCompany.phone)}</p>}
+                      {selectedCredit?.uses_credit && <CreditStatus compact credit={selectedCredit} />}
                     </>
                   )}
                 </div>
