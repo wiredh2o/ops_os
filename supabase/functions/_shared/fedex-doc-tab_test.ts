@@ -17,6 +17,8 @@ Deno.test("all 6 tab rows get equal gaps and the block is centred; label fields 
   const out = adjustDocTabZpl(zpl);
   assertEquals(out.includes("^FO40,100^A0N,40,40^FDLABEL"), true);
   for (const [text, top] of [["TRCK", 1222], ["Svcs", 1246], ["Invoice", 1270], ["Custo", 1294], ["Dept", 1318], ["Total", 1342]] as const) {
-    assertEquals(out.includes(`^FO10,${top}^A0N,20,20^FD${text}`), true, `${text} at ${top}`);
+    assertEquals(new RegExp(`\\^FO\\d+,${top}\\^A0N,20,20\\^FD${text}`).test(out), true, `${text} at ${top}`);
   }
+  // Horizontal centring: block spans 10..310 (Invoice row is widest), so dx = (812-300)/2 - 10 = 246.
+  assertEquals(out.includes("^FO256,1270^A0N,20,20^FDInvoice"), true);
 });
