@@ -72,9 +72,11 @@ export function downloadMultipleLabels(labels: LabelToPrint[]): void {
  * @param blobUrl - Blob URL of the label
  * @param options - Optional settings including mimeType
  */
-export function printThermalLabel(blobUrl: string, options?: PrintOptions): void {
+export function printThermalLabel(blobUrl: string, options?: PrintOptions & { docTabHtml?: string }): void {
   const mimeType = options?.mimeType;
   const isPdfLabel = isPdf(mimeType, blobUrl);
+  const docTab = options?.docTabHtml;
+  
   
   console.log('[printThermalLabel] Starting print:', { blobUrl, mimeType, isPdfLabel });
   
