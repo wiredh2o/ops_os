@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { loadTenantKeys, getCaller } from "../_shared/tenant-integrations.ts";
-import { fedexDocTabLabelSpec } from "../_shared/fedex-doc-tab.ts";
+import { fedexDocTabLabelSpec, adjustDocTabZplBase64 } from "../_shared/fedex-doc-tab.ts";
 
 // Generates FedEx SANDBOX test labels for the Bar Code Analysis Group
 // certification packet. Returns raw label data (ZPL) directly in the
@@ -126,7 +126,7 @@ async function createShipment(
     trackingNumber: piece.trackingNumber,
     sequence: i + 1,
     totalPieces: totalPackageCount,
-    zplBase64: piece.packageDocuments?.[0]?.encodedLabel ?? '',
+    zplBase64: adjustDocTabZplBase64(piece.packageDocuments?.[0]?.encodedLabel ?? ''),
   }));
 }
 
