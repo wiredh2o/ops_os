@@ -1,4 +1,6 @@
-# Count shipping in available credit
+# Count shipping, tax and fees in available credit
+
+- **Tax and fees:** the invoice total (items, fees, shipping and tax) counts against credit. Open orders that aren't invoiced yet also count their fees and estimated tax, using the order's own tax lines, not a flat rate.
 
 ## What you will get
 - **Open orders (not yet invoiced):** the estimated shipping on the order counts against available credit, on top of the item amounts.
