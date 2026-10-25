@@ -7,6 +7,9 @@
 - **Multiple shipments:** each box or shipment's charge adds up. The total of all shipments for the invoice is what counts, not just the first or last one.
 - **Shipping is never counted twice.** For example, an estimate on the order and the real charge on the invoice are not both counted.
 - The credit-hold check uses the same figure, so a big shipping charge can put an order on hold, and a lower one can lift a hold.
+- **Ship as available:** each shipment gets its own invoice. An invoice can only be created for items that are actually available to ship right now. The server refuses an invoice for items that aren't ready.
+- **Shipping on every invoice:** the shipping charge is the carrier's rate for the method picked for that invoice, never a guess. The shipping charge is written from the carrier's rate when the method is chosen. If a label is later bought at a different price, the invoice updates to the label price, unless the invoice is already paid.
+- The order's estimated shipping counts toward credit only for items not yet invoiced. As each piece is invoiced, its real carrier rate replaces its share of the estimate.
 
 ## Steps
 1. Check how shipping reaches an invoice today. Is it already part of the invoice total, a separate freight line, or only the carrier's cost on the order and on each shipment? Then pick the one figure that counts as what the customer is charged.
@@ -14,7 +17,9 @@
    - Unpaid invoices count items + tax + shipping. Shipping is the sum of all shipments when any exist, otherwise the estimate.
    - Open orders (cash basis) add their estimated shipping.
 3. Keep the order form's credit check in step with this by adding the estimated shipping before comparing to available credit.
-4. Add tests for these cases: estimate counts before shipping; real price replaces the estimate; two shipments add together; no double counting when shipping is already in the invoice total.
+4. Block invoices for items that aren't available. Check the current invoicing screen first, then add a server rule so no screen can get around it.
+5. Write the selected carrier rate onto the invoice when a shipping method is picked, and replace it with the label price when the label is bought. Paid invoices stay locked.
+6. Add tests for these cases: estimate counts before shipping; real price replaces the estimate; two shipments add together; no double counting when shipping is already in the invoice total; an invoice is refused for items that aren't available; each ship-as-available invoice carries its own carrier rate.
 
 ## Technical details
 - Function to change: `public.customer_credit_used`. Today it sums `production_orders.total_amount + tax_amount - credit_applied - deposit` and, on cash basis, uninvoiced `customer_order_items`. It does not reference `shipping_cost`, `production_order_shipments.shipping_cost` or `customer_orders.estimated_shipping`.
