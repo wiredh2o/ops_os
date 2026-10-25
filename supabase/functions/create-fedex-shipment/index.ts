@@ -1,3 +1,4 @@
+import { fedexDocTabLabelSpec } from '../_shared/fedex-doc-tab.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -145,31 +146,7 @@ serve(async (req) => {
           if (!isThermal) {
             return { imageType, labelStockType: 'PAPER_4X675', labelPrintingOrientation: 'BOTTOM_EDGE_OF_TEXT_FIRST' };
           }
-          const lit = (v: unknown) => (v == null ? '' : String(v)).slice(0, 30);
-          const zones = [
-            { zoneNumber: 1, header: 'Invoice', literalValue: lit(doc_tab?.invoice) },
-            { zoneNumber: 2, header: 'Custo', literalValue: lit(doc_tab?.customer) },
-            { zoneNumber: 3, header: 'Dept', literalValue: lit(doc_tab?.dept) },
-            { zoneNumber: 4, header: 'Date', dataField: 'REQUEST/SHIPMENT/ShipTimestamp' },
-            { zoneNumber: 5, header: 'Weight', dataField: 'REQUEST/PACKAGE/Weight/Value' },
-            { zoneNumber: 6, header: 'COD', dataField: 'REQUEST/SHIPMENT/SpecialServicesRequested/CodDetail/CodCollectionAmount/Amount' },
-            { zoneNumber: 7, header: 'DV', dataField: 'REQUEST/PACKAGE/InsuredValue/Amount' },
-            { zoneNumber: 8, header: 'Shipping', dataField: 'REPLY/SHIPMENT/RATES/ACTUAL/TotalBaseCharge/Amount' },
-            { zoneNumber: 9, header: 'Special', dataField: 'REPLY/SHIPMENT/RATES/ACTUAL/TotalSurcharges/Amount' },
-            { zoneNumber: 10, header: 'Handling', literalValue: lit(doc_tab?.handling ?? '0.00') },
-            { zoneNumber: 11, header: 'Total', dataField: 'REPLY/SHIPMENT/RATES/ACTUAL/TotalNetCharge/Amount' },
-          ];
-          return {
-            imageType,
-            labelStockType: 'STOCK_4X675_TRAILING_DOC_TAB',
-            labelPrintingOrientation: 'BOTTOM_EDGE_OF_TEXT_FIRST',
-            customerSpecifiedDetail: {
-              docTabContent: {
-                docTabContentType: 'ZONE001',
-                zone001: { docTabZoneSpecifications: zones },
-              },
-            },
-          };
+          return fedexDocTabLabelSpec(doc_tab);
         })(),
         requestedPackageLineItems: packages.map((pkg: any) => ({
           weight: {
