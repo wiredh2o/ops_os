@@ -134,10 +134,15 @@ export function printThermalLabel(blobUrl: string, options?: PrintOptions & { do
     }
     img {
       width: 100%;
-      height: 100%;
-      object-fit: fill;
+      height: ${docTab ? '6in' : '100%'};
+      object-fit: ${docTab ? 'contain' : 'fill'};
       display: block;
     }
+    .doc-tab {
+      height: 0.75in; display: flex; gap: 0.2in; padding: 0.05in 0.15in;
+      border-top: 1px dashed #000; font: 7pt/1.15 'Courier New', monospace; color: #000;
+    }
+    .doc-tab .col { flex: 1; display: flex; flex-direction: column; flex-wrap: wrap; column-gap: 0.15in; }
   </style>
 </head>
 <body>
@@ -147,6 +152,7 @@ export function printThermalLabel(blobUrl: string, options?: PrintOptions & { do
     onload="setTimeout(function() { window.print(); }, 100);"
     onerror="document.body.innerHTML='<p style=\\'padding:20px\\'>Failed to load label image</p>';"
   />
+  ${docTab ?? ''}
 </body>
 </html>`;
   
