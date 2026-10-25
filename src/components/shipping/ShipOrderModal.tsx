@@ -31,6 +31,14 @@ import { ThirdPartyBillingFallbackDialog } from './ThirdPartyBillingFallbackDial
 import { SerialAssignmentModal } from './SerialAssignmentModal';
 import { carrierAllowedForDropShip, dropShipLabelRecipient, isDropShipSnapshot, type DropShipSnapshot } from '@/lib/drop-ship';
 import { printPackingSlip, shipmentPackingSlipItems } from '@/lib/packing-slip';
+import { useQueryClient } from '@tanstack/react-query';
+import { usePaymentTerms, paymentTermsQuery } from '@/hooks/usePaymentTerms';
+import { useCustomerCredit } from '@/hooks/useCustomerCredit';
+import { CreditStatus, CreditHoldBadge } from '@/components/customers/CreditStatus';
+import { findTerm, termKind, type PaymentTerm } from '@/lib/credit-rules';
+
+/** Prepay and deposit terms must be paid before a label is bought. */
+const termsRequirePayment = (terms: PaymentTerm[], code: string | null | undefined) => termKind(findTerm(terms, code)) !== 'net';
 
 interface ShipOrderModalProps {
   order: {
@@ -445,8 +453,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
         
         // For Pick-Up orders, skip to payment step directly
         if (pickUp) {
-          const terms = resolvedCompany.payment_terms || 'due_in_advance';
-          const requiresPayment = terms === 'due_in_advance' || terms === 'fifty_fifty';
+          const requiresPayment = termsRequirePayment(await queryClient.ensureQueryData(paymentTermsQuery), resolvedCompany.payment_terms);
           if (requiresPayment) {
             setStep('payment');
           } else {
@@ -492,8 +499,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
           setStep('print_label');
         } else {
           // Label created but payment pending - check if payment is needed
-          const terms = resolvedCompany?.payment_terms || 'due_in_advance';
-          const requiresPayment = terms === 'due_in_advance' || terms === 'fifty_fifty';
+          const requiresPayment = termsRequirePayment(await queryClient.ensureQueryData(paymentTermsQuery), resolvedCompany?.payment_terms);
           if (requiresPayment) {
             setStep('payment');
           } else {
@@ -517,22 +523,21 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
   // Set payment amount option based on customer payment terms
   useEffect(() => {
     if (customer) {
-      const terms = customer.payment_terms || 'due_in_advance';
-      if (terms === 'net_15' || terms === 'net_30') {
+      const kind = termKind(findTerm(termsList, customer.payment_terms));
+      if (kind === 'net') {
         setPaymentAmountOption('terms');
         setPaymentMethodType('terms');
-      } else if (terms === 'fifty_fifty' && orderDetails?.deposit_paid) {
+      } else if (kind === 'deposit' && orderDetails?.deposit_paid) {
         setPaymentAmountOption('remaining');
       } else {
         setPaymentAmountOption('full');
       }
     }
-  }, [customer, orderDetails?.deposit_paid]);
+  }, [customer, orderDetails?.deposit_paid, termsList]);
 
   const requiresPaymentBeforeShipping = () => {
     if (!customer) return true;
-    const terms = customer.payment_terms || 'due_in_advance';
-    return terms === 'due_in_advance' || terms === 'fifty_fifty';
+    return termsRequirePayment(termsList, customer.payment_terms);
   };
 
   // Get subtotal of all line items (before tax)
@@ -710,6 +715,14 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
     
     setIsCreatingLabel(true);
     setLabelError(null);
+
+    const { data: onHold, error: holdError } = await (supabase as any).rpc('production_order_credit_hold', { _order_id: order.id });
+    if (holdError || onHold) {
+      setLabelError(holdError ? `Could not check credit: ${holdError.message}` : 'Credit Hold: this customer is over their credit limit. The order can\'t ship until enough credit is available.');
+      refetchCredit();
+      setIsCreatingLabel(false);
+      return;
+    }
     
     try {
       const getLabelFunctionName = (carrier: string) => {
@@ -1329,9 +1342,11 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
               </div>
               <div className="text-right">
                 <PaymentTermsBadge terms={customer?.payment_terms} />
-                {customer?.payment_terms === 'fifty_fifty' && orderDetails?.deposit_paid && (
-                  <Badge variant="outline" className="ml-2">50% Deposit Paid</Badge>
+                {termKind(findTerm(termsList, customer?.payment_terms)) === 'deposit' && orderDetails?.deposit_paid && (
+                  <Badge variant="outline" className="ml-2">Deposit Paid</Badge>
                 )}
+                {customerCredit?.on_hold && <span className="ml-2"><CreditHoldBadge /></span>}
+                {customerCredit?.uses_credit && <div className="mt-1"><CreditStatus compact credit={customerCredit} /></div>}
               </div>
             </div>
           </CardContent>
