@@ -64,3 +64,9 @@
 - [x] Over-limit orders on credit terms are accepted on Credit Hold; label purchase and "shipped" blocked server-side (12 rule tests pass).
 - [ ] Verify signed-in credit flow end-to-end — external Supabase has no managed browser session.
 - [ ] Platform-level SaaS admin roles — waiting on the user's decision.
+
+## Credit: shipping, tax and fees
+- [x] Count invoice shipping, tax and fees and open-order tax/estimated shipping in available credit.
+- [x] Invoice only items available to ship (invoice screen check).
+- [ ] Server-side availability rule for invoices: needs confirmation of how stock on hand is reserved before it can be enforced safely.
+- [ ] Signed-in end-to-end check: external Supabase has no managed test session.
