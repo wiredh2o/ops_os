@@ -1,4 +1,4 @@
-import { fedexDocTabLabelSpec } from '../_shared/fedex-doc-tab.ts';
+import { fedexDocTabLabelSpec, adjustDocTabZplBase64 } from '../_shared/fedex-doc-tab.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -215,7 +215,8 @@ serve(async (req) => {
     const pieceResponses = shipData.output?.transactionShipments?.[0]?.pieceResponses || [];
     
     const trackingNumber = pieceResponses[0]?.trackingNumber;
-    const encodedLabel = pieceResponses[0]?.packageDocuments?.[0]?.encodedLabel;
+    const rawLabel = pieceResponses[0]?.packageDocuments?.[0]?.encodedLabel;
+    const encodedLabel = rawLabel && (label_format || '').toUpperCase() === 'ZPLII' ? adjustDocTabZplBase64(rawLabel) : rawLabel;
     const totalCharge = shipData.output?.transactionShipments?.[0]?.completedShipmentDetail?.shipmentRating?.shipmentRateDetails?.[0]?.totalNetCharge;
 
     console.log('Created shipment:', { trackingNumber, hasLabel: !!encodedLabel });
