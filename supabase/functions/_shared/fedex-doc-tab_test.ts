@@ -14,18 +14,18 @@ function paperBoxes(out: string) {
   });
 }
 
-Deno.test("inverted label: tab block moves 63 dots right and 10 down on paper; body stays", () => {
+Deno.test("inverted label: tab block moves 63 dots right and 16 down on paper; body stays", () => {
   const f = (x: number, y: number, t: string) => `^FO${x},${y}^ABN,20,10^FD${t}^FS`;
   const zpl = "^XA^POI^PW812^LL1370" + f(300, 600, "LABEL BODY") +
     f(500, 140, "TRCK: 0000") + f(620, 100, "Invoice: TEST-1") + f(60, 40, "Total: 20.69") + "^XZ";
   const out = adjustDocTabZpl(zpl);
   assertEquals(out.includes("^FO300,600^ABN,20,10^FDLABEL BODY"), true);
-  assertEquals(out.includes("^FO437,130^ABN,20,10^FDTRCK"), true);
-  assertEquals(out.includes("^FO557,90^ABN,20,10^FDInvoice"), true);
-  assertEquals(out.includes("^FO0,30^ABN,20,10^FDTotal"), true);
+  assertEquals(out.includes("^FO437,124^ABN,20,10^FDTRCK"), true);
+  assertEquals(out.includes("^FO557,84^ABN,20,10^FDInvoice"), true);
+  assertEquals(out.includes("^FO0,24^ABN,20,10^FDTotal"), true);
 });
 
-Deno.test("normal label: tab block moves +63 x and +10 y", () => {
+Deno.test("normal label: tab block moves +63 x and +16 y", () => {
   const zpl = "^XA^PW812^LL1370^FO40,1240^ABN,20,10^FDInvoice: X^FS^XZ";
-  assertEquals(adjustDocTabZpl(zpl).includes("^FO103,1250"), true);
+  assertEquals(adjustDocTabZpl(zpl).includes("^FO103,1256"), true);
 });
