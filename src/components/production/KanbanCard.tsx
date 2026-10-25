@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import { Calendar, DollarSign, Phone, Mail, Trash2, ChevronDown, ChevronRight, Stethoscope, Package, Printer } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getShippingOrderRibbon, getPaymentRibbon } from "@/lib/repair-item-status-ui";
+import { usePaymentTerms } from "@/hooks/usePaymentTerms";
+import { findTerm, termKind } from "@/lib/credit-rules";
 import { DiagnoseItemModal } from "@/components/receiving/DiagnoseItemModal";
 
 export interface RepairItemData {
@@ -100,7 +102,11 @@ export const KanbanCard = ({ order, type, onAction, onDelete, onPrintPackingSlip
   };
 
   const workflowRibbon = type === 'fulfillment' ? getShippingOrderRibbon(order.status) : null;
-  const paymentRibbon = type === 'fulfillment' ? getPaymentRibbon(order.payment_status, order.payment_terms, order.label_created_at) : null;
+  const { data: termsList = [] } = usePaymentTerms();
+  const cardTerm = findTerm(termsList, order.payment_terms);
+  const paymentRibbon = type === 'fulfillment'
+    ? getPaymentRibbon(order.payment_status, termKind(cardTerm) === 'prepay' ? 'due_in_advance' : order.payment_terms, order.label_created_at, termKind(cardTerm) === 'net' ? cardTerm?.net_days : 0)
+    : null;
   
   const lineItems = order.line_items || [];
   const hasLineItems = lineItems.length > 0;

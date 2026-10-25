@@ -12,6 +12,8 @@ import { Calendar, Package, Truck, AlertCircle, Pencil, Trash2, ChevronDown, Che
 import { formatCurrency } from "@/lib/utils";
 import { getCustomerOrderRibbon } from "@/lib/repair-item-status-ui";
 import type { DropShipSnapshot } from "@/lib/drop-ship";
+import { useCustomerCredit } from "@/hooks/useCustomerCredit";
+import { CreditHoldBadge } from "@/components/customers/CreditStatus";
 
 export interface CustomerOrderLineItem {
   id: string;
@@ -66,6 +68,8 @@ interface CustomerOrderCardProps {
 }
 
  export const CustomerOrderCard = ({ order, onFulfill, onEdit, onDelete }: CustomerOrderCardProps) => {
+  const { data: creditMap = {} } = useCustomerCredit([order.company_id]);
+  const onCreditHold = Boolean(creditMap[order.company_id]?.on_hold);
   const [isExpanded, setIsExpanded] = useState(false);
   const quantityRemaining = order.quantity_ordered - order.quantity_invoiced;
   const fulfillmentProgress = order.quantity_ordered > 0 
@@ -160,6 +164,7 @@ interface CustomerOrderCardProps {
                 </Tooltip>
               </TooltipProvider>
             {getPriorityIndicator(order.priority)}
+            {onCreditHold && <CreditHoldBadge />}
           </div>
         </div>
       </CardHeader>
