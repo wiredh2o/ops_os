@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_CREDIT_LIMIT, availableCredit, canManageCredit, canViewCredit,
   depositFraction, termKind, isOnCreditHold, orderExceedsCredit, parseCreditLimit,
+  invoiceCreditShipping, openOrderCreditUsed, canInvoiceQuantity,
 } from './credit-rules.ts';
 
 const net30 = { uses_credit: true };
