@@ -258,8 +258,8 @@ serve(async (req) => {
         }
         
         const imageFormat = (label_format || 'PDF').toUpperCase();
-        const fileExtension = imageFormat === 'PNG' ? 'png' : 'pdf';
-        const contentType = imageFormat === 'PNG' ? 'image/png' : 'application/pdf';
+        const fileExtension = imageFormat === 'PNG' ? 'png' : imageFormat === 'ZPLII' ? 'zpl' : 'pdf';
+        const contentType = imageFormat === 'PNG' ? 'image/png' : imageFormat === 'ZPLII' ? 'text/plain' : 'application/pdf';
         const fileName = `${trackingNumber}_${Date.now()}.${fileExtension}`;
         
         const { error: uploadError } = await supabase
