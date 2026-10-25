@@ -12,6 +12,7 @@ import { TaxSettings } from "./TaxSettings";
 import { IntegrationKeysSettings } from "./IntegrationKeysSettings";
 import { ZebraPrinterSettings } from "./ZebraPrinterSettings";
 import { NotificationFailureList } from './NotificationFailureList';
+import { PaymentTermsSettings } from './PaymentTermsSettings';
 
 
 export function SystemSettings() {
@@ -211,6 +212,8 @@ export function SystemSettings() {
       <ZebraPrinterSettings />
 
       <TaxSettings />
+
+      <PaymentTermsSettings />
 
       {/* Email Templates Section */}
       <Collapsible open={emailTemplatesOpen} onOpenChange={setEmailTemplatesOpen}>
