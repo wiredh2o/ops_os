@@ -260,6 +260,20 @@ export const FulfillCustomerOrderModal = ({
       return;
     }
 
+    // An invoice may only contain items available to ship now (drop-ships excepted).
+    for (const id of selectedItemIds) {
+      const item = items.find(i => i.id === id)!;
+      const dropShip = needsDropShip(item) && !!getExternalSupplier(item);
+      if (!canInvoiceQuantity(selectedItems[id], getAvailableStock(item), dropShip)) {
+        toast({
+          title: "Not available to ship",
+          description: `Only ${getAvailableStock(item)} of ${getItemName(item)} can ship now. Invoice just what's available.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Validate range-tracked items have valid range assignments
     const rangeTrackedSelectedItems = selectedItemIds
       .map(id => items.find(i => i.id === id)!)
