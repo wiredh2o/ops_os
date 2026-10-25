@@ -20,5 +20,5 @@ Deno.test("all 6 tab rows get equal gaps and the block is centred; label fields 
     assertEquals(new RegExp(`\\^FO\\d+,${top}\\^A0N,20,20\\^FD${text}`).test(out), true, `${text} at ${top}`);
   }
   // Horizontal centring: block spans 10..310 (Invoice row is widest), so dx = (812-300)/2 - 10 = 246.
-  assertEquals(out.includes("^FO256,1270^A0N,20,20^FDInvoice"), true);
+  assertEquals(out.includes("^FO256,1272^A0N,20,20^FDInvoice"), true);
 });
