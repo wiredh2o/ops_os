@@ -18,6 +18,9 @@ import { CustomerShippingAddressCsvExporter } from './CustomerShippingAddressCsv
 import { CustomerShippingAddressCsvImporter } from './CustomerShippingAddressCsvImporter';
 import { BulkCustomerEditor } from './BulkCustomerEditor';
 import { BulkStripeSync } from './BulkStripeSync';
+import { CreditStatus } from './CreditStatus';
+import { useCustomerCredit } from '@/hooks/useCustomerCredit';
+import { canViewCredit } from '@/lib/credit-rules';
 
 interface ShippingAddress {
   id: string;
@@ -503,6 +506,7 @@ export function CustomerManagement() {
                         {renderSortIcon('is_active')}
                       </div>
                     </TableHead>
+                    {showCredit && <TableHead className="w-[200px]">Credit</TableHead>}
                     <TableHead className="w-[150px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -529,6 +533,11 @@ export function CustomerManagement() {
                           {customer.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
+                      {showCredit && (
+                        <TableCell>
+                          <CreditStatus compact credit={creditMap[customer.id]} />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
