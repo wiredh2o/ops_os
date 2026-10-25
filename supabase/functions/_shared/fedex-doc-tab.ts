@@ -40,41 +40,66 @@ const TAB_DOTS = 152; // 3/4" at 203 dpi
 const HEADERS = ['Invoice:', 'Custo:', 'Dept:', 'Date:', 'Weight:', 'COD:', 'DV:', 'Shipping:', 'Special:', 'Handling:', 'Total:'];
 
 /**
- * Re-centres the doc-tab text inside its 3/4" strip so the gap to the
- * perforation equals the gap to the outer edge, with the same side margin.
- * Only fields inside the tab strip move; the shipping label is untouched.
+ * Lays out the whole doc tab — FedEx's TRCK/SVC header rows plus our 4
+ * custom rows — as one 6-row block: equal gaps between rows, and the block
+ * centred in the 3/4" strip so all four outer paddings match. Only fields
+ * inside the tab strip move; the shipping label is untouched.
  */
 export function adjustDocTabZpl(zpl: string): string {
   const labelLen = Number(zpl.match(/\^LL(\d+)/)?.[1] ?? 1370);
+  const labelWidth = Number(zpl.match(/\^PW(\d+)/)?.[1] ?? 812);
   // Each field: positioning command up to ^FS
   const fieldRe = /\^(FO|FT)(\d+),(\d+)([^]*?\^FS)/g;
-  type F = { idx: number; len: number; cmd: string; x: number; y: number; rest: string; top: number; bottom: number; text: string };
+  type F = { idx: number; len: number; cmd: string; x: number; y: number; rest: string; top: number; bottom: number; width: number; text: string };
   const fields: F[] = [];
   for (const m of zpl.matchAll(fieldRe)) {
     const [all, cmd, xs, ys, rest] = m;
     const x = Number(xs), y = Number(ys);
     const h = Number(rest.match(/\^A[0-9A-Z@][NRIB]?,(\d+)/)?.[1] ?? 20);
+    const cw = Number(rest.match(/\^A[0-9A-Z@][NRIB]?,\d+,(\d+)/)?.[1] ?? h);
+    const text = rest.match(/\^FD([^^]*)/)?.[1] ?? '';
     const top = cmd === 'FT' ? y - h : y;
-    fields.push({ idx: m.index!, len: all.length, cmd, x, y, rest, top, bottom: top + h, text: rest.match(/\^FD([^^]*)/)?.[1] ?? '' });
+    fields.push({ idx: m.index!, len: all.length, cmd, x, y, rest, top, bottom: top + h, width: text.length * cw, text });
   }
   const anchors = fields.filter((f) => HEADERS.some((h) => f.text.includes(h)));
   if (!anchors.length) return zpl;
   const atEnd = anchors[0].top > labelLen / 2;
   const regionStart = atEnd ? labelLen - TAB_DOTS : 0;
   const regionEnd = regionStart + TAB_DOTS;
-  const tab = fields.filter((f) => f.top >= regionStart - 4 && f.bottom <= regionEnd + 4 && !/TRCK|SVC/i.test(f.text));
+  const tab = fields.filter((f) => f.top >= regionStart - 4 && f.bottom <= regionEnd + 4);
   if (!tab.length) return zpl;
-  const minTop = Math.min(...tab.map((f) => f.top));
-  const maxBottom = Math.max(...tab.map((f) => f.bottom));
-  const pad = Math.max(0, Math.round((TAB_DOTS - (maxBottom - minTop)) / 2));
-  const dy = regionStart + pad - minTop;
+
+  // Group fields into rows by their top edge.
+  const rows: F[][] = [];
+  for (const f of [...tab].sort((a, b) => a.top - b.top)) {
+    const row = rows.find((r) => Math.abs(Math.min(...r.map((g) => g.top)) - f.top) <= 4);
+    if (row) row.push(f);
+    else rows.push([f]);
+  }
+  const rowTop = (r: F[]) => Math.min(...r.map((f) => f.top));
+  const rowBottom = (r: F[]) => Math.max(...r.map((f) => f.bottom));
+  rows.sort((a, b) => rowTop(a) - rowTop(b));
+
+  // Equal gap above row 1, between rows, and below the last row.
+  const totalH = rows.reduce((s, r) => s + (rowBottom(r) - rowTop(r)), 0);
+  const gap = Math.floor(Math.max(0, TAB_DOTS - totalH) / (rows.length + 1));
+  const dyByField = new Map<F, number>();
+  let y = regionStart + Math.floor((TAB_DOTS - (totalH + gap * (rows.length - 1))) / 2);
+  for (const r of rows) {
+    const dy = y - rowTop(r);
+    for (const f of r) dyByField.set(f, dy);
+    y += rowBottom(r) - rowTop(r) + gap;
+  }
+
+  // Centre the whole block horizontally.
   const minX = Math.min(...tab.map((f) => f.x));
-  const dx = pad - minX;
-  if (!dy && !dx) return zpl;
+  const maxRight = Math.max(...tab.map((f) => f.x + f.width));
+  const dx = Math.round((labelWidth - (maxRight - minX)) / 2) - minX;
+
   let out = '';
   let cursor = 0;
-  for (const f of tab.sort((a, b) => a.idx - b.idx)) {
-    out += zpl.slice(cursor, f.idx) + `^${f.cmd}${Math.max(0, f.x + dx)},${Math.max(0, f.y + dy)}${f.rest}`;
+  for (const f of [...tab].sort((a, b) => a.idx - b.idx)) {
+    out += zpl.slice(cursor, f.idx) + `^${f.cmd}${Math.max(0, f.x + dx)},${Math.max(0, f.y + (dyByField.get(f) ?? 0))}${f.rest}`;
     cursor = f.idx + f.len;
   }
   return out + zpl.slice(cursor);
