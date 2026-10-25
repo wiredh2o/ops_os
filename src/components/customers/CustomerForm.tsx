@@ -103,7 +103,6 @@ export function CustomerForm({ customer, onClose, onSuccess }: CustomerFormProps
   const canEditCredit = canManageCredit(roles);
   const { data: allTerms = [] } = usePaymentTerms();
   const [creditLimitInput, setCreditLimitInput] = useState(DEFAULT_CREDIT_LIMIT.toFixed(2));
-  const [savedTerms, setSavedTerms] = useState('due_in_advance');
   // Active terms, plus the customer's current term even if it was turned off.
   const paymentTermsOptions = allTerms
     .filter((t) => t.active || t.code === formData.payment_terms)
@@ -113,7 +112,6 @@ export function CustomerForm({ customer, onClose, onSuccess }: CustomerFormProps
     if (!customer?.id || !canEditCredit) { setCreditLimitInput(DEFAULT_CREDIT_LIMIT.toFixed(2)); return; }
     (supabase as any).from('customer_credit_limits').select('credit_limit').eq('company_id', customer.id).maybeSingle()
       .then(({ data }: any) => setCreditLimitInput(Number(data?.credit_limit ?? DEFAULT_CREDIT_LIMIT).toFixed(2)));
-    setSavedTerms((customer as any).payment_terms || 'due_in_advance');
   }, [customer?.id, canEditCredit]);
 
   const saveCreditTerms = async (companyId: string) => {
