@@ -4,10 +4,10 @@
 - **Open orders (not yet invoiced):** the estimated shipping on the order counts against available credit, on top of the item amounts.
 - **Invoices:** once shipping is known, the invoice's shipping counts. Before any label is bought, the order's estimate counts instead.
 - **Price changes:** if the real shipping price is different from the estimate, the real price replaces it. Available credit updates right away.
-- **Multiple shipments:** each box or shipment's charge adds up. The total of all shipments for the invoice is what counts, not just the first or last one.
+- **One invoice = one shipment.** That shipment may need several boxes. The invoice's shipping is the total for all of its boxes, not just the first or last one.
 - **Shipping is never counted twice.** For example, an estimate on the order and the real charge on the invoice are not both counted.
 - The credit-hold check uses the same figure, so a big shipping charge can put an order on hold, and a lower one can lift a hold.
-- **Ship as available:** each shipment gets its own invoice. An invoice can only be created for items that are actually available to ship right now. The server refuses an invoice for items that aren't ready.
+- **Ship as available:** pieces of the order ship separately as they become available. Each of those shipments has its own invoice. An invoice can only be created for items that are actually available to ship right now. The server refuses an invoice for items that aren't ready.
 - **Shipping on every invoice:** the shipping charge is the carrier's rate for the method picked for that invoice, never a guess. The shipping charge is written from the carrier's rate when the method is chosen. If a label is later bought at a different price, the invoice updates to the label price, unless the invoice is already paid.
 - The order's estimated shipping counts toward credit only for items not yet invoiced. As each piece is invoiced, its real carrier rate replaces its share of the estimate.
 
