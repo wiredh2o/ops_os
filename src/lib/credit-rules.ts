@@ -39,6 +39,15 @@ export const findTerm = (terms: readonly PaymentTerm[], code: string | null | un
 export const depositFraction = (term: Pick<PaymentTerm, 'deposit_percent'> | undefined) =>
   Math.min(Math.max(Number(term?.deposit_percent ?? 100), 0), 100) / 100;
 
+export type TermKind = 'prepay' | 'deposit' | 'net';
+/** How a term is collected: full prepay, partial deposit, or billed on net days. Unknown terms are treated as prepay. */
+export const termKind = (term: Pick<PaymentTerm, 'deposit_percent'> | undefined): TermKind => {
+  if (!term) return 'prepay';
+  const pct = Number(term.deposit_percent);
+  if (pct >= 100) return 'prepay';
+  return pct > 0 ? 'deposit' : 'net';
+};
+
 export const parseCreditLimit = (input: string): number | null => {
   const n = Number(String(input).replace(/[$,\s]/g, ''));
   return Number.isFinite(n) && n >= 0 ? round2(n) : null;

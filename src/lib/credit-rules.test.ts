@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_CREDIT_LIMIT, availableCredit, canManageCredit, canViewCredit,
-  depositFraction, isOnCreditHold, orderExceedsCredit, parseCreditLimit,
+  depositFraction, termKind, isOnCreditHold, orderExceedsCredit, parseCreditLimit,
 } from './credit-rules.ts';
 
 const net30 = { uses_credit: true };
@@ -58,4 +58,11 @@ test('credit limit input parsing', () => {
   assert.equal(parseCreditLimit('$1,250.555'), 1250.56);
   assert.equal(parseCreditLimit('-5'), null);
   assert.equal(parseCreditLimit(''), 0);
+});
+
+test('term kind comes from the deposit percent, unknown is prepay', () => {
+  assert.equal(termKind({ deposit_percent: 100 }), 'prepay');
+  assert.equal(termKind({ deposit_percent: 50 }), 'deposit');
+  assert.equal(termKind({ deposit_percent: 0 }), 'net');
+  assert.equal(termKind(undefined), 'prepay');
 });
