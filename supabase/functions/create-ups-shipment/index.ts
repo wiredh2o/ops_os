@@ -1,3 +1,4 @@
+import { creditHoldResponse } from '../_shared/credit-hold.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -91,6 +92,9 @@ serve(async (req) => {
     if (!order_id || !service_type || !ship_from || !ship_to || !packages) {
       throw new Error('Missing required shipment details');
     }
+
+    const held = await creditHoldResponse(order_id, corsHeaders);
+    if (held) return held;
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     let isMock = false;

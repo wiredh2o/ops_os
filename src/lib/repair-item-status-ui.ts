@@ -198,7 +198,9 @@ export interface PaymentRibbon {
 export const getPaymentRibbon = (
   paymentStatus: string | null | undefined,
   paymentTerms: string | null | undefined,
-  labelCreatedAt: string | null | undefined
+  labelCreatedAt: string | null | undefined,
+  /** Days to pay from the settings list; omitted for unknown/prepay terms. */
+  termNetDays?: number
 ): PaymentRibbon => {
   // If already paid, show green PAID
   if (paymentStatus === 'paid') {
@@ -211,7 +213,7 @@ export const getPaymentRibbon = (
   }
 
   // Net terms - calculate if overdue
-  const netDays = paymentTerms === 'net_15' ? 15 : paymentTerms === 'net_30' ? 30 : 0;
+  const netDays = termNetDays ?? 0;
   
   if (netDays === 0) {
     return { label: 'UNPAID', bgClass: 'bg-yellow-500' };

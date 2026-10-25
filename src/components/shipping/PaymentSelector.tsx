@@ -18,6 +18,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { usePaymentTerms } from '@/hooks/usePaymentTerms';
+import { findTerm, termKind, depositFraction } from '@/lib/credit-rules';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { AddCardForm } from './AddCardForm';
@@ -106,7 +108,13 @@ export function PaymentSelector({
   const { toast } = useToast();
 
   const paymentTerms = customer.payment_terms || 'due_in_advance';
-  const isNetTermsCustomer = paymentTerms === 'net_15' || paymentTerms === 'net_30';
+  const { data: termsList = [] } = usePaymentTerms();
+  const term = findTerm(termsList, paymentTerms);
+  const kind = termKind(term);
+  const isNetTermsCustomer = kind === 'net';
+  const termLabel = term?.label ?? paymentTerms;
+  const netDays = term?.net_days ?? 0;
+  const remainingFraction = 1 - depositFraction(term);
 
   useEffect(() => {
     initializePayment();
@@ -118,12 +126,12 @@ export function PaymentSelector({
       // Net Terms customers default to invoice option
       setSelectedType('invoice');
       setSelectedAmountOption('terms');
-    } else if (paymentTerms === 'fifty_fifty' && depositPaid) {
+    } else if (kind === 'deposit' && depositPaid) {
       setSelectedAmountOption('remaining');
     } else {
       setSelectedAmountOption('full');
     }
-  }, [paymentTerms, depositPaid, isNetTermsCustomer]);
+  }, [paymentTerms, depositPaid, isNetTermsCustomer, kind]);
 
   const ensureStripeCustomer = async (): Promise<string | null> => {
     // Already have a Stripe customer ID
@@ -390,8 +398,8 @@ export function PaymentSelector({
         return totalWithShipping;
       case 'remaining':
         // For fifty_fifty with deposit paid, charge remaining 50% + shipping
-        if (paymentTerms === 'fifty_fifty' && depositPaid) {
-          return (orderSubtotal / 2) + shippingCost;
+        if (kind === 'deposit' && depositPaid) {
+          return (orderSubtotal * remainingFraction) + shippingCost;
         }
         return totalWithShipping - depositAmount;
       case 'terms':
@@ -406,7 +414,7 @@ export function PaymentSelector({
     const totalWithShipping = orderSubtotal + shippingCost;
     const options: { value: PaymentAmountOption; label: string; amount: number; description: string }[] = [];
 
-    if (paymentTerms === 'due_in_advance') {
+    if (kind === 'prepay') {
       // Only full amount for due_in_advance
       options.push({
         value: 'full',
@@ -414,14 +422,14 @@ export function PaymentSelector({
         amount: totalWithShipping,
         description: 'Collect payment before shipping'
       });
-    } else if (paymentTerms === 'fifty_fifty') {
+    } else if (kind === 'deposit') {
       if (depositPaid) {
         // Only remaining balance
         options.push({
           value: 'remaining',
           label: 'Pay Remaining Balance',
-          amount: (orderSubtotal / 2) + shippingCost,
-          description: `50% deposit (${formatCurrency(depositAmount)}) already paid`
+          amount: (orderSubtotal * remainingFraction) + shippingCost,
+          description: `Deposit (${formatCurrency(depositAmount)}) already paid`
         });
       } else {
         // Show both 50% deposit and full amount options
@@ -432,11 +440,11 @@ export function PaymentSelector({
           description: 'Pay the entire order upfront'
         });
       }
-    } else if (paymentTerms === 'net_15' || paymentTerms === 'net_30') {
+    } else if (kind === 'net') {
       // Net terms: show bill on terms or pay now
       options.push({
         value: 'terms',
-        label: `Bill on ${paymentTerms === 'net_15' ? 'Net 15' : 'Net 30'} Terms`,
+        label: `Bill on ${termLabel} Terms`,
         amount: 0,
         description: 'Invoice will be sent after shipping'
       });
@@ -671,10 +679,10 @@ export function PaymentSelector({
                       <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       <div>
                         <p className="font-medium">
-                          Invoice on {paymentTerms === 'net_15' ? 'Net 15' : 'Net 30'}
+                          Invoice on {termLabel}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Payment due within {paymentTerms === 'net_15' ? '15' : '30'} days of shipment
+                          Payment due within {netDays} days of shipment
                         </p>
                       </div>
                     </div>
@@ -977,11 +985,11 @@ export function PaymentSelector({
               <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
               <div>
                 <p className="font-medium text-blue-900 dark:text-blue-100">
-                  Invoice on {paymentTerms === 'net_15' ? 'Net 15' : 'Net 30'} Terms
+                  Invoice on {termLabel} Terms
                 </p>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
                   No payment required now. An invoice for <FinancialGuard kind="revenue">{formatCurrency(orderSubtotal + shippingCost)}</FinancialGuard> will be 
-                  sent after shipping and is due within {paymentTerms === 'net_15' ? '15' : '30'} days.
+                  sent after shipping and is due within {netDays} days.
                 </p>
               </div>
             </div>

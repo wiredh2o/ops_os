@@ -1,3 +1,4 @@
+import { creditHoldResponse } from '../_shared/credit-hold.ts';
 import { fedexDocTabLabelSpec, adjustDocTabZplBase64 } from '../_shared/fedex-doc-tab.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { loadTenantKeys } from "../_shared/tenant-integrations.ts";
@@ -72,6 +73,9 @@ serve(async (req) => {
     if (!order_id || !service_type || !ship_from || !ship_to || !packages) {
       throw new Error('Missing required shipment details');
     }
+
+    const held = await creditHoldResponse(order_id, corsHeaders);
+    if (held) return held;
 
     // Get auth token
     const token = await getFedExToken(FEDEX_API_KEY, FEDEX_SECRET_KEY);

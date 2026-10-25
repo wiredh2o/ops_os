@@ -18,6 +18,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerSaveResultDialog } from './CustomerSaveResultDialog';
+import { usePaymentTerms } from '@/hooks/usePaymentTerms';
+import { CUSTOMER_CREDIT_KEY } from '@/hooks/useCustomerCredit';
+import { useQueryClient } from '@tanstack/react-query';
+import { canManageCredit, parseCreditLimit, DEFAULT_CREDIT_LIMIT } from '@/lib/credit-rules';
 
 interface ShippingAddress {
   id: string;
@@ -94,12 +98,32 @@ export function CustomerForm({ customer, onClose, onSuccess }: CustomerFormProps
     ups_account_number: '',
   });
 
-  const paymentTermsOptions = [
-    { value: 'due_in_advance', label: 'Due in Advance' },
-    { value: 'fifty_fifty', label: '50% Down / 50% Before Ship' },
-    { value: 'net_15', label: 'Net 15' },
-    { value: 'net_30', label: 'Net 30' },
-  ];
+  const { roles } = useAuth();
+  const queryClient = useQueryClient();
+  const canEditCredit = canManageCredit(roles);
+  const { data: allTerms = [] } = usePaymentTerms();
+  const [creditLimitInput, setCreditLimitInput] = useState(DEFAULT_CREDIT_LIMIT.toFixed(2));
+  // Active terms, plus the customer's current term even if it was turned off.
+  const paymentTermsOptions = allTerms
+    .filter((t) => t.active || t.code === formData.payment_terms)
+    .map((t) => ({ value: t.code, label: t.active ? t.label : `${t.label} (inactive)` }));
+
+  useEffect(() => {
+    if (!customer?.id || !canEditCredit) { setCreditLimitInput(DEFAULT_CREDIT_LIMIT.toFixed(2)); return; }
+    (supabase as any).from('customer_credit_limits').select('credit_limit').eq('company_id', customer.id).maybeSingle()
+      .then(({ data }: any) => setCreditLimitInput(Number(data?.credit_limit ?? DEFAULT_CREDIT_LIMIT).toFixed(2)));
+  }, [customer?.id, canEditCredit]);
+
+  const saveCreditTerms = async (companyId: string) => {
+    if (!canEditCredit) return;
+    const limit = parseCreditLimit(creditLimitInput);
+    if (limit === null) throw new Error('Credit limit must be $0.00 or more');
+    const { error } = await (supabase as any).rpc('set_customer_credit_terms', {
+      _company_id: companyId, _credit_limit: limit, _payment_terms: formData.payment_terms,
+    });
+    if (error) throw error;
+    queryClient.invalidateQueries({ queryKey: [CUSTOMER_CREDIT_KEY] });
+  };
   
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddress[]>([]);
   const [priceLevels, setPriceLevels] = useState<PriceLevel[]>([]);
@@ -623,7 +647,7 @@ export function CustomerForm({ customer, onClose, onSuccess }: CustomerFormProps
         sales_tax_license_expires_at: licenseExpirationDate ? licenseExpirationDate.toISOString().split('T')[0] : null,
         sales_tax_license_ocr_data: ocrData,
         start_date: formData.start_date,
-        payment_terms: formData.payment_terms,
+        // Terms and credit limit are saved separately (admin/accounting only).
         // Third-party shipping account fields
         use_third_party_shipping: formData.use_third_party_shipping,
         fedex_account_number: formData.fedex_account_number || null,
@@ -638,6 +662,7 @@ export function CustomerForm({ customer, onClose, onSuccess }: CustomerFormProps
           .eq('id', customer.id);
 
         if (error) throw error;
+        await saveCreditTerms(customer.id);
 
         // Sync to Stripe if customer has a Stripe ID
         if ((customer as any).stripe_customer_id) {
@@ -684,6 +709,12 @@ export function CustomerForm({ customer, onClose, onSuccess }: CustomerFormProps
           });
           setShowSaveResultDialog(true);
           return;
+        }
+
+        try {
+          await saveCreditTerms(insertedData.id);
+        } catch (creditErr: any) {
+          toast({ title: 'Customer saved, but terms were not', description: creditErr.message, variant: 'destructive' });
         }
 
         // Database insert succeeded, now create in Stripe
@@ -1304,6 +1335,20 @@ export function CustomerForm({ customer, onClose, onSuccess }: CustomerFormProps
               </Select>
             </div>
 
+            {canEditCredit && (<>
+            <div>
+              <Label htmlFor="credit_limit">Credit Limit</Label>
+              <Input
+                id="credit_limit"
+                inputMode="decimal"
+                value={creditLimitInput}
+                onChange={(e) => setCreditLimitInput(e.target.value)}
+                onBlur={() => { const n = parseCreditLimit(creditLimitInput); if (n !== null) setCreditLimitInput(n.toFixed(2)); }}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Orders on credit terms beyond this amount go on Credit Hold and can't ship
+              </p>
+            </div>
             <div>
               <Label htmlFor="payment_terms">Payment Terms *</Label>
               <Select
@@ -1325,6 +1370,7 @@ export function CustomerForm({ customer, onClose, onSuccess }: CustomerFormProps
                 Determines when payment is required for orders
               </p>
             </div>
+            </>)}
 
             <div className="flex items-center justify-between">
               <div>
