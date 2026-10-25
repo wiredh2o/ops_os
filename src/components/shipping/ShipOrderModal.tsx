@@ -24,6 +24,8 @@ import { PaymentTermsBadge } from '@/components/payments/PaymentTermsBadge';
 import { CustomerPhoneDialog } from './CustomerPhoneDialog';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { printThermalLabel, downloadLabel } from '@/lib/thermal-print-utils';
+import { docTabHtml, type DocTabData } from '@/lib/doc-tab';
+import { checkZebraService, getDefaultPrinter, sendZplToPrinter } from '@/lib/zebra-browser-print';
 import { PrintInstructionsTooltip } from './PrintInstructionsTooltip';
 import { ThirdPartyBillingFallbackDialog } from './ThirdPartyBillingFallbackDialog';
 import { SerialAssignmentModal } from './SerialAssignmentModal';
@@ -117,6 +119,8 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
   const [labelPath, setLabelPath] = useState<string | null>(null);
   const [labelBlobUrl, setLabelBlobUrl] = useState<string | null>(null);
   const [labelMimeType, setLabelMimeType] = useState<string | null>(null);
+  const [docTab, setDocTab] = useState<DocTabData | null>(null);
+  const [isZebraPrinting, setIsZebraPrinting] = useState(false);
   const [labelLoadError, setLabelLoadError] = useState<string | null>(null);
   const [labelLoading, setLabelLoading] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState<string | null>(null);
@@ -288,6 +292,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
         if (!mimeType || mimeType === 'application/octet-stream') {
           mimeType = labelPath.toLowerCase().endsWith('.png') ? 'image/png' : 'application/pdf';
         }
+        if (labelPath.toLowerCase().endsWith('.zpl')) mimeType = 'application/zpl';
         
         blobUrl = URL.createObjectURL(blob);
         
@@ -740,8 +745,23 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
         packages: [{ weight_lbs: packageWeight, dimensions: packageDimensions }],
         service_type: selectedRate.service_type,
         order_id: order.id,
-        label_format: 'PNG',
+        // FedEx: thermal ZPL on 4" x 6.75" stock with FedEx's native trailing doc tab
+        label_format: selectedRate.carrier === 'fedex' ? 'ZPLII' : 'PNG',
+        doc_tab: {
+          invoice: order.order_number,
+          customer: customer.name || order.customer_name,
+          handling: '0.00',
+        },
       };
+      setDocTab({
+        invoice: order.order_number,
+        customer: customer.name || order.customer_name,
+        date: new Date(),
+        weightLbs: Number(packageWeight) || 0,
+        shipping: Number(selectedRate.total_charge) || 0,
+        special: 0,
+        handling: 0,
+      });
 
       // Add container type for USPS flat rate
       if (selectedRate.carrier === 'usps' && selectedRate.container_type) {
@@ -1865,7 +1885,12 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                         <p>{labelLoadError}</p>
                       </div>
                     ) : labelBlobUrl ? (
-                      labelMimeType?.startsWith('image/') ? (
+                      labelMimeType === 'application/zpl' ? (
+                        <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground p-4 text-center gap-1">
+                          <p className="font-medium text-foreground">FedEx thermal label ready</p>
+                          <p className="text-sm">Prints on 4" x 6¾" stock with the summary tab on the last ¾".</p>
+                        </div>
+                      ) : labelMimeType?.startsWith('image/') ? (
                         <img 
                           src={labelBlobUrl} 
                           alt="Shipping Label" 
@@ -1893,11 +1918,29 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                     <Button 
                       variant="outline" 
                       className="flex-1"
-                      disabled={!labelBlobUrl}
-                      onClick={() => {
-                        if (labelBlobUrl) {
-                          printThermalLabel(labelBlobUrl, { mimeType: labelMimeType || undefined });
+                      disabled={!labelBlobUrl || isZebraPrinting}
+                      onClick={async () => {
+                        if (!labelBlobUrl) return;
+                        if (labelMimeType === 'application/zpl') {
+                          setIsZebraPrinting(true);
+                          try {
+                            const info = await checkZebraService();
+                            if (!info.available || !info.baseUrl) throw new Error(info.error ?? 'Zebra Browser Print not detected.');
+                            const printer = info.printer ?? (await getDefaultPrinter(info.baseUrl));
+                            const zpl = await (await fetch(labelBlobUrl)).text();
+                            await sendZplToPrinter(info.baseUrl, printer, zpl);
+                            toast({ title: 'Label sent', description: `Printed to ${printer.name}.` });
+                          } catch (err: any) {
+                            toast({ title: 'Print failed', description: err.message, variant: 'destructive' });
+                          } finally {
+                            setIsZebraPrinting(false);
+                          }
+                          return;
                         }
+                        printThermalLabel(labelBlobUrl, {
+                          mimeType: labelMimeType || undefined,
+                          docTabHtml: docTab && labelMimeType?.startsWith('image/') ? docTabHtml(docTab) : undefined,
+                        });
                       }}
                     >
                       <Printer className="h-4 w-4 mr-2" />
@@ -1909,7 +1952,7 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
                       disabled={!labelBlobUrl}
                       onClick={() => {
                         if (labelBlobUrl && trackingNumber) {
-                          const extension = labelMimeType?.includes('png') ? 'png' : 'pdf';
+                          const extension = labelMimeType === 'application/zpl' ? 'zpl' : labelMimeType?.includes('png') ? 'png' : 'pdf';
                           downloadLabel(labelBlobUrl, `shipping-label-${trackingNumber}.${extension}`);
                         }
                       }}
