@@ -20,12 +20,12 @@ Deno.test("inverted label: tab block moves 38 dots right and 20 down on paper; b
     f(500, 140, "TRCK: 0000") + f(620, 100, "Invoice: TEST-1") + f(60, 40, "Total: 20.69") + "^XZ";
   const out = adjustDocTabZpl(zpl);
   assertEquals(out.includes("^FO300,600^ABN,20,10^FDLABEL BODY"), true);
-  assertEquals(out.includes("^FO437,124^ABN,20,10^FDTRCK"), true);
-  assertEquals(out.includes("^FO557,84^ABN,20,10^FDInvoice"), true);
-  assertEquals(out.includes("^FO0,24^ABN,20,10^FDTotal"), true);
+  assertEquals(out.includes("^FO462,120^ABN,20,10^FDTRCK"), true);
+  assertEquals(out.includes("^FO582,80^ABN,20,10^FDInvoice"), true);
+  assertEquals(out.includes("^FO22,20^ABN,20,10^FDTotal"), true);
 });
 
 Deno.test("normal label: tab block moves +38 x and +20 y", () => {
   const zpl = "^XA^PW812^LL1370^FO40,1240^ABN,20,10^FDInvoice: X^FS^XZ";
-  assertEquals(adjustDocTabZpl(zpl).includes("^FO103,1256"), true);
+  assertEquals(adjustDocTabZpl(zpl).includes("^FO78,1260"), true);
 });
