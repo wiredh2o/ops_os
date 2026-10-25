@@ -39,7 +39,7 @@ export function fedexDocTabLabelSpec(doc: DocTabInput | undefined, shipDate = ne
 const TAB_DOTS = 152; // 3/4" at 203 dpi
 /** Fixed paper-space nudge for the doc tab text block (203 dpi). */
 export const TAB_SHIFT_RIGHT_DOTS = 63; // 0.3125"
-export const TAB_SHIFT_DOWN_DOTS = 10; // 0.050"
+export const TAB_SHIFT_DOWN_DOTS = 16; // 0.080"
 const HEADERS = ['Invoice:', 'Custo:', 'Dept:', 'Date:', 'Weight:', 'COD:', 'DV:', 'Shipping:', 'Special:', 'Handling:', 'Total:'];
 
 /**
