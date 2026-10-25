@@ -1,23 +1,21 @@
 import { Badge } from "@/components/ui/badge";
+import { usePaymentTerms } from "@/hooks/usePaymentTerms";
+import { findTerm, termKind } from "@/lib/credit-rules";
 
 interface PaymentTermsBadgeProps {
   terms: string | null | undefined;
   className?: string;
 }
 
+/** Shows the term's name from the settings list. */
 export function PaymentTermsBadge({ terms, className }: PaymentTermsBadgeProps) {
-  const termsConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
-    due_in_advance: { label: "Due in Advance", variant: "default" },
-    fifty_fifty: { label: "50% Down / 50% Before Ship", variant: "secondary" },
-    net_15: { label: "Net 15", variant: "outline" },
-    net_30: { label: "Net 30", variant: "outline" },
-  };
-
-  const config = termsConfig[terms || "due_in_advance"] || { label: terms || "Due in Advance", variant: "secondary" as const };
-
+  const { data: list = [] } = usePaymentTerms();
+  const term = findTerm(list, terms);
+  const kind = termKind(term);
+  const variant = kind === "prepay" ? "default" : kind === "deposit" ? "secondary" : "outline";
   return (
-    <Badge variant={config.variant} className={className}>
-      {config.label}
+    <Badge variant={variant} className={className}>
+      {term?.label ?? terms ?? "Due in Advance"}
     </Badge>
   );
 }
