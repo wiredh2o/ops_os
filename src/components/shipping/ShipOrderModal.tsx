@@ -116,6 +116,10 @@ export function ShipOrderModal({ order, onClose, onSuccess }: ShipOrderModalProp
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const queryClient = useQueryClient();
+  const { data: termsList = [] } = usePaymentTerms();
+  const { data: creditMap = {}, refetch: refetchCredit } = useCustomerCredit([customer?.id]);
+  const customerCredit = customer?.id ? creditMap[customer.id] : undefined;
   const [taxModel, setTaxModel] = useState<TaxModel>({ jurisdictions: [], zips: [], assignments: [] });
   const [taxPending, setTaxPending] = useState(true);
   const [taxError, setTaxError] = useState('');
