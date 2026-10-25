@@ -55,7 +55,7 @@ interface Customer {
 }
 
 export function CustomerManagement() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -324,6 +324,8 @@ export function CustomerManagement() {
   };
   
   const filteredCustomers = getFilteredCustomers();
+  const showCredit = canViewCredit(roles);
+  const { data: creditMap = {} } = useCustomerCredit(filteredCustomers.map((c) => c.id));
 
   const stats = {
     total: customers.length,
