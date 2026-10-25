@@ -56,6 +56,22 @@ export const parseCreditLimit = (input: string): number | null => {
 export const formatMoney = (n: number) =>
   n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
+/**
+ * Shipping an unpaid invoice counts against credit (mirrors customer_credit_used).
+ * One invoice = one shipment: its stored shipping is the carrier rate for the chosen
+ * method (then the label price, covering all boxes). Until then, its share of the order estimate.
+ */
+export const invoiceCreditShipping = (invoiceShipping: number | null | undefined, orderEstimate: number, invoiceValue: number, orderValue: number) =>
+  invoiceShipping != null ? Number(invoiceShipping) : orderValue > 0 ? round2(orderEstimate * Math.min(invoiceValue / orderValue, 1)) : 0;
+
+/** Uninvoiced part of an open order: items/fees plus the same share of its tax and estimated shipping. */
+export const openOrderCreditUsed = (openValue: number, totalValue: number, tax: number, estimatedShipping: number) =>
+  round2(openValue + (totalValue > 0 ? ((tax + estimatedShipping) * openValue) / totalValue : 0));
+
+/** An invoice may only include stock that's available to ship now (labor/fees and drop-ships excepted). */
+export const canInvoiceQuantity = (qty: number, availableStock: number | null, dropShip: boolean) =>
+  availableStock === null || dropShip || qty <= availableStock;
+
 function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
