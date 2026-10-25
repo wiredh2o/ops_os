@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { loadTenantKeys, getCaller } from "../_shared/tenant-integrations.ts";
+import { fedexDocTabLabelSpec } from "../_shared/fedex-doc-tab.ts";
 
 // Generates FedEx SANDBOX test labels for the Bar Code Analysis Group
 // certification packet. Returns raw label data (ZPL) directly in the
@@ -72,6 +73,7 @@ async function createShipment(
   shipTo: Address,
   serviceType: string,
   pieces: { weight: number; length: number; width: number; height: number }[],
+  scenario: string,
 ): Promise<{ trackingNumber: string; sequence: number; totalPieces: number; zplBase64: string }[]> {
   const totalPackageCount = pieces.length;
   const shipmentRequest = {
@@ -89,11 +91,11 @@ async function createShipment(
         paymentType: 'SENDER',
         payor: { responsibleParty: { accountNumber: { value: accountNumber } } },
       },
-      labelSpecification: {
-        imageType: 'ZPLII',
-        labelStockType: 'STOCK_4X675',
-        labelPrintingOrientation: 'BOTTOM_EDGE_OF_TEXT_FIRST',
-      },
+      labelSpecification: fedexDocTabLabelSpec({
+        invoice: `TEST-${scenario}`,
+        customer: shipTo.company || shipTo.name,
+        handling: '0.00',
+      }),
       requestedPackageLineItems: pieces.map((p, i) => ({
         sequenceNumber: i + 1,
         groupPackageCount: 1,
@@ -169,7 +171,7 @@ serve(async (req) => {
     const results: ScenarioResult[] = [];
     for (const s of scenarios) {
       try {
-        const labels = await createShipment(token, FEDEX_ACCOUNT_NUMBER, ship_from, ship_to, s.service, s.pieces);
+        const labels = await createShipment(token, FEDEX_ACCOUNT_NUMBER, ship_from, ship_to, s.service, s.pieces, s.scenario ?? s.name ?? s.service);
         results.push({ scenario: s.name, service: s.service, labels });
       } catch (e) {
         results.push({ scenario: s.name, service: s.service, labels: [], error: (e as Error).message });
