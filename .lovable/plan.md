@@ -24,6 +24,7 @@
 6. Add tests for these cases: estimate counts before shipping; real price replaces the estimate; two shipments add together; no double counting when shipping is already in the invoice total; an invoice is refused for items that aren't available; each ship-as-available invoice carries its own carrier rate.
 
 ## Technical details
+- Tax and fees: invoices already include `tax_amount`. Open orders today count only qty x unit_price for uninvoiced lines, with no tax. Use the server tax snapshot for open orders (via `compute_jurisdiction_tax` / order tax lines), counting only the uninvoiced share. Check whether fees (labor/fee items such as FREIGHT-DS) are stored as `customer_order_items`. If they aren't, add them as their own term.
 - Function to change: `public.customer_credit_used`. Today it sums `production_orders.total_amount + tax_amount - credit_applied - deposit` and, on cash basis, uninvoiced `customer_order_items`. It does not reference `shipping_cost`, `production_order_shipments.shipping_cost` or `customer_orders.estimated_shipping`.
 - Shipping per invoice = `COALESCE(sum(production_order_shipments.shipping_cost), production_orders.shipping_cost)`. Add it only if step 1 shows `total_amount` excludes it. If shipping is billed through a FREIGHT labor line instead, that line already counts and only the estimate fallback is added.
 - Open orders add `customer_orders.estimated_shipping` for orders not yet fully invoiced. Partially invoiced orders don't add it again, because their invoice already carries shipping.
