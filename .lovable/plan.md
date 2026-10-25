@@ -4,8 +4,8 @@
 - **Terms list in Settings (admin only).** A list of standard terms. Each one has a name, the number of days to pay, an optional deposit percent, and a switch for whether it uses credit. It starts with your current four terms: Due in Advance, 50% Down / 50% Before Ship, Net 15 and Net 30. Customers keep the terms they have now. A term in use can be turned off but not deleted.
 - **Customer form.** The terms picker and a credit limit box (starts at $0.00) appear only for admin, accounting and the tenant's admin. Changes take effect right away.
 - **Customer list and order/invoice screens.**
-  - Sales roles see only **Available credit**.
-  - Admin, accounting and tenant admin see **Credit limit** and **Available credit**.
+  - Sales, marketing, admin, accounting and tenant admin see **Credit limit** and **Available credit**.
+  - Only admin, accounting and tenant admin can change them.
   - Everyone else sees neither.
   - Hiding happens on the server, so the numbers never reach a screen that shouldn't show them.
 - **Credit hold instead of blocking.** An order on credit terms is always accepted, whether staff or the online store enters it. If it costs more than the available credit, it gets a **Credit Hold** badge. Every step can still happen (allocation, production, packing, invoicing) except shipping. Rates can still be quoted, but no label can be bought and nothing can be marked shipped. The hold lifts by itself as soon as enough credit frees up, for example after a payment or a higher limit.
