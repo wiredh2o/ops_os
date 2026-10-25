@@ -14,20 +14,18 @@ function paperBoxes(out: string) {
   });
 }
 
-Deno.test("inverted label: 6 rows evenly spaced and block centred on paper", () => {
+Deno.test("inverted label: tab block moves 63 dots right and 10 down on paper; body stays", () => {
   const f = (x: number, y: number, t: string) => `^FO${x},${y}^ABN,20,10^FD${t}^FS`;
-  // Paper tops wanted wrong on purpose (crowded at top, shifted left on paper).
   const zpl = "^XA^POI^PW812^LL1370" + f(300, 600, "LABEL BODY") +
-    f(500, 140, "TRCK: 0000") + f(500, 120, "Svcs: GND") +
-    f(620, 100, "Invoice: TEST-1") + f(320, 100, "Date: 25OCT26") + f(60, 100, "Shipping: 14.06") +
-    f(620, 80, "Custo: Doe") + f(620, 60, "Dept:") + f(60, 40, "Total: 20.69") + "^XZ";
+    f(500, 140, "TRCK: 0000") + f(620, 100, "Invoice: TEST-1") + f(60, 40, "Total: 20.69") + "^XZ";
   const out = adjustDocTabZpl(zpl);
   assertEquals(out.includes("^FO300,600^ABN,20,10^FDLABEL BODY"), true);
-  const tab = paperBoxes(out).filter((b) => b.text !== "LABEL BODY");
-  const tops = [...new Set(tab.map((b) => b.top))].sort((a, b) => a - b);
-  assertEquals(tops.length, 6);
-  const gaps = [tops[0] - 1218, ...tops.slice(1).map((t, i) => t - tops[i] - 20), 1370 - (tops[5] + 20)];
-  for (const g of gaps) assertEquals(Math.abs(g - gaps[0]) <= 2, true, `gaps ${gaps}`);
-  const left = Math.min(...tab.map((b) => b.left)), right = 812 - Math.max(...tab.map((b) => b.right));
-  assertEquals(Math.abs(left - right) <= 2, true, `left ${left} right ${right}`);
+  assertEquals(out.includes("^FO437,130^ABN,20,10^FDTRCK"), true);
+  assertEquals(out.includes("^FO557,90^ABN,20,10^FDInvoice"), true);
+  assertEquals(out.includes("^FO0,30^ABN,20,10^FDTotal"), true);
+});
+
+Deno.test("normal label: tab block moves +63 x and +10 y", () => {
+  const zpl = "^XA^PW812^LL1370^FO40,1240^ABN,20,10^FDInvoice: X^FS^XZ";
+  assertEquals(adjustDocTabZpl(zpl).includes("^FO103,1250"), true);
 });

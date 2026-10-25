@@ -37,6 +37,9 @@ export function fedexDocTabLabelSpec(doc: DocTabInput | undefined, shipDate = ne
 }
 
 const TAB_DOTS = 152; // 3/4" at 203 dpi
+/** Fixed paper-space nudge for the doc tab text block (203 dpi). */
+export const TAB_SHIFT_RIGHT_DOTS = 63; // 0.3125"
+export const TAB_SHIFT_DOWN_DOTS = 10; // 0.050"
 const HEADERS = ['Invoice:', 'Custo:', 'Dept:', 'Date:', 'Weight:', 'COD:', 'DV:', 'Shipping:', 'Special:', 'Handling:', 'Total:'];
 
 /**
@@ -75,30 +78,11 @@ export function adjustDocTabZpl(zpl: string): string {
   const tab = fields.filter((f) => f.pTop >= regionStart - 24 && f.pTop + f.h <= regionEnd + 4);
   if (!tab.length) return zpl;
 
-  const rows: F[][] = [];
-  for (const f of [...tab].sort((a, b) => a.pTop - b.pTop)) {
-    const row = rows.find((r) => Math.abs(r[0].pTop - f.pTop) <= 4);
-    if (row) row.push(f); else rows.push([f]);
-  }
-  const rowTop = (r: F[]) => Math.min(...r.map((f) => f.pTop));
-  const rowH = (r: F[]) => Math.max(...r.map((f) => f.pTop + f.h)) - rowTop(r);
-  const totalH = rows.reduce((s, r) => s + rowH(r), 0);
-  const gap = Math.max(0, (TAB_DOTS - totalH) / (rows.length + 1));
-  const dy = new Map<F, number>();
-  let y = regionStart + gap;
-  for (const r of rows) {
-    const d = Math.round(y) - rowTop(r);
-    for (const f of r) dy.set(f, d);
-    y += rowH(r) + gap;
-  }
-  const minX = Math.min(...tab.map((f) => f.pLeft));
-  const maxX = Math.max(...tab.map((f) => f.pLeft + f.w));
-  const dx = Math.round((labelWidth - (maxX - minX)) / 2) - minX;
-
+  const dx = TAB_SHIFT_RIGHT_DOTS;
+  const pdy = TAB_SHIFT_DOWN_DOTS;
   let out = '';
   let cursor = 0;
   for (const f of [...tab].sort((a, b) => a.idx - b.idx)) {
-    const pdy = dy.get(f) ?? 0;
     const nx = f.x + (f.inv ? -dx : dx);
     const ny = f.y + (f.inv ? -pdy : pdy);
     out += zpl.slice(cursor, f.idx) + `^${f.cmd}${Math.max(0, nx)},${Math.max(0, ny)}${f.rest}`;
