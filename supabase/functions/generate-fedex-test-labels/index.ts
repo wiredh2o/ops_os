@@ -171,7 +171,7 @@ serve(async (req) => {
     const results: ScenarioResult[] = [];
     for (const s of scenarios) {
       try {
-        const labels = await createShipment(token, FEDEX_ACCOUNT_NUMBER, ship_from, ship_to, s.service, s.pieces, s.scenario ?? s.name ?? s.service);
+        const labels = await createShipment(token, FEDEX_ACCOUNT_NUMBER, ship_from, ship_to, s.service, s.pieces, String(scenarios.indexOf(s) + 1));
         results.push({ scenario: s.name, service: s.service, labels });
       } catch (e) {
         results.push({ scenario: s.name, service: s.service, labels: [], error: (e as Error).message });
