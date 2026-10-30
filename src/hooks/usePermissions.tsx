@@ -23,7 +23,7 @@ export function useStaffTabPermissions() {
       }));
       return results.filter((name): name is Exclude<typeof name, null> => name !== null);
     },
-    staleTime: 0,
+    staleTime: 60_000,
   });
   const needsMarketing = roles.includes('marketing') && !roles.includes('admin');
   return {
