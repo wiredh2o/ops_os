@@ -21,7 +21,12 @@ import OrderTaxes from "./pages/OrderTaxes";
 import FedExCertLabels from "./pages/FedExCertLabels";
 import { toast } from "sonner";
 
-const queryClient = new QueryClient();
+// Returning to the tab must never reload data under an open form.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { refetchOnWindowFocus: false, refetchOnReconnect: false, staleTime: 60_000 },
+  },
+});
 
 // Error Boundary to catch React component errors
 interface ErrorBoundaryState {
