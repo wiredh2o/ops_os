@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { MarketingFinancialFlags } from './financial-visibility';
+import { nextAuthUser } from './auth-session-identity';
 
 interface AuthContextType {
   user: User | null;
@@ -57,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser((prev) => nextAuthUser(prev, session?.user ?? null));
         setLoading(false);
       }
     );
@@ -65,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      setUser((prev) => nextAuthUser(prev, session?.user ?? null));
       setLoading(false);
     });
 

@@ -171,7 +171,10 @@ export function useRepairTimer({
     };
 
     initializeTimer();
-  }, [isModalOpen, repairItemId, onClose, toast, readOnly]);
+    // Only re-initialize when the modal opens or the item changes; parent re-renders
+    // (new onClose/toast identities) must never restart the timer session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen, repairItemId, readOnly]);
 
   // Count up from database value
   useEffect(() => {
