@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
+import { canInvoiceQuantity } from "@/lib/credit-rules";
 import { Loader2, Package, AlertTriangle, CheckCircle, Truck, Key, CreditCard } from "lucide-react";
 import { CustomerOrderSummary } from "./CustomerOrderCard";
 import { useAuth } from "@/hooks/useAuth";
