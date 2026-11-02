@@ -70,3 +70,8 @@
 - [x] Invoice only items available to ship (invoice screen check).
 - [ ] Server-side availability rule for invoices: needs confirmation of how stock on hand is reserved before it can be enforced safely.
 - [ ] Signed-in end-to-end check: external Supabase has no managed test session.
+
+## No unexpected page refreshes
+- [x] Repair/Diagnose timer no longer restarts when the screen behind it redraws; it starts only on open or item change.
+- [x] Removed app-wide causes of surprise refreshes (session-identity churn re-signing the user in).
+- [ ] Verify signed-in: confirm no form loses input and the Diagnose timer keeps counting — external Supabase has no managed browser session.
