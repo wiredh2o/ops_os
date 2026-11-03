@@ -15,7 +15,8 @@
 - Top: one adjustment date and offset account. No description is required.
 - Table of all inventory items: name/SKU, current qty, current value, counted qty, counted value. Counted value is not typed in; it is calculated as counted qty times the item's per-item cost. Search box; blank counted cells mean "no change".
 - Summary bar: lines changed, total value increase, total decrease, net.
-- Change one item or many, as in QuickBooks Desktop. "Post adjustments" posts every changed line at once: each changed item gets exactly one general journal entry that rebalances Inventory Asset against the offset account, dated with the entered date. No batch description is attached.
+- Change one item or hundreds, as in QuickBooks Desktop. "Post adjustments" updates every changed item at once and posts one general journal entry for the whole posting, dated with the entered date: a single debit and a single credit for the net value change between Inventory Asset and the offset account. If the net change is zero, no entry is posted. No batch description is attached.
+- Each item's before/after quantity and value is kept in a small adjustment record linked to that one entry, so item history still shows what changed.
 
 ## Accounting rules
 - Value decrease: credit Inventory Asset, debit COGS/Inventory Adjustment.
@@ -28,7 +29,7 @@
 - Existing `accounts`, `transactions`, `transaction_lines` are reused (no new chart of accounts). The Inventory Asset account is the active `account_subtype = inventory` account; offset defaults to `cost_of_goods_sold`. Posting fails with a clear message if either is missing.
 - Minimal new schema:
   - `inventory_adjustments` (inventory_item_id, adjustment_date, old/new qty, old/new value, reason, transaction_id, request_key, created_by) — audit trail; GRANTs + RLS for Admin/Accounting.
-- Private-schema RPC `post_inventory_adjustments(date, offset_account_id, lines jsonb, request_key)` with public invoker wrapper: checks Admin/Accounting role and company, locks item rows, recomputes current values server-side (client numbers are not trusted), updates `quantity_on_hand`/`unit_cost`, writes one transaction + balanced lines + audit row per changed item, updates account balances, all in one transaction. Request key prevents double-posting on retry. Single-item dialog calls the same RPC with one line (optional reason becomes the entry memo).
+- Private-schema RPC `post_inventory_adjustments(date, offset_account_id, lines jsonb, request_key)` with public invoker wrapper: checks Admin/Accounting role and company, locks item rows, recomputes current values server-side (client numbers are not trusted), updates `quantity_on_hand`/`unit_cost`, writes one transaction with exactly two lines (net debit and net credit) for the whole posting plus one audit row per changed item, updates account balances, all in one transaction. Request key prevents double-posting on retry. Single-item dialog calls the same RPC with one line (optional reason becomes the entry memo).
 - Pure helper `src/lib/inventory-adjustment-rules.ts` (delta math, debit/credit side, validation) with tests.
 - Files: InventoryManagement.tsx and InventoryItemForm.tsx (button), new `InventoryAdjustmentDialog.tsx` in src/components/inventory, new `src/pages/InventoryPhysicalCount.tsx`, route in `src/App.tsx`, AGENTS.md rule.
 - General Journal screen (new page `src/pages/GeneralJournal.tsx`, route `/accounting/general-journal`, opened from the Accounting screen; Admin and Accounting only), modeled on QuickBooks Desktop "Make General Journal Entries":
