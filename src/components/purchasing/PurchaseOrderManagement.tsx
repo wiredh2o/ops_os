@@ -13,6 +13,7 @@ import { formatCurrency } from '@/lib/utils';
 import { PurchaseOrderForm } from './PurchaseOrderForm';
 import { VendorForm } from '../vendors/VendorForm';
 import { POSerialEntryModal } from './POSerialEntryModal';
+import { BILL_STATUS_LABEL, poBillStatus } from '@/lib/vendor-bill-rules';
 
 interface Vendor {
   id: string;
@@ -35,6 +36,7 @@ interface PurchaseOrder {
   total_amount: number;
   supplier?: Vendor;
   purchase_order_items?: any[];
+  po_receipts?: Array<{ id: string; is_billed: boolean; bill_total: number | null; bill_amount_paid: number | null }>;
 }
 
 export function PurchaseOrderManagement() {
@@ -73,7 +75,8 @@ export function PurchaseOrderManagement() {
                stocking_quantity,
                inventory_item:inventory_items(id, sku, sales_description, serial_tracking_type),
                assembly:assemblies(id, sku, sales_description, serial_tracking_type)
-             )
+             ),
+             po_receipts(id, is_billed, bill_total, bill_amount_paid)
           `)
           .order('created_at', { ascending: false }),
         supabase
@@ -286,6 +289,16 @@ export function PurchaseOrderManagement() {
                             <Badge className={getStatusColor(po.status)}>
                               {po.status}
                             </Badge>
+                            {(() => {
+                              const receipts = po.po_receipts || [];
+                              const st = poBillStatus(receipts);
+                              const billed = receipts.filter(r => r.is_billed).length;
+                              return (
+                                <Badge variant={st === 'paid' ? 'default' : 'outline'}>
+                                  Bill: {BILL_STATUS_LABEL[st]}{receipts.length > 0 ? ` (${billed}/${receipts.length} receipts billed)` : ''}
+                                </Badge>
+                              );
+                            })()}
                           </div>
                            <p className="text-muted-foreground mb-1">
                              Vendor: {po.supplier?.name}
