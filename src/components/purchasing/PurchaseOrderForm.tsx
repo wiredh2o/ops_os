@@ -877,6 +877,15 @@ export function PurchaseOrderForm({ purchaseOrder, suppliers, onClose, onSuccess
             </Button>
           </div>
         </form>
+
+        {purchaseOrder && (
+          <POReceiptsBillsPanel
+            purchaseOrderId={purchaseOrder.id}
+            poStatus={purchaseOrder.status}
+            poTotal={Number(purchaseOrder.total_amount) || 0}
+            onChanged={onReceiptsChanged}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
