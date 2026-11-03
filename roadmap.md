@@ -75,3 +75,14 @@
 - [x] Repair/Diagnose timer no longer restarts when the screen behind it redraws; it starts only on open or item change.
 - [x] Removed app-wide causes of surprise refreshes (session-identity churn re-signing the user in).
 - [ ] Verify signed-in: confirm no form loses input and the Diagnose timer keeps counting — external Supabase has no managed browser session.
+
+## PO bills, payments and receipt links
+- [x] Item receipts per PO with over/under-shipment and short-close; "Bill received" switch turns a receipt into a bill (each receipt billed once).
+- [x] Advance and partial payments on PO/bills, applied to the earliest open bill; no overpaying.
+- [x] Manual receipts (Log Package / Open Box) can link to a PO or a credit-card transaction.
+- [ ] Signed-in click-through: external Supabase has no managed browser session (database rules verified with a rolled-back test).
+
+## Vendor check printing
+- [x] Check details per checking account in Settings → System → Check Printing, with VOID alignment test.
+- [x] Pay with check (Accounting screen and PO bills): top-third check with MICR line, two identical stubs; reprint and void.
+- [ ] Bank test of the printed MICR line (some banks require MICR toner).
