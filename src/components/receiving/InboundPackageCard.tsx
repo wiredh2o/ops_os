@@ -429,6 +429,8 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
 
       <CardContent className="pt-0 px-3 pb-3">
         {pkg.rma_request_id && <Badge variant="outline" className="mb-2">{pkg.intake_notes?.split('\n')[0] || 'RMA return'}</Badge>}
+        {pkg.linked_purchase_order_id && <Badge variant="outline" className="mb-2">Linked to PO</Badge>}
+        {pkg.linked_transaction_id && <Badge variant="outline" className="mb-2">Linked to card charge</Badge>}
         <Collapsible open={!detailsCollapsed}>
           <CollapsibleContent>
             {pkg.intake_notes && (
