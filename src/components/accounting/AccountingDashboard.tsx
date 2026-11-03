@@ -432,6 +432,9 @@ export function PayWithCheckDialog({ open, onOpenChange, presetReceiptId, preset
   const [date, setDate] = useState(todayIso());
   const [memo, setMemo] = useState('');
   const [busy, setBusy] = useState(false);
+  // One key per dialog opening: retries or double-submits replay the same check server-side.
+  const [requestKey, setRequestKey] = useState(() => crypto.randomUUID());
+  useEffect(() => { if (open) setRequestKey(crypto.randomUUID()); }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -482,10 +485,10 @@ export function PayWithCheckDialog({ open, onOpenChange, presetReceiptId, preset
     try {
       const { data, error } = await sdb.rpc('issue_vendor_check', {
         p_account_id: accountId, p_po_id: poId, p_amount: amt, p_check_date: date, p_memo: memo || null,
-        p_receipt_id: bill ? bill.id : null,
+        p_receipt_id: bill ? bill.id : null, p_request_key: requestKey,
       });
       if (error) throw error;
-      toast.success(`Check ${data.check_number} issued`);
+      toast.success(data.replayed ? `Check ${data.check_number} was already issued` : `Check ${data.check_number} issued`);
       onOpenChange(false);
       onIssued?.();
       await printIssuedCheck(data.transaction_id);

@@ -1010,6 +1010,57 @@ export type Database = {
         }
         Relationships: []
       }
+      check_register: {
+        Row: {
+          account_id: string
+          amount: number
+          check_number: number
+          created_at: string
+          created_by: string | null
+          id: string
+          request_key: string | null
+          transaction_id: string
+          voided_at: string | null
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          check_number: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          request_key?: string | null
+          transaction_id: string
+          voided_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          check_number?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          request_key?: string | null
+          transaction_id?: string
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_register_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_register_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           billing_address: string | null
@@ -6439,6 +6490,7 @@ export type Database = {
           p_memo?: string
           p_po_id: string
           p_receipt_id?: string
+          p_request_key?: string
         }
         Returns: Json
       }
