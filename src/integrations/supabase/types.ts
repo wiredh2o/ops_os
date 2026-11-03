@@ -1801,6 +1801,8 @@ export type Database = {
           intake_notes: string | null
           item_count: number | null
           label_purchased: boolean
+          linked_purchase_order_id: string | null
+          linked_transaction_id: string | null
           received_at: string | null
           received_by: string | null
           return_shipping_address: string | null
@@ -1823,6 +1825,8 @@ export type Database = {
           intake_notes?: string | null
           item_count?: number | null
           label_purchased?: boolean
+          linked_purchase_order_id?: string | null
+          linked_transaction_id?: string | null
           received_at?: string | null
           received_by?: string | null
           return_shipping_address?: string | null
@@ -1845,6 +1849,8 @@ export type Database = {
           intake_notes?: string | null
           item_count?: number | null
           label_purchased?: boolean
+          linked_purchase_order_id?: string | null
+          linked_transaction_id?: string | null
           received_at?: string | null
           received_by?: string | null
           return_shipping_address?: string | null
@@ -1860,6 +1866,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_packages_linked_purchase_order_id_fkey"
+            columns: ["linked_purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_packages_linked_transaction_id_fkey"
+            columns: ["linked_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
           {
@@ -3004,6 +3024,153 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      po_receipt_lines: {
+        Row: {
+          assembly_id: string | null
+          created_at: string
+          id: string
+          inventory_item_id: string | null
+          item_type: string
+          quantity_ordered: number
+          quantity_previously_received: number
+          quantity_received: number
+          quantity_short_closed: number
+          receipt_id: string
+          unit_cost: number
+          variance: string
+        }
+        Insert: {
+          assembly_id?: string | null
+          created_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          item_type: string
+          quantity_ordered?: number
+          quantity_previously_received?: number
+          quantity_received: number
+          quantity_short_closed?: number
+          receipt_id: string
+          unit_cost?: number
+          variance?: string
+        }
+        Update: {
+          assembly_id?: string | null
+          created_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          item_type?: string
+          quantity_ordered?: number
+          quantity_previously_received?: number
+          quantity_received?: number
+          quantity_short_closed?: number
+          receipt_id?: string
+          unit_cost?: number
+          variance?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "po_receipt_lines_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "po_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      po_receipts: {
+        Row: {
+          bill_amount_paid: number
+          bill_date: string | null
+          bill_number: string | null
+          bill_shipping: number | null
+          bill_subtotal: number | null
+          bill_tax: number | null
+          bill_total: number | null
+          bill_transaction_id: string | null
+          billed_at: string | null
+          billed_by: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          is_billed: boolean
+          notes: string | null
+          package_id: string | null
+          purchase_order_id: string
+          received_at: string
+          updated_at: string
+        }
+        Insert: {
+          bill_amount_paid?: number
+          bill_date?: string | null
+          bill_number?: string | null
+          bill_shipping?: number | null
+          bill_subtotal?: number | null
+          bill_tax?: number | null
+          bill_total?: number | null
+          bill_transaction_id?: string | null
+          billed_at?: string | null
+          billed_by?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          is_billed?: boolean
+          notes?: string | null
+          package_id?: string | null
+          purchase_order_id: string
+          received_at?: string
+          updated_at?: string
+        }
+        Update: {
+          bill_amount_paid?: number
+          bill_date?: string | null
+          bill_number?: string | null
+          bill_shipping?: number | null
+          bill_subtotal?: number | null
+          bill_tax?: number | null
+          bill_total?: number | null
+          bill_transaction_id?: string | null
+          billed_at?: string | null
+          billed_by?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          is_billed?: boolean
+          notes?: string | null
+          package_id?: string | null
+          purchase_order_id?: string
+          received_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "po_receipts_bill_transaction_id_fkey"
+            columns: ["bill_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_receipts_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_receipts_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       price_levels: {
         Row: {
@@ -5598,6 +5765,90 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_payments: {
+        Row: {
+          account_id: string | null
+          amount: number
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_advance: boolean
+          method: string
+          paid_at: string
+          purchase_order_id: string
+          receipt_id: string | null
+          reference: string | null
+          transaction_id: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_advance?: boolean
+          method: string
+          paid_at?: string
+          purchase_order_id: string
+          receipt_id?: string | null
+          reference?: string | null
+          transaction_id?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_advance?: boolean
+          method?: string
+          paid_at?: string
+          purchase_order_id?: string
+          receipt_id?: string | null
+          reference?: string | null
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_payments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_payments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_payments_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_payments_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "po_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       accounts_secure: {
@@ -5739,6 +5990,7 @@ export type Database = {
       }
     }
     Functions: {
+      apply_po_advances: { Args: { p_po_id: string }; Returns: undefined }
       calculate_assembly_actual_lead_time: {
         Args: { assembly_id_param: string }
         Returns: {
@@ -5942,6 +6194,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_manage_vendor_bills: { Args: never; Returns: boolean }
       can_receive_rma: { Args: never; Returns: boolean }
       can_request_rma: { Args: never; Returns: boolean }
       can_review_rma: { Args: never; Returns: boolean }
@@ -5967,6 +6220,18 @@ export type Database = {
         }
         Returns: Json
       }
+      convert_receipt_to_bill: {
+        Args: {
+          p_bill_date: string
+          p_bill_number: string
+          p_due_date?: string
+          p_receipt_id: string
+          p_shipping?: number
+          p_subtotal?: number
+          p_tax?: number
+        }
+        Returns: string
+      }
       customer_credit_used: { Args: { _company_id: string }; Returns: number }
       customer_on_credit_hold: {
         Args: { _company_id: string }
@@ -5980,6 +6245,13 @@ export type Database = {
           p_sms: string
           p_subject: string
           p_user: string
+        }
+        Returns: string
+      }
+      find_account: {
+        Args: {
+          p_company: string
+          p_subtype: Database["public"]["Enums"]["account_subtype"]
         }
         Returns: string
       }
@@ -6198,6 +6470,29 @@ export type Database = {
         Args: { target_order_id: string }
         Returns: undefined
       }
+      record_po_receipt: {
+        Args: {
+          p_lines: Json
+          p_notes?: string
+          p_package_id?: string
+          p_po_id: string
+          p_received_at?: string
+        }
+        Returns: string
+      }
+      record_vendor_payment: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_method: string
+          p_paid_at: string
+          p_po_id: string
+          p_receipt_id?: string
+          p_reference?: string
+        }
+        Returns: string
+      }
+      refresh_bill_paid: { Args: { p_receipt_id: string }; Returns: undefined }
       refresh_order_tax: {
         Args: { p_invoice?: boolean; p_order_id: string }
         Returns: undefined
@@ -6241,6 +6536,17 @@ export type Database = {
           p_zip: string
         }
         Returns: undefined
+      }
+      search_card_transactions: {
+        Args: { p_search?: string }
+        Returns: {
+          account_name: string
+          description: string
+          id: string
+          reference_number: string
+          total_amount: number
+          transaction_date: string
+        }[]
       }
       search_repair_items: {
         Args: { search_term: string }
@@ -6309,6 +6615,7 @@ export type Database = {
         Returns: string
       }
       sync_tax_zip_directory: { Args: never; Returns: Json }
+      unbill_receipt: { Args: { p_receipt_id: string }; Returns: undefined }
       update_committed_inventory: { Args: never; Returns: undefined }
       update_daily_consumption_rates: { Args: never; Returns: string }
       update_daily_ttm_values: { Args: never; Returns: string }
