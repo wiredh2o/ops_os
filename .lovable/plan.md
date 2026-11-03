@@ -8,7 +8,7 @@ All changes extend the existing Purchase Order screen and the two existing recei
 - A PO can have many item receipts (one per shipment that arrives). Each receipt has a **Bill received** switch the user turns on once the vendor's bill arrives, which turns that item receipt into a bill.
 - One PO can produce several item receipts and so several bills. Each bill covers only the items on its receipt: received quantity times unit cost, plus any tax and shipping on the vendor's bill. You enter the vendor's invoice number, bill date and due date (the amounts can be adjusted to match the vendor's bill).
 - A new **Bill** column/badge: No bill, Open, Partially paid, Paid.
-- Each received item can be billed only once: an item already on a bill can't go on another bill, but one PO can have several bills for partial shipments. When a vendor ships more than the PO ordered, the extra quantity is received and billed normally, flagged as **Over-shipped** on the receipt and bill, with no error or blocked step.
+- Each received item can be billed only once: an item already on a bill can't go on another bill, but one PO can have several bills for partial shipments. When a vendor ships more than the PO ordered, the extra quantity is received and billed normally, flagged as **Over-shipped** on the receipt and bill, with no error or blocked step. When a vendor ships a few pieces short, the receipt and bill cover only what arrived and the line is flagged **Under-shipped**; the missing pieces either stay open on the PO for a later shipment, or the user marks them **Short-closed** so the PO can close without them.
 
 **Purchase Order form**
 - New **Payments** section: lists every payment and the balance due.
@@ -37,6 +37,6 @@ All changes extend the existing Purchase Order screen and the two existing recei
 - Pure helpers in `src/lib/vendor-bill-rules.ts` (bill amount, over-shipment split, billed-once check, balance, advance application, status) with node:test tests.
 - Edits: `PurchaseOrderManagement.tsx`, `PurchaseOrderForm.tsx`, `UnifiedPackageModal.tsx`, `UnifiedOpenBoxModal.tsx`, `InboundPackageCard.tsx` (link display); AGENTS.md rule.
 
-## Assumptions to confirm
+## Confirmed decisions
 - Bill is for received quantities, not ordered quantities.
 - Advances apply to the earliest open bill first.
