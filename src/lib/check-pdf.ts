@@ -155,7 +155,7 @@ function drawStub(page: PDFPage, d: CheckData, sy: number, h: {
   const ty = sy + PART_HEIGHT_IN - 0.45;
   line(5.5, ty - 0.15, 8.0, ty - 0.15, 0.5);
   text('Check total', 5.5, ty, 9, bold);
-  textRight(`$${stubTotal(d.stubLines).toFixed(2)}`, 8.0, ty, 10, bold);
+  textRight(`$${stubTotal(d.stubLines).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 8.0, ty, 10, bold);
   if (d.memo) text(`Memo: ${d.memo.slice(0, 80)}`, 0.5, ty, 8.5);
   if (d.voided) text('VOID', 3.6, sy + 1.9, 36, bold);
 }
