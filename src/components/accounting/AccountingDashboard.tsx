@@ -404,7 +404,7 @@ export async function printIssuedCheck(transactionId: string) {
     checkNumber: first.check_number,
     date: usDate(first.paid_at),
     payee: first.payee_name || sup?.name || '',
-    payeeAddress: sup?.address && !String(sup.address).includes('\n') && !sup?.shipping_city ? sup.address : payeeAddress,
+    payeeAddress,
     amount: rows.reduce((s: number, r: any) => s + Number(r.amount), 0),
     memo: first.memo,
     stubLines: rows.map((r: any) => ({
