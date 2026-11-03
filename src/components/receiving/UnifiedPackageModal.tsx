@@ -59,6 +59,7 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
     setNotes(selectedRma ? rmaIntakeNotes(selectedRma) : '');
     setReturnShippingAddress(selectedRma?.return_shipping_address || '');
     setDateReceived(new Date());
+    setReceiptLink(EMPTY_RECEIPT_LINK);
   }, [open, mode, selectedRma]);
 
   useEffect(() => {
