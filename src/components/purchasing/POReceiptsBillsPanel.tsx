@@ -18,6 +18,8 @@ import {
   maxPayment, openQuantity, overShippedQuantity, receiptSubtotal,
 } from '@/lib/vendor-bill-rules';
 
+import { PayWithCheckDialog, printIssuedCheck } from '@/components/accounting/AccountingDashboard';
+
 const db = supabase as any;
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -62,6 +64,7 @@ export function POReceiptsBillsPanel({ purchaseOrderId, poStatus, poTotal, onCha
   const [payments, setPayments] = useState<Payment[]>([]);
   const [accounts, setAccounts] = useState<Array<{ id: string; name: string; account_subtype: string }>>([]);
   const [busy, setBusy] = useState(false);
+  const [checkFor, setCheckFor] = useState<{ receiptId?: string } | null>(null);
 
   // New receipt
   const [qty, setQty] = useState<Record<string, string>>({});
@@ -210,6 +213,9 @@ export function POReceiptsBillsPanel({ purchaseOrderId, poStatus, poTotal, onCha
                   })}
                 </ul>
                 {r.notes && <p className="text-sm text-muted-foreground">{r.notes}</p>}
+                {manage && r.is_billed && st !== 'paid' && (
+                  <Button type="button" size="sm" variant="outline" onClick={() => setCheckFor({ receiptId: r.id })}>Pay with check</Button>
+                )}
                 {r.is_billed && (
                   <p className="text-sm">
                     Bill {r.bill_number} · {r.bill_date}{r.due_date ? ` · due ${r.due_date}` : ''} · Total{' '}
@@ -265,6 +271,11 @@ export function POReceiptsBillsPanel({ purchaseOrderId, poStatus, poTotal, onCha
                   <span className="font-medium">{formatCurrency(Number(p.amount))}</span>
                   <span className="text-muted-foreground">{p.method.toUpperCase()}{p.account?.name ? ` · ${p.account.name}` : ''}{p.reference ? ` · ${p.reference}` : ''}</span>
                   {p.is_advance && <Badge variant="outline">Advance</Badge>}
+                  {(p as any).check_number && (
+                    <Button type="button" size="sm" variant="ghost" onClick={() => printIssuedCheck((p as any).transaction_id).catch(e => fail('Could not print', e))}>
+                      Reprint check {(p as any).check_number}
+                    </Button>
+                  )}
                   <span className="text-muted-foreground">{r ? `→ bill ${r.bill_number}` : 'not yet applied'}</span>
                 </div>
               );
@@ -301,13 +312,22 @@ export function POReceiptsBillsPanel({ purchaseOrderId, poStatus, poTotal, onCha
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-full flex justify-end">
+              <div className="col-span-full flex justify-end gap-2">
+                <Button type="button" size="sm" variant="outline" disabled={maxPay <= 0} onClick={() => setCheckFor({})}>Pay with check</Button>
                 <Button type="button" size="sm" disabled={busy || maxPay <= 0} onClick={submitPayment}>Record payment</Button>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
+
+      <PayWithCheckDialog
+        open={!!checkFor}
+        onOpenChange={o => { if (!o) setCheckFor(null); }}
+        presetReceiptId={checkFor?.receiptId}
+        presetPoId={checkFor && !checkFor.receiptId ? purchaseOrderId : undefined}
+        onIssued={() => done('Check issued')}
+      />
 
       <Dialog open={!!billFor} onOpenChange={o => { if (!o) setBillFor(null); }}>
         <DialogContent>
