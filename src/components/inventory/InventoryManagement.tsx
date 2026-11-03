@@ -7,7 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Package, Boxes, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Package, Boxes, Edit, Trash2, AlertTriangle, Scale, ClipboardList } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { canManageVendorBills } from "@/lib/vendor-bill-rules";
+import { InventoryAdjustmentDialog, AdjustableItem } from "./InventoryAdjustmentDialog";
 
 type StockBadgeInfo = {
   variant: "default" | "destructive" | "secondary" | "outline";
@@ -118,6 +122,10 @@ interface LaborItem {
 
 export const InventoryManagement = () => {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [adjustingItem, setAdjustingItem] = useState<AdjustableItem | null>(null);
+  const navigate = useNavigate();
+  const { roles } = useAuth();
+  const canAdjust = canManageVendorBills(roles);
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [laborItems, setLaborItems] = useState<LaborItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -336,6 +344,7 @@ export const InventoryManagement = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {adjustingItem && <InventoryAdjustmentDialog item={adjustingItem} onClose={() => setAdjustingItem(null)} onSaved={fetchData} />}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Inventory Management</h1>
         <div className="flex gap-2">
@@ -351,6 +360,12 @@ export const InventoryManagement = () => {
             <Plus size={16} />
             Add Labor
           </Button>
+          {canAdjust && (
+            <Button variant="outline" className="gap-2" onClick={() => navigate("/inventory/physical-count")}>
+              <ClipboardList size={16} />
+              Physical Count
+            </Button>
+          )}
           <InventoryManagementActions onDataChange={fetchData} />
         </div>
       </div>
@@ -450,6 +465,12 @@ export const InventoryManagement = () => {
                     <TableCell className="text-right">{item.reorder_point}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
+                        {canAdjust && (
+                          <Button size="sm" variant="ghost" title="Adjust Quantity/Value on Hand" aria-label="Adjust Quantity/Value on Hand"
+                            onClick={() => setAdjustingItem(item as unknown as AdjustableItem)}>
+                            <Scale size={14} />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"

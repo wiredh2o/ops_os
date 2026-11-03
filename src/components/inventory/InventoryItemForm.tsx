@@ -1,3 +1,6 @@
+import { useAuth } from "@/hooks/useAuth";
+import { InventoryAdjustmentDialog, AdjustableItem } from "./InventoryAdjustmentDialog";
+import { canManageVendorBills } from "@/lib/vendor-bill-rules";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,6 +104,9 @@ interface InventoryItemFormProps {
 }
 
 export const InventoryItemForm = ({ item, onClose, onSuccess }: InventoryItemFormProps) => {
+  const [showAdjust, setShowAdjust] = useState(false);
+  const { roles } = useAuth();
+  const canAdjust = canManageVendorBills(roles);
   const [formData, setFormData] = useState({
     sku: item?.sku || '',
     sales_description: item?.sales_description || '',
@@ -475,6 +481,10 @@ export const InventoryItemForm = ({ item, onClose, onSuccess }: InventoryItemFor
   };
 
   return (
+    <>
+    {showAdjust && item && (
+      <InventoryAdjustmentDialog item={item as unknown as AdjustableItem} onClose={() => setShowAdjust(false)} onSaved={() => onSuccess?.()} />
+    )}
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -1383,6 +1393,11 @@ export const InventoryItemForm = ({ item, onClose, onSuccess }: InventoryItemFor
           </Tabs>
 
           <div className="flex justify-end gap-2 pt-4 border-t">
+            {item && canAdjust && (
+              <Button type="button" variant="outline" className="mr-auto" onClick={() => setShowAdjust(true)}>
+                Adjust Quantity/Value on Hand
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
@@ -1393,5 +1408,6 @@ export const InventoryItemForm = ({ item, onClose, onSuccess }: InventoryItemFor
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 };

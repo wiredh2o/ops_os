@@ -1972,6 +1972,79 @@ export type Database = {
           },
         ]
       }
+      inventory_adjustments: {
+        Row: {
+          adjustment_date: string
+          created_at: string
+          created_by: string
+          id: string
+          inventory_item_id: string
+          new_quantity: number
+          new_unit_cost: number
+          new_value: number
+          old_quantity: number
+          old_unit_cost: number
+          old_value: number
+          reason: string | null
+          request_key: string
+          transaction_id: string | null
+        }
+        Insert: {
+          adjustment_date: string
+          created_at?: string
+          created_by: string
+          id?: string
+          inventory_item_id: string
+          new_quantity: number
+          new_unit_cost: number
+          new_value: number
+          old_quantity: number
+          old_unit_cost: number
+          old_value: number
+          reason?: string | null
+          request_key: string
+          transaction_id?: string | null
+        }
+        Update: {
+          adjustment_date?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          inventory_item_id?: string
+          new_quantity?: number
+          new_unit_cost?: number
+          new_value?: number
+          old_quantity?: number
+          old_unit_cost?: number
+          old_value?: number
+          reason?: string | null
+          request_key?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_adjustments_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "backordered_inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_adjustments_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_adjustments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_demand_analytics: {
         Row: {
           adjusted_reorder_point: number | null
@@ -5781,10 +5854,13 @@ export type Database = {
           created_at: string
           created_by: string
           description: string
+          entry_number: string | null
           id: string
+          is_adjusting: boolean
           is_reconciled: boolean
           reference_id: string | null
           reference_number: string | null
+          request_key: string | null
           total_amount: number
           transaction_date: string
           transaction_type: string
@@ -5795,10 +5871,13 @@ export type Database = {
           created_at?: string
           created_by: string
           description: string
+          entry_number?: string | null
           id?: string
+          is_adjusting?: boolean
           is_reconciled?: boolean
           reference_id?: string | null
           reference_number?: string | null
+          request_key?: string | null
           total_amount: number
           transaction_date?: string
           transaction_type: string
@@ -5809,10 +5888,13 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string
+          entry_number?: string | null
           id?: string
+          is_adjusting?: boolean
           is_reconciled?: boolean
           reference_id?: string | null
           reference_number?: string | null
+          request_key?: string | null
           total_amount?: number
           transaction_date?: string
           transaction_type?: string
@@ -6494,6 +6576,7 @@ export type Database = {
         }
         Returns: Json
       }
+      next_journal_entry_number: { Args: never; Returns: string }
       notification_claim: {
         Args: never
         Returns: {
@@ -6539,6 +6622,27 @@ export type Database = {
       notification_schedule_next: { Args: never; Returns: undefined }
       notification_wake: { Args: never; Returns: undefined }
       populate_weekly_component_prices: { Args: never; Returns: string }
+      post_inventory_adjustments: {
+        Args: {
+          p_date: string
+          p_lines: Json
+          p_memo?: string
+          p_offset_account_id: string
+          p_request_key: string
+        }
+        Returns: Json
+      }
+      post_journal_entry: {
+        Args: {
+          p_date: string
+          p_entry_number: string
+          p_is_adjusting: boolean
+          p_lines: Json
+          p_memo: string
+          p_request_key: string
+        }
+        Returns: Json
+      }
       production_order_credit_hold: {
         Args: { _order_id: string }
         Returns: boolean

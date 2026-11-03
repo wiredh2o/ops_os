@@ -170,6 +170,10 @@ export const AccountingDashboard = () => {
             <Plus className="w-4 h-4 mr-2" />
             New Transaction
           </Button>
+          <Button variant="outline" onClick={() => window.location.assign("/accounting/general-journal")}>
+            <FileText className="w-4 h-4 mr-2" />
+            General Journal
+          </Button>
           <Button variant="outline" onClick={() => setCheckOpen(true)}>
             <FileText className="w-4 h-4 mr-2" />
             Pay with check

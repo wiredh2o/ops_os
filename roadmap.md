@@ -86,3 +86,5 @@
 - [x] Check details per checking account in Settings → System → Check Printing, with VOID alignment test.
 - [x] Pay with check (Accounting screen and PO bills): top-third check with MICR line, two identical stubs; reprint and void.
 - [ ] Bank test of the printed MICR line (some banks require MICR toner).
+
+- [x] Inventory adjustments, Physical Count worksheet and General Journal screen

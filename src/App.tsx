@@ -19,6 +19,8 @@ import PendingSerials from "./pages/PendingSerials";
 import RmaRequests from "./pages/RmaRequests";
 import OrderTaxes from "./pages/OrderTaxes";
 import FedExCertLabels from "./pages/FedExCertLabels";
+import InventoryPhysicalCount from "./pages/InventoryPhysicalCount";
+import GeneralJournal from "./pages/GeneralJournal";
 import { toast } from "sonner";
 
 // Returning to the tab must never reload data under an open form.
@@ -180,6 +182,8 @@ function AppRoutes() {
         <Route path="/pending-serials" element={<ProtectedRoute><PendingSerials /></ProtectedRoute>} />
         <Route path="/rma" element={<ProtectedRoute><RmaRequests /></ProtectedRoute>} />
         <Route path="/order-taxes" element={<ProtectedRoute><OrderTaxes /></ProtectedRoute>} />
+        <Route path="/inventory/physical-count" element={<ProtectedRoute><InventoryPhysicalCount /></ProtectedRoute>} />
+        <Route path="/accounting/general-journal" element={<ProtectedRoute><GeneralJournal /></ProtectedRoute>} />
         <Route path="/fedex-cert-labels" element={<ProtectedRoute><FedExCertLabels /></ProtectedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
