@@ -19,6 +19,12 @@ export type Database = {
           account_number: string | null
           account_subtype: Database["public"]["Enums"]["account_subtype"]
           account_type: Database["public"]["Enums"]["account_type"]
+          bank_address: string | null
+          bank_name: string | null
+          check_account_number: string | null
+          check_company_address: string | null
+          check_company_name: string | null
+          check_logo_url: string | null
           company_id: string | null
           created_at: string
           created_by: string
@@ -27,12 +33,22 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          next_check_number: number
+          print_offset_x: number
+          print_offset_y: number
+          routing_number: string | null
           updated_at: string
         }
         Insert: {
           account_number?: string | null
           account_subtype: Database["public"]["Enums"]["account_subtype"]
           account_type: Database["public"]["Enums"]["account_type"]
+          bank_address?: string | null
+          bank_name?: string | null
+          check_account_number?: string | null
+          check_company_address?: string | null
+          check_company_name?: string | null
+          check_logo_url?: string | null
           company_id?: string | null
           created_at?: string
           created_by: string
@@ -41,12 +57,22 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          next_check_number?: number
+          print_offset_x?: number
+          print_offset_y?: number
+          routing_number?: string | null
           updated_at?: string
         }
         Update: {
           account_number?: string | null
           account_subtype?: Database["public"]["Enums"]["account_subtype"]
           account_type?: Database["public"]["Enums"]["account_type"]
+          bank_address?: string | null
+          bank_name?: string | null
+          check_account_number?: string | null
+          check_company_address?: string | null
+          check_company_name?: string | null
+          check_logo_url?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string
@@ -55,6 +81,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          next_check_number?: number
+          print_offset_x?: number
+          print_offset_y?: number
+          routing_number?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -5769,13 +5799,16 @@ export type Database = {
         Row: {
           account_id: string | null
           amount: number
+          check_number: number | null
           company_id: string | null
           created_at: string
           created_by: string | null
           id: string
           is_advance: boolean
+          memo: string | null
           method: string
           paid_at: string
+          payee_name: string | null
           purchase_order_id: string
           receipt_id: string | null
           reference: string | null
@@ -5784,13 +5817,16 @@ export type Database = {
         Insert: {
           account_id?: string | null
           amount: number
+          check_number?: number | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           is_advance?: boolean
+          memo?: string | null
           method: string
           paid_at?: string
+          payee_name?: string | null
           purchase_order_id: string
           receipt_id?: string | null
           reference?: string | null
@@ -5799,13 +5835,16 @@ export type Database = {
         Update: {
           account_id?: string | null
           amount?: number
+          check_number?: number | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           is_advance?: boolean
+          memo?: string | null
           method?: string
           paid_at?: string
+          payee_name?: string | null
           purchase_order_id?: string
           receipt_id?: string | null
           reference?: string | null
@@ -6392,6 +6431,17 @@ export type Database = {
       is_admin_or_owner: { Args: never; Returns: boolean }
       is_internal_staff: { Args: { _uid: string }; Returns: boolean }
       is_notification_staff: { Args: never; Returns: boolean }
+      issue_vendor_check: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_check_date: string
+          p_memo?: string
+          p_po_id: string
+          p_receipt_id?: string
+        }
+        Returns: Json
+      }
       notification_claim: {
         Args: never
         Returns: {
@@ -6619,6 +6669,10 @@ export type Database = {
       update_committed_inventory: { Args: never; Returns: undefined }
       update_daily_consumption_rates: { Args: never; Returns: string }
       update_daily_ttm_values: { Args: never; Returns: string }
+      void_vendor_check: {
+        Args: { p_transaction_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       account_subtype:
