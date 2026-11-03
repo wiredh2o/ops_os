@@ -5,10 +5,10 @@ All changes extend the existing Purchase Order screen and the two existing recei
 ## What you will see
 
 **Purchase Orders list**
-- A PO with status Partial or Closed (goods received) gets a **Convert to Bill** action.
-- Converting creates one bill per PO. The bill amount is the **received** quantity times unit cost, plus the PO's tax and shipping. You can enter the vendor's invoice number, bill date and due date.
+- A PO can have many item receipts (one per shipment that arrives). Each receipt has a **Bill received** switch the user turns on once the vendor's bill arrives, which turns that item receipt into a bill.
+- One PO can produce several item receipts and so several bills. Each bill covers only the items on its receipt: received quantity times unit cost, plus any tax and shipping on the vendor's bill. You enter the vendor's invoice number, bill date and due date (the amounts can be adjusted to match the vendor's bill).
 - A new **Bill** column/badge: No bill, Open, Partially paid, Paid.
-- A PO can only be billed once; if more items arrive after billing, the bill shows a "received since billed" warning and an **Update bill** button.
+- Each received item can be billed only once: an item already on a bill can't go on another bill, but one PO can have several bills for partial shipments. When a vendor ships more than the PO ordered, the extra quantity is received and billed normally, flagged as **Over-shipped** on the receipt and bill, with no error or blocked step.
 
 **Purchase Order form**
 - New **Payments** section: lists every payment and the balance due.
