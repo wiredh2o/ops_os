@@ -339,6 +339,18 @@ export function PurchaseOrderManagement() {
                           >
                             Edit
                           </Button>
+                          {!['draft', 'cancelled'].includes(po.status) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingPO(po);
+                                setShowPOForm(true);
+                              }}
+                            >
+                              Receive / Bill
+                            </Button>
+                          )}
                           <Button
                             variant="destructive"
                             size="sm"
