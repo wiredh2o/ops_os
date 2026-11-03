@@ -5,12 +5,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, DollarSign, CreditCard, Building2 } from "lucide-react";
+import { Plus, DollarSign, CreditCard, Building2, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { FieldGuard } from "@/components/permissions/FieldGuard";
 import { formatCurrency } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { buildCheckPdf, openPdf, type CheckData } from "@/lib/check-pdf";
 
 interface Account {
   id: string;
@@ -40,6 +44,7 @@ export const AccountingDashboard = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [checkOpen, setCheckOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -164,6 +169,10 @@ export const AccountingDashboard = () => {
           <Button>
             <Plus className="w-4 h-4 mr-2" />
             New Transaction
+          </Button>
+          <Button variant="outline" onClick={() => setCheckOpen(true)}>
+            <FileText className="w-4 h-4 mr-2" />
+            Pay with check
           </Button>
           <Button variant="outline">
             <Building2 className="w-4 h-4 mr-2" />
@@ -324,7 +333,17 @@ export const AccountingDashboard = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex items-center gap-2">
+                      {transaction.transaction_type === 'vendor_payment' && transaction.reference_number?.startsWith('Check #') && !transaction.description.startsWith('VOID') && (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => printIssuedCheck(transaction.id).catch(e => toast.error(e.message))}>Reprint</Button>
+                          <Button size="sm" variant="outline" onClick={async () => {
+                            if (!window.confirm(`Void ${transaction.reference_number}? The payment is reversed and the number stays used.`)) return;
+                            const { error } = await (supabase as any).rpc('void_vendor_check', { p_transaction_id: transaction.id });
+                            if (error) toast.error(error.message); else { toast.success('Check voided'); fetchData(); }
+                          }}>Void</Button>
+                        </>
+                      )}
                       <div className={`text-lg font-semibold ${
                         transaction.total_amount >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
@@ -343,6 +362,177 @@ export const AccountingDashboard = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <PayWithCheckDialog open={checkOpen} onOpenChange={setCheckOpen} onIssued={fetchData} />
     </div>
   );
 };
+// ---------------- Vendor checks ----------------
+
+const sdb = supabase as any;
+const todayIso = () => new Date().toISOString().split('T')[0];
+const usDate = (iso: string | null | undefined) => {
+  if (!iso) return '';
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return `${m}/${d}/${y}`;
+};
+
+/** Load an issued check (all payment rows sharing its transaction) and open the print-ready PDF. */
+export async function printIssuedCheck(transactionId: string) {
+  const { data: rows, error } = await sdb.from('vendor_payments')
+    .select('amount, paid_at, check_number, payee_name, memo, account_id, receipt:po_receipts(bill_number, bill_date, bill_total), po:purchase_orders(purchase_order_number, supplier:suppliers(name, address, shipping_city, shipping_state, shipping_postal_code))')
+    .eq('transaction_id', transactionId);
+  if (error) throw error;
+  const { data: tx } = await sdb.from('transactions').select('description, total_amount').eq('id', transactionId).maybeSingle();
+  const voided = !rows?.length && /^VOID check #/.test(tx?.description || '');
+  if (!rows?.length) throw new Error(voided ? 'This check was voided; it can no longer be printed.' : 'Check not found');
+  const first = rows[0];
+  if (!first.check_number) throw new Error('This payment was not made by printed check');
+  const { data: acct, error: aErr } = await sdb.from('accounts').select('*').eq('id', first.account_id).single();
+  if (aErr) throw aErr;
+  const sup = first.po?.supplier;
+  const payeeAddress = [sup?.address, [sup?.shipping_city, sup?.shipping_state, sup?.shipping_postal_code].filter(Boolean).join(' ')]
+    .filter(Boolean).join('\n');
+  const data: CheckData = {
+    companyName: acct.check_company_name || '',
+    companyAddress: acct.check_company_address || '',
+    logoUrl: acct.check_logo_url,
+    bankName: acct.bank_name || '',
+    bankAddress: acct.bank_address || '',
+    routingNumber: acct.routing_number,
+    accountNumber: acct.check_account_number,
+    checkNumber: first.check_number,
+    date: usDate(first.paid_at),
+    payee: first.payee_name || sup?.name || '',
+    payeeAddress: sup?.address && !String(sup.address).includes('\n') && !sup?.shipping_city ? sup.address : payeeAddress,
+    amount: rows.reduce((s: number, r: any) => s + Number(r.amount), 0),
+    memo: first.memo,
+    stubLines: rows.map((r: any) => ({
+      billNumber: r.receipt?.bill_number || '', poNumber: r.po?.purchase_order_number || '',
+      billDate: usDate(r.receipt?.bill_date), billAmount: Number(r.receipt?.bill_total || 0), paid: Number(r.amount),
+    })),
+    offsetXIn: Number(acct.print_offset_x || 0),
+    offsetYIn: Number(acct.print_offset_y || 0),
+  };
+  openPdf(await buildCheckPdf(data));
+}
+
+interface OpenBillOption { id: string; purchase_order_id: string; bill_number: string; bill_total: number; bill_amount_paid: number; po: { purchase_order_number: string; supplier: { name: string } | null } | null }
+
+/** Issue a vendor check against a bill (or as an advance on a PO) and print it. */
+export function PayWithCheckDialog({ open, onOpenChange, presetReceiptId, presetPoId, onIssued }: {
+  open: boolean; onOpenChange: (o: boolean) => void; presetReceiptId?: string; presetPoId?: string; onIssued?: () => void;
+}) {
+  const [bills, setBills] = useState<OpenBillOption[]>([]);
+  const [pos, setPos] = useState<Array<{ id: string; purchase_order_number: string; supplier: { name: string } | null }>>([]);
+  const [checking, setChecking] = useState<any[]>([]);
+  const [target, setTarget] = useState('');
+  const [accountId, setAccountId] = useState('');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(todayIso());
+  const [memo, setMemo] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const [b, p, a] = await Promise.all([
+        sdb.from('po_receipts').select('id, purchase_order_id, bill_number, bill_total, bill_amount_paid, po:purchase_orders(purchase_order_number, supplier:suppliers(name))').eq('is_billed', true).order('bill_date'),
+        sdb.from('purchase_orders').select('id, purchase_order_number, supplier:suppliers(name)').not('status', 'in', '(draft,cancelled)').order('created_at', { ascending: false }).limit(200),
+        sdb.from('accounts').select('id, name, routing_number, check_account_number, next_check_number').eq('account_subtype', 'checking').eq('is_active', true).order('name'),
+      ]);
+      const open = (b.data || []).filter((r: OpenBillOption) => Number(r.bill_total) - Number(r.bill_amount_paid) > 0.004);
+      setBills(open);
+      setPos(p.data || []);
+      setChecking(a.data || []);
+      if (a.data?.length === 1) setAccountId(a.data[0].id);
+      const preset = presetReceiptId ? `bill:${presetReceiptId}` : presetPoId ? `po:${presetPoId}` : '';
+      setTarget(preset);
+      setDate(todayIso());
+      applyTarget(preset, open, p.data || []);
+    })();
+  }, [open, presetReceiptId, presetPoId]);
+
+  const applyTarget = (t: string, billList = bills, poList = pos) => {
+    setTarget(t);
+    if (t.startsWith('bill:')) {
+      const b = billList.find(x => x.id === t.slice(5));
+      if (b) {
+        setAmount((Number(b.bill_total) - Number(b.bill_amount_paid)).toFixed(2));
+        setMemo(`PO ${b.po?.purchase_order_number || ''} / Inv ${b.bill_number}`);
+      }
+    } else if (t.startsWith('po:')) {
+      const p = poList.find(x => x.id === t.slice(3));
+      setAmount('');
+      setMemo(p ? `Advance on PO ${p.purchase_order_number}` : '');
+    }
+  };
+
+  const account = checking.find(a => a.id === accountId);
+  const accountReady = account && account.routing_number && account.check_account_number;
+
+  const issue = async () => {
+    const amt = Number(amount);
+    if (!target) return toast.error('Pick a bill or PO to pay');
+    if (!accountReady) return toast.error('Add routing and account numbers for this checking account in Settings first');
+    if (!(amt > 0)) return toast.error('Enter the check amount');
+    const bill = target.startsWith('bill:') ? bills.find(b => b.id === target.slice(5)) : null;
+    const poId = bill ? bill.purchase_order_id : target.slice(3);
+    setBusy(true);
+    try {
+      const { data, error } = await sdb.rpc('issue_vendor_check', {
+        p_account_id: accountId, p_po_id: poId, p_amount: amt, p_check_date: date, p_memo: memo || null,
+        p_receipt_id: bill ? bill.id : null,
+      });
+      if (error) throw error;
+      toast.success(`Check ${data.check_number} issued`);
+      onOpenChange(false);
+      onIssued?.();
+      await printIssuedCheck(data.transaction_id);
+    } catch (e: any) {
+      toast.error(e?.message || 'Check not issued');
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Pay with check</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Pay</Label>
+            <Select value={target} onValueChange={v => applyTarget(v)}>
+              <SelectTrigger><SelectValue placeholder="Pick an open bill or a PO" /></SelectTrigger>
+              <SelectContent>
+                {bills.map(b => (
+                  <SelectItem key={b.id} value={`bill:${b.id}`}>
+                    Bill {b.bill_number} · {b.po?.supplier?.name} · PO {b.po?.purchase_order_number} · owes {formatCurrency(Number(b.bill_total) - Number(b.bill_amount_paid))}
+                  </SelectItem>
+                ))}
+                {pos.map(p => <SelectItem key={p.id} value={`po:${p.id}`}>Advance on PO {p.purchase_order_number} · {p.supplier?.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Checking account</Label>
+            <Select value={accountId} onValueChange={setAccountId}>
+              <SelectTrigger><SelectValue placeholder="Pick account" /></SelectTrigger>
+              <SelectContent>{checking.map(a => <SelectItem key={a.id} value={a.id}>{a.name} · next check {a.next_check_number}</SelectItem>)}</SelectContent>
+            </Select>
+            {account && !accountReady && <p className="text-sm text-destructive mt-1">This account has no routing/account numbers yet. Add them in Settings → System → Check printing.</p>}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Amount</Label><Input type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} /></div>
+            <div><Label>Check date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+          </div>
+          <div><Label>Memo</Label><Input value={memo} maxLength={60} onChange={e => setMemo(e.target.value)} /></div>
+          <p className="text-xs text-muted-foreground">Prints on the top third of 8.5" × 11" check stock with two stubs below. Print at Actual size (100%). The signature is left blank.</p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button disabled={busy} onClick={issue}>{busy ? 'Issuing…' : 'Issue & print check'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
