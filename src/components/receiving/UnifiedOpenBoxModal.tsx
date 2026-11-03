@@ -11,6 +11,7 @@ import { Camera, X, Hash, PackageCheck, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { InboundPackage } from "./InboundPackageCard";
+import { ReceiptLinkField, EMPTY_RECEIPT_LINK, type ReceiptLink } from "./ReceiptLinkField";
 import { INCOMPLETE_REPAIR_ITEM_STATUSES } from "@/lib/repair-queue-filter";
 
 interface UnifiedOpenBoxModalProps {
@@ -38,11 +39,16 @@ export const UnifiedOpenBoxModal: React.FC<UnifiedOpenBoxModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingItemsCount, setExistingItemsCount] = useState(0);
   const [shippingPreference, setShippingPreference] = useState<'ship_complete' | 'ship_as_available'>('ship_complete');
+  const [receiptLink, setReceiptLink] = useState<ReceiptLink>(EMPTY_RECEIPT_LINK);
   const { toast } = useToast();
 
   // Load data when modal opens
   useEffect(() => {
     if (isOpen) {
+      setReceiptLink({
+        purchaseOrderId: (pkg as any).linked_purchase_order_id || null,
+        transactionId: (pkg as any).linked_transaction_id || null,
+      });
       if (mode === 'edit') {
         loadUnboxData();
         loadPackageImages();
@@ -639,6 +645,11 @@ export const UnifiedOpenBoxModal: React.FC<UnifiedOpenBoxModalProps> = ({
               rows={3}
             />
           </div>
+
+          {/* Optional link from a manual receipt to a PO or credit-card transaction */}
+          {!pkg.rma_request_id && (
+            <ReceiptLinkField value={receiptLink} onChange={setReceiptLink} packageId={pkg.id} />
+          )}
 
           {/* Package Images */}
           <div className="space-y-2">

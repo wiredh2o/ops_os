@@ -19,6 +19,7 @@ import type { InboundPackage } from "./InboundPackageCard";
 import { useRmaRequests } from '@/hooks/useRmaRequests';
 import { rmaIntakeNotes, type RmaRequest } from '@/lib/rma';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ReceiptLinkField, EMPTY_RECEIPT_LINK, type ReceiptLink } from './ReceiptLinkField';
 
 interface UnifiedPackageModalProps {
   open: boolean;
@@ -46,6 +47,7 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
   const [searchTerm, setSearchTerm] = useState("");
   const [companies, setCompanies] = useState<any[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(true);
+  const [receiptLink, setReceiptLink] = useState<ReceiptLink>(EMPTY_RECEIPT_LINK);
   
   
   const { toast } = useToast();
@@ -57,6 +59,7 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
     setNotes(selectedRma ? rmaIntakeNotes(selectedRma) : '');
     setReturnShippingAddress(selectedRma?.return_shipping_address || '');
     setDateReceived(new Date());
+    setReceiptLink(EMPTY_RECEIPT_LINK);
   }, [open, mode, selectedRma]);
 
   useEffect(() => {
@@ -151,6 +154,10 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
         setSelectedCustomer(pkg.company_id || pkg.company?.id || (pkg.company ? companies.find(c => c.name === pkg.company?.name)?.id || "" : ""));
         setDateReceived(pkg.received_at ? new Date(pkg.received_at) : undefined);
         setNotes(pkg.intake_notes || "");
+        setReceiptLink({
+          purchaseOrderId: (pkg as any).linked_purchase_order_id || null,
+          transactionId: (pkg as any).linked_transaction_id || null,
+        });
         loadReturnShippingAddress();
         loadPackageImages();
       } else {
@@ -262,8 +269,10 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
             received_at: dateReceived.toISOString(),
             intake_notes: notes || null,
             return_shipping_address: returnShippingAddress || null,
-            category: 'repairs'
-          })
+            category: 'repairs',
+            linked_purchase_order_id: receiptLink.purchaseOrderId,
+            linked_transaction_id: receiptLink.transactionId,
+          } as any)
           .select()
           .single();
 
@@ -612,6 +621,11 @@ export function UnifiedPackageModal({ open, onOpenChange, mode, package: pkg, on
               rows={3}
             />
           </div>
+
+          {/* Optional link from a manual receipt to a PO or credit-card transaction */}
+          {!selectedRma && !(mode === 'edit' && pkg?.rma_request_id) && (
+            <ReceiptLinkField value={receiptLink} onChange={setReceiptLink} packageId={mode === 'edit' ? pkg?.id : undefined} />
+          )}
 
           {/* Return Shipping Address */}
           <div className="space-y-2">

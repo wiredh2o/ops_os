@@ -29,6 +29,8 @@ export type InboundPackage = {
   assigned_tray?: string | null;
   rma_request_id?: string | null;
   customer_po?: string | null;
+  linked_purchase_order_id?: string | null;
+  linked_transaction_id?: string | null;
   created_at: string;
   received_at?: string | null;
   company_id?: string | null;
@@ -427,6 +429,8 @@ export const InboundPackageCard: React.FC<InboundPackageCardProps> = ({ pkg, ite
 
       <CardContent className="pt-0 px-3 pb-3">
         {pkg.rma_request_id && <Badge variant="outline" className="mb-2">{pkg.intake_notes?.split('\n')[0] || 'RMA return'}</Badge>}
+        {pkg.linked_purchase_order_id && <Badge variant="outline" className="mb-2">Linked to PO</Badge>}
+        {pkg.linked_transaction_id && <Badge variant="outline" className="mb-2">Linked to card charge</Badge>}
         <Collapsible open={!detailsCollapsed}>
           <CollapsibleContent>
             {pkg.intake_notes && (

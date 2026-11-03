@@ -16,6 +16,7 @@ import { formatCurrency } from "@/lib/utils";
 import { getUomLabel, calculateStockingQuantity } from '@/lib/uom-constants';
 import { isRangeTracked, recordRangeReceived } from '@/lib/serial-range-utils';
 import { POLineItemRangeInput } from './POLineItemRangeInput';
+import { POReceiptsBillsPanel } from './POReceiptsBillsPanel';
 interface Supplier {
   id: string;
   name: string;
@@ -108,6 +109,8 @@ interface PurchaseOrderItem {
   serial_range_start?: number | null;
   serial_range_end?: number | null;
   range_valid?: boolean;
+  quantity_received?: number;
+  actual_received_date?: string | null;
 }
 
 interface PurchaseOrderFormProps {
@@ -261,6 +264,9 @@ export function PurchaseOrderForm({ purchaseOrder, suppliers, onClose, onSuccess
           serial_range_start: item.serial_range_start,
           serial_range_end: item.serial_range_end,
           range_valid: item.serial_range_start != null && item.serial_range_end != null,
+          // Keep received counts so saving the PO never wipes recorded receipts
+          quantity_received: item.quantity_received ?? 0,
+          actual_received_date: item.actual_received_date ?? null,
         };
       });
       
@@ -268,6 +274,14 @@ export function PurchaseOrderForm({ purchaseOrder, suppliers, onClose, onSuccess
     } catch (error) {
       console.error('Error fetching purchase order items:', error);
     }
+  };
+
+  // After a receipt, bill or payment: reload status and received counts so a later save stays accurate
+  const onReceiptsChanged = async () => {
+    if (!purchaseOrder?.id) return;
+    const { data } = await supabase.from('purchase_orders').select('status, actual_delivery_date').eq('id', purchaseOrder.id).single();
+    if (data) setFormData(prev => ({ ...prev, status: data.status }));
+    await fetchPurchaseOrderItems();
   };
 
   const generatePONumber = async () => {
@@ -877,6 +891,15 @@ export function PurchaseOrderForm({ purchaseOrder, suppliers, onClose, onSuccess
             </Button>
           </div>
         </form>
+
+        {purchaseOrder && (
+          <POReceiptsBillsPanel
+            purchaseOrderId={purchaseOrder.id}
+            poStatus={purchaseOrder.status}
+            poTotal={Number(purchaseOrder.total_amount) || 0}
+            onChanged={onReceiptsChanged}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
