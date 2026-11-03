@@ -1,7 +1,12 @@
 # Let assemblies and subassemblies be adjusted too
 
 ## Answer on the "Inventory Asset account" message
-A posting moves money between two accounts in your chart of accounts: the Inventory Asset account and the offset account (Cost of Goods Sold unless you pick another). The posting looks for an active account marked as type "Inventory". If none exists, or it is switched off, the posting stops with that message rather than guess. Nothing changes here. It's only a one-time setup: make sure one Inventory-type account is active.
+A posting moves money between two accounts in your chart of accounts: the Inventory Asset account and the offset account (Cost of Goods Sold unless you pick another). The posting looks for an active account marked as type "Inventory". If none exists, or it is switched off, the posting stops with that message rather than guess. Nothing changes here. Today the Accounting screen creates a starter chart of accounts on first open, including "Inventory" (1200) and "Cost of Goods Sold" (5000). You can't add, edit or switch off accounts anywhere in the app yet, so normally that message shouldn't appear.
+
+## Add and edit accounts (new)
+- The Accounting screen gets a Chart of Accounts list with **New account** and **Edit** (Admin and Accounting only): name, number, type, subtype, description, and an active switch.
+- Accounts used in journal entries can be switched off but not deleted.
+- Account numbers must be unique.
 
 ## Why assemblies were left out
 I left them out to keep the first version small, not for a business reason. Assemblies and subassemblies already have their own on-hand quantity and unit cost, and they belong in the same Inventory Asset balance. So they should be adjustable too.
