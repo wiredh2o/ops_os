@@ -5,7 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, DollarSign, CreditCard, Building2, FileText } from "lucide-react";
+import { Plus, DollarSign, CreditCard, Building2, FileText, Pencil } from "lucide-react";
+import { AccountEditDialog } from "./AccountEditDialog";
+import { canManageVendorBills } from "@/lib/vendor-bill-rules";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -39,7 +41,9 @@ interface Transaction {
 }
 
 export const AccountingDashboard = () => {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+  const canEditAccounts = canManageVendorBills(roles);
+  const [editingAccount, setEditingAccount] = useState<Account | "new" | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -229,6 +233,10 @@ export const AccountingDashboard = () => {
         />
       </div>
 
+      {editingAccount && user && (
+        <AccountEditDialog account={editingAccount === "new" ? null : editingAccount} userId={user.id}
+          onClose={() => setEditingAccount(null)} onSaved={fetchData} />
+      )}
       <Tabs defaultValue="accounts" className="w-full">
         <TabsList>
           <TabsTrigger value="accounts">Chart of Accounts</TabsTrigger>
@@ -237,8 +245,11 @@ export const AccountingDashboard = () => {
 
         <TabsContent value="accounts" className="mt-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Chart of Accounts</CardTitle>
+              {canEditAccounts && (
+                <Button size="sm" onClick={() => setEditingAccount("new")}><Plus size={14} className="mr-1" />New account</Button>
+              )}
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -284,7 +295,13 @@ export const AccountingDashboard = () => {
                         )}
                       </FieldGuard>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex items-center gap-3">
+                      {!account.is_active && <Badge variant="outline">Inactive</Badge>}
+                      {canEditAccounts && (
+                        <Button size="sm" variant="ghost" aria-label={`Edit ${account.name}`} onClick={() => setEditingAccount(account)}>
+                          <Pencil size={14} />
+                        </Button>
+                      )}
                       <FieldGuard 
                         tableName="accounts" 
                         columnName="current_balance" 

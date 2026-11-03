@@ -43,3 +43,11 @@ test('journal balancing pre-fills the difference', () => {
   assert.equal(journalTotals([{ debit: 50 }, { credit: 50 }]).balanced, true);
   assert.equal(journalTotals([{ debit: 50 }, { credit: 40 }]).balanced, false);
 });
+
+test('a mixed batch of items and assemblies still nets to one entry', () => {
+  const item = computeAdjustment(10, 100, 7, null);     // -300
+  const assembly = computeAdjustment(3, 250, 5, null);  // +500
+  const net = netChange([item, assembly]);
+  assert.equal(net, 200);
+  assert.deepEqual(adjustmentEntry(net), { inventory: { debit: 200, credit: 0 }, offset: { debit: 0, credit: 200 } });
+});

@@ -12,6 +12,9 @@ import { computeAdjustment, netChange } from "@/lib/inventory-adjustment-rules";
 import { AdjustableItem, today, useOffsetAccounts } from "@/components/inventory/InventoryAdjustmentDialog";
 import { toast } from "sonner";
 
+type ItemType = "item" | "assembly" | "subassembly";
+const typeOf = (i: AdjustableItem): ItemType => i.kind === "assembly" ? (i.is_subassembly ? "subassembly" : "assembly") : "item";
+const TYPE_LABEL: Record<ItemType, string> = { item: "Item", assembly: "Assembly", subassembly: "Subassembly" };
 const money = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 export default function InventoryPhysicalCount() {
@@ -20,6 +23,7 @@ export default function InventoryPhysicalCount() {
   const [items, setItems] = useState<AdjustableItem[]>([]);
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | ItemType>("all");
   const [date, setDate] = useState(today());
   const [offset, setOffset] = useState("");
   const [posting, setPosting] = useState(false);
@@ -34,9 +38,19 @@ export default function InventoryPhysicalCount() {
         .select("id,sku,sales_description,purchase_description,quantity_on_hand,unit_cost")
         .eq("is_active", true).order("sku").range(from, from + 999);
       if (error) { toast.error(error.message); break; }
-      all.push(...(data || []));
+      all.push(...(data || []).map(d => ({ ...d, kind: "item" as const })));
       if (!data || data.length < 1000) break;
     }
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase.from("assemblies")
+        .select("id,sku,sales_description,purchase_description,quantity_on_hand,unit_cost,is_subassembly")
+        .order("sku").range(from, from + 999);
+      if (error) { toast.error(error.message); break; }
+      all.push(...(data || []).map(d => ({ id: d.id, sku: d.sku, sales_description: d.sales_description, purchase_description: d.purchase_description,
+        quantity_on_hand: Number(d.quantity_on_hand) || 0, unit_cost: d.unit_cost, is_subassembly: d.is_subassembly, kind: "assembly" as const })));
+      if (!data || data.length < 1000) break;
+    }
+    all.sort((a, b) => a.sku.localeCompare(b.sku));
     setItems(all);
   };
   useEffect(() => { load(); }, []);
@@ -48,7 +62,7 @@ export default function InventoryPhysicalCount() {
   const inc = changed.reduce((s, i) => s + Math.max(0, results[i.id].valueChange), 0);
   const dec = changed.reduce((s, i) => s + Math.min(0, results[i.id].valueChange), 0);
   const net = netChange(changed.map(i => results[i.id]));
-  const shown = items.filter(i => !search || `${i.sku} ${i.sales_description || ""} ${i.purchase_description || ""}`.toLowerCase().includes(search.toLowerCase()));
+  const shown = items.filter(i => typeFilter === "all" || typeOf(i) === typeFilter).filter(i => !search || `${i.sku} ${i.sales_description || ""} ${i.purchase_description || ""}`.toLowerCase().includes(search.toLowerCase()));
 
   if (rolesLoading) return <div className="p-6">Loading…</div>;
   if (!canManageVendorBills(roles)) return <Navigate to="/staff/inventory" replace />;
@@ -57,7 +71,7 @@ export default function InventoryPhysicalCount() {
     setPosting(true);
     const { data, error } = await supabase.rpc("post_inventory_adjustments", {
       p_date: date, p_offset_account_id: offset || null, p_request_key: requestKey.current,
-      p_lines: changed.map(i => ({ item_id: i.id, new_quantity: Number(counts[i.id]) })),
+      p_lines: changed.map(i => ({ kind: i.kind || "item", item_id: i.id, new_quantity: Number(counts[i.id]) })),
     });
     setPosting(false);
     if (error) return toast.error(error.message);
@@ -82,6 +96,18 @@ export default function InventoryPhysicalCount() {
             <SelectContent>{accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
+        <div className="w-44">
+          <Label>Type</Label>
+          <Select value={typeFilter} onValueChange={v => setTypeFilter(v as typeof typeFilter)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="item">Items</SelectItem>
+              <SelectItem value="assembly">Assemblies</SelectItem>
+              <SelectItem value="subassembly">Subassemblies</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex-1 min-w-48"><Label>Search</Label><Input value={search} onChange={e => setSearch(e.target.value)} placeholder="SKU or description" /></div>
       </div>
       <div className="flex flex-wrap gap-6 rounded-md border p-3 text-sm items-center">
@@ -96,7 +122,7 @@ export default function InventoryPhysicalCount() {
       {errors.length > 0 && <p className="text-sm text-destructive">Quantity on hand can't go below 0 ({errors.map(i => i.sku).join(", ")}).</p>}
       <Table>
         <TableHeader><TableRow>
-          <TableHead>Item</TableHead><TableHead className="text-right">Current qty</TableHead>
+          <TableHead>Item</TableHead><TableHead>Type</TableHead><TableHead className="text-right">Current qty</TableHead>
           <TableHead className="text-right">Current value</TableHead><TableHead className="text-right w-32">Counted qty</TableHead>
           <TableHead className="text-right">Counted value</TableHead><TableHead className="text-right">Change</TableHead>
         </TableRow></TableHeader>
@@ -104,6 +130,7 @@ export default function InventoryPhysicalCount() {
           {shown.map(i => { const r = results[i.id]; return (
             <TableRow key={i.id}>
               <TableCell><div className="font-medium">{i.sku}</div><div className="text-xs text-muted-foreground">{i.sales_description || i.purchase_description}</div></TableCell>
+              <TableCell className="text-sm text-muted-foreground">{TYPE_LABEL[typeOf(i)]}</TableCell>
               <TableCell className="text-right">{i.quantity_on_hand}</TableCell>
               <TableCell className="text-right">{money(r.oldValue)}</TableCell>
               <TableCell className="text-right"><Input type="number" min={0} className="text-right h-8" value={counts[i.id] ?? ""}

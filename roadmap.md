@@ -88,3 +88,5 @@
 - [ ] Bank test of the printed MICR line (some banks require MICR toner).
 
 - [x] Inventory adjustments, Physical Count worksheet and General Journal screen
+- [x] Adjust quantity/value for assemblies and subassemblies
+- [x] Chart of accounts add/edit on the Accounting screen

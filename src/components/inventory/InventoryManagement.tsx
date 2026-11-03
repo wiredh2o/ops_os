@@ -566,6 +566,17 @@ export const InventoryManagement = () => {
                     <TableCell className="text-right">{assembly.reorder_point}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
+                        {canAdjust && (
+                          <Button size="sm" variant="ghost" title="Adjust Quantity/Value on Hand" aria-label="Adjust Quantity/Value on Hand"
+                            onClick={() => setAdjustingItem({
+                              id: assembly.id, sku: assembly.sku, sales_description: assembly.description,
+                              quantity_on_hand: Number((assembly as unknown as { quantity_on_hand?: number }).quantity_on_hand) || 0,
+                              unit_cost: (assembly as unknown as { unit_cost?: number | null }).unit_cost ?? 0,
+                              kind: "assembly",
+                            })}>
+                            <Scale size={14} />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"

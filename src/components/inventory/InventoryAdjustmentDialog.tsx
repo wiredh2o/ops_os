@@ -15,6 +15,9 @@ export interface AdjustableItem {
   purchase_description?: string | null;
   quantity_on_hand: number;
   unit_cost: number | null;
+  /** 'assembly' covers assemblies and subassemblies; defaults to inventory item. */
+  kind?: "item" | "assembly";
+  is_subassembly?: boolean | null;
 }
 
 const money = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -54,7 +57,7 @@ export function InventoryAdjustmentDialog({ item, onClose, onSaved }: {
     const { error } = await supabase.rpc("post_inventory_adjustments", {
       p_date: date, p_offset_account_id: offset || null, p_request_key: requestKey.current,
       p_memo: reason || null,
-      p_lines: [{ item_id: item.id, new_quantity: qty === "" ? null : Number(qty), new_value: value === "" ? null : Number(value), reason: reason || null }],
+      p_lines: [{ kind: item.kind || "item", item_id: item.id, new_quantity: qty === "" ? null : Number(qty), new_value: value === "" ? null : Number(value), reason: reason || null }],
     });
     setSaving(false);
     if (error) return toast.error(error.message);

@@ -1975,10 +1975,11 @@ export type Database = {
       inventory_adjustments: {
         Row: {
           adjustment_date: string
+          assembly_id: string | null
           created_at: string
           created_by: string
           id: string
-          inventory_item_id: string
+          inventory_item_id: string | null
           new_quantity: number
           new_unit_cost: number
           new_value: number
@@ -1991,10 +1992,11 @@ export type Database = {
         }
         Insert: {
           adjustment_date: string
+          assembly_id?: string | null
           created_at?: string
           created_by: string
           id?: string
-          inventory_item_id: string
+          inventory_item_id?: string | null
           new_quantity: number
           new_unit_cost: number
           new_value: number
@@ -2007,10 +2009,11 @@ export type Database = {
         }
         Update: {
           adjustment_date?: string
+          assembly_id?: string | null
           created_at?: string
           created_by?: string
           id?: string
-          inventory_item_id?: string
+          inventory_item_id?: string | null
           new_quantity?: number
           new_unit_cost?: number
           new_value?: number
@@ -2022,6 +2025,20 @@ export type Database = {
           transaction_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "inventory_adjustments_assembly_id_fkey"
+            columns: ["assembly_id"]
+            isOneToOne: false
+            referencedRelation: "assemblies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_adjustments_assembly_id_fkey"
+            columns: ["assembly_id"]
+            isOneToOne: false
+            referencedRelation: "backordered_assemblies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inventory_adjustments_inventory_item_id_fkey"
             columns: ["inventory_item_id"]
