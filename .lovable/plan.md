@@ -21,8 +21,8 @@
 - Value decrease: credit Inventory Asset, debit COGS/Inventory Adjustment.
 - Value increase: debit Inventory Asset, credit COGS/Inventory Adjustment.
 - Quantity-only change: value moves at the current unit cost. Value-only change: quantity stays, unit cost is recalculated. Both: new unit cost = new value / new quantity.
-- Quantity change with zero value effect (e.g. zero cost) updates the item with no journal lines.
-- New quantity cannot be negative; value cannot be positive when quantity is zero.
+- Total value is always quantity times per-item cost for each part, assembly or subassembly. Any quantity change changes total value by (quantity change times per-item cost), and that change is what gets posted. A value entry is stored as a new per-item cost (value / quantity), never as a separate total.
+- Negative quantity is allowed, because sales can ship before stock is received. Its value is then negative too (negative quantity times per-item cost), shown in red with a warning, not blocked. Per-item cost can never be negative. When quantity is zero, a new value can't be entered (no quantity to spread it over); only the per-item cost can be changed.
 
 ## Technical details
 - Existing `accounts`, `transactions`, `transaction_lines` are reused (no new chart of accounts). The Inventory Asset account is the active `account_subtype = inventory` account; offset defaults to `cost_of_goods_sold`. Posting fails with a clear message if either is missing.
@@ -33,4 +33,9 @@
 - Private-schema RPC `post_inventory_adjustments(date, description, offset_account_id, lines jsonb, request_key)` with public invoker wrapper: checks Admin/Accounting role and company, locks item rows, recomputes current values server-side (client numbers are not trusted), updates `quantity_on_hand`/`unit_cost`, writes transaction + balanced lines + audit row, updates account balances, all in one transaction. Request key prevents double-posting on retry. Single-item dialog calls the same RPC with one line and no batch description required (reason becomes the entry memo).
 - Pure helper `src/lib/inventory-adjustment-rules.ts` (delta math, debit/credit side, validation) with tests.
 - Files: InventoryManagement.tsx and InventoryItemForm.tsx (button), new `InventoryAdjustmentDialog.tsx` in src/components/inventory, new `src/pages/InventoryPhysicalCount.tsx`, route in `src/App.tsx`, AGENTS.md rule.
-- No general-journal UI.
+- General Journal screen (new page `src/pages/GeneralJournal.tsx`, route `/accounting/general-journal`, opened from the Accounting screen; Admin and Accounting only), modeled on QuickBooks Desktop "Make General Journal Entries":
+  - Header: Date, Entry No. (auto-numbered, editable), Adjusting Entry checkbox, Previous / Next buttons to page through entries, and "List of Selected General Journal Entries" toggle showing recent entries.
+  - Grid: Account, Debit, Credit, Memo, Name columns; new rows add automatically; the remaining difference pre-fills the next row so the entry balances like QuickBooks.
+  - Running debit/credit totals; Save and Close / Save and New / Clear are disabled until debits equal credits.
+  - Batch description from physical counts appears on each entry it created; inventory adjustment entries open read-only with a link back to the adjustment (edit by posting a new adjustment).
+  - Manual entries save through a private-schema RPC `post_journal_entry` (role/company check, balanced-lines check, account balance update, request key); adds `transactions.entry_number` and `is_adjusting` columns.
