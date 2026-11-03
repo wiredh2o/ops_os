@@ -161,7 +161,7 @@ function drawStub(page: PDFPage, d: CheckData, sy: number, h: {
 }
 
 export function openPdf(bytes: Uint8Array) {
-  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/pdf' }));
   window.open(url, '_blank');
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
