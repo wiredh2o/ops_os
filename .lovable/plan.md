@@ -29,13 +29,14 @@ All changes extend the existing Purchase Order screen and the two existing recei
 - Bill and payment amounts are hidden from staff without financial access (same rule as other financial displays).
 
 ## Technical details
-- New table `vendor_bills` (company_id, purchase_order_id unique, bill_number, bill_date, due_date, subtotal, tax, shipping, total, status) and `vendor_payments` (purchase_order_id, bill_id nullable, amount, paid_at, method, account_id → accounts, reference, is_advance). GRANTs + RLS via `has_role` (admin, accounting; read for financial viewers).
-- `convert_po_to_bill(po_id, ...)` security-definer RPC: requires PO status partial/closed, computes total from `purchase_order_items` received quantity, attaches existing advances, writes a `transactions` + `transaction_lines` entry (Inventory debit / Accounts Payable credit). Payments post AP debit / bank-or-card credit.
+- New table `vendor_bills` (company_id, purchase_order_id, receipt_id unique, bill_number, bill_date, due_date, subtotal, tax, shipping, total, status) with `vendor_bill_items` (bill_id, receipt line, po item, quantity, unit_cost, is_over_shipment; each receipt line billable once via unique constraint), and `vendor_payments` (purchase_order_id, bill_id nullable, amount, paid_at, method, account_id → accounts, reference, is_advance). GRANTs + RLS via `has_role` (admin, accounting; read for financial viewers).
+- Item receipts per PO use the existing receiving records (`receiving_items`), grouped per arrival; quantity above the PO line's remaining ordered amount is recorded as over-shipped instead of rejected.
+- `convert_receipt_to_bill(receipt_id, ...)` security-definer RPC (fired by the Bill received switch): bills only that receipt's unbilled lines, applies unapplied PO advances, writes a `transactions` + `transaction_lines` entry (Inventory debit / Accounts Payable credit). Payments post AP debit / bank-or-card credit.
 - Trigger keeps bill status (open/partial/paid) in sync with payment sum; rejects overpayment.
 - `inbound_packages` gains `linked_purchase_order_id` and `linked_transaction_id` (nullable; at most one set, enforced by trigger; transaction must belong to a credit-card account in the same company).
-- Pure helpers in `src/lib/vendor-bill-rules.ts` (bill amount, balance, advance application, status) with node:test tests.
+- Pure helpers in `src/lib/vendor-bill-rules.ts` (bill amount, over-shipment split, billed-once check, balance, advance application, status) with node:test tests.
 - Edits: `PurchaseOrderManagement.tsx`, `PurchaseOrderForm.tsx`, `UnifiedPackageModal.tsx`, `UnifiedOpenBoxModal.tsx`, `InboundPackageCard.tsx` (link display); AGENTS.md rule.
 
 ## Assumptions to confirm
 - Bill is for received quantities, not ordered quantities.
-- One bill per PO.
+- Advances apply to the earliest open bill first.
