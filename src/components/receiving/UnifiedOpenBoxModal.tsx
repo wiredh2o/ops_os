@@ -11,6 +11,7 @@ import { Camera, X, Hash, PackageCheck, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { InboundPackage } from "./InboundPackageCard";
+import { ReceiptLinkField, EMPTY_RECEIPT_LINK, type ReceiptLink } from "./ReceiptLinkField";
 import { INCOMPLETE_REPAIR_ITEM_STATUSES } from "@/lib/repair-queue-filter";
 
 interface UnifiedOpenBoxModalProps {

@@ -29,6 +29,8 @@ export type InboundPackage = {
   assigned_tray?: string | null;
   rma_request_id?: string | null;
   customer_po?: string | null;
+  linked_purchase_order_id?: string | null;
+  linked_transaction_id?: string | null;
   created_at: string;
   received_at?: string | null;
   company_id?: string | null;
