@@ -34,7 +34,8 @@ test('MICR line puts routing in positions 33-43 and account ending at 14', () =>
   assert.equal(at(14), 'C');
   assert.equal(at(15), '9');
   assert.equal(at(13), undefined); // amount field blank for the bank
-  assert.equal(line.filter(c => c.position >= 45).map(c => c.char).reverse().join(''), 'C001001C'.split('').reverse().join('').split('').reverse().join(''));
+  assert.equal(line.filter(c => c.position >= 45).map(c => c.char).join(''), 'C001001C'); // check number, left to right
+  assert.equal(at(44), undefined);
   assert.equal(micrCharX(1), 8.5 - 5 / 16 - 0.125);
 });
 
