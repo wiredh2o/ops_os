@@ -13,7 +13,7 @@
 **Physical Inventory Worksheet (new page, `/inventory/physical-count`)**
 - Opened from an "Physical Count" button on the Inventory screen; Admin and Accounting only (others are sent back).
 - Top: one adjustment date and offset account. No description is required.
-- Table of all inventory items: name/SKU, current qty, current value, counted qty, counted value. Search box; blank counted cells mean "no change".
+- Table of all inventory items: name/SKU, current qty, current value, counted qty, counted value. Counted value is not typed in; it is calculated as counted qty times the item's per-item cost. Search box; blank counted cells mean "no change".
 - Summary bar: lines changed, total value increase, total decrease, net.
 - Change one item or many, as in QuickBooks Desktop. "Post adjustments" posts every changed line at once: each changed item gets exactly one general journal entry that rebalances Inventory Asset against the offset account, dated with the entered date. No batch description is attached.
 
@@ -22,7 +22,7 @@
 - Value increase: debit Inventory Asset, credit COGS/Inventory Adjustment.
 - Quantity-only change: value moves at the current unit cost. Value-only change: quantity stays, unit cost is recalculated. Both: new unit cost = new value / new quantity.
 - Total value is always quantity times per-item cost for each part, assembly or subassembly. Any quantity change changes total value by (quantity change times per-item cost), and that change is what gets posted. A value entry is stored as a new per-item cost (value / quantity), never as a separate total.
-- Negative quantity is allowed, because orders can be taken for stock not on hand or not yet ordered (items still can't ship before they're received). Its value is then negative too (negative quantity times per-item cost), shown in red with a warning, not blocked. Example: 10 sold at $100 each with none on hand is quantity -10, value -$1,000. Per-item cost itself stays positive ($100); only quantity and total value go negative. When quantity is zero, a new value can't be entered (no quantity to spread it over); only the per-item cost can be changed.
+- Quantity on hand can never go below 0, since physical stock can't be negative, so on-hand value is never negative either. An adjustment to a negative quantity is blocked with a clear message. Orders for stock not on hand or not yet ordered are still accepted: the shortfall shows in the other existing quantities (allocated, available to promise, available to sell, which can go negative), not in on-hand. Per-item cost can never be negative. When quantity is zero, a new value can't be entered (no quantity to spread it over); only the per-item cost can be changed.
 
 ## Technical details
 - Existing `accounts`, `transactions`, `transaction_lines` are reused (no new chart of accounts). The Inventory Asset account is the active `account_subtype = inventory` account; offset defaults to `cost_of_goods_sold`. Posting fails with a clear message if either is missing.
